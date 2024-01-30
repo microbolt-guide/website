@@ -1,0 +1,12 @@
+{
+    "index": "Inici",
+    "system": "Sistema",
+    "bitcoin": "Bitcoin",
+    "lightning": "Lightning",
+    "---": {
+        "type": "separator",
+        "title": ""
+    },
+    "faq": "FAQ",
+    "donations": "Donacions"
+}
