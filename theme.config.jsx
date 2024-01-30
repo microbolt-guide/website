@@ -48,8 +48,11 @@ export default {
         </>
     ),
     useNextSeoProps() {
-        const { asPath } = useRouter()
-        return {
+        const { asPath, locale } = useRouter()
+        if (locale === 'ca-ES') return {
+            titleTemplate: asPath !== '/' ? '%s – MicroBolt' : 'Inici – MicroBolt'
+        }
+        if (locale === 'en-US') return {
             titleTemplate: asPath !== '/' ? '%s – MicroBolt' : 'Home – MicroBolt'
         }
     },
