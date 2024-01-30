@@ -76,6 +76,33 @@ export default {
     footer: {
         component: null,
     },
+    gitTimestamp: function useGitTimestamp({ timestamp }) {
+        const { locale } = useRouter()
+        if (locale === 'ca-ES') return (
+            <>
+                Última actualització el{' '}
+                <time dateTime={timestamp.toISOString()}>
+                    {timestamp.toLocaleDateString(locale, {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                    })}
+                </time>
+            </>
+        )
+        if (locale === 'en-US') return (
+            <>
+                Last updated on{' '}
+                <time dateTime={timestamp.toISOString()}>
+                    {timestamp.toLocaleDateString(locale, {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                    })}
+                </time>
+            </>
+        )
+    },
     navigation: {
         prev: true,
         next: true
