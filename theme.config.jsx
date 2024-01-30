@@ -9,7 +9,7 @@ export default {
         defaultMenuCollapseLevel: 1,
         autoCollapse: true
     },
-    docsRepositoryBase: "https://github.com/microbolt-guide/microbolt",
+    docsRepositoryBase: "https://github.com/microbolt-guide/microbolt/blob/main",
     i18n: [
         { locale: 'ca-ES', text: 'Català' },
         { locale: 'en-US', text: 'English' },
