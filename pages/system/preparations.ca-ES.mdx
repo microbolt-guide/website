@@ -1,0 +1,143 @@
+import { Callout,Tabs } from 'nextra/components'
+
+# Preparacions
+
+Aconseguim totes les peces de maquinari necessàries i preparem algunes
+contrasenyes.
+
+## Ordinador
+
+Aquesta guia es basa en ordinadors personals, ja que son fàcilment disponibles.
+
+Tot i que un ordinador personal és la millor opció per a la majoria, aquesta
+guia també funciona amb altres plataformes informàtiques, servidors en núvol o
+màquines virtuals que executen Alpine Linux. Només utilitza instruccions
+estàndard de Linux.
+
+### Requisits de maquinari
+
+Necessites el següent:
+* CPU: processador > 2010 gen
+* RAM: > 2 GB (només client Bitcoin), > 4 GB (tota la resta)
+* Emmagatzematge intern: >=1TB HDD, es recomana un SSD
+* Unitat USB/SD: >=1 GB
+* Pantalla de monitor temporal
+* Teclat temporal USB/PS2
+
+És possible que també vulgueu obtenir aquest maquinari opcional:
+* SAI (font d'alimentació ininterrompuda)
+
+## Anoteu les vostres contrasenyes
+
+Necessitareu diverses contrasenyes, i és més fàcil escriure-les totes al
+principi, en lloc de trobar-les al llarg de la guia. Han de ser úniques i molt
+segures, almenys 12 caràcters. **No utilitzeu caràcters especials**, espais o
+cometes poc habituals (‘ o “).
+
+```
+[ A ] Contrasenya mestre d'usuari
+[ B ] Contrasenya de Bitcoin RPC
+[ C ] Contrasenya de cartera LND
+[ D ] Contrasenya de BTC-RPC-Explorer (opcional)
+[ E ] Contrasenya de ThunderHub
+```
+
+![](/img/system/xkcd.webp)
+
+Si necessiteu inspiració per crear les vostres contrasenyes: el còmic
+[xkcd: Password Strength](https://xkcd.com/936/) és divertit i conté molta
+veritat. Emmagatzemeu una còpia de les vostres contrasenyes en un lloc segur
+(preferiblement en un gestor de contrasenyes de codi obert com
+[KeePassXC](https://keepassxc.org/)), o qualsevol gestor de contrasenyes que ja
+estigueu utilitzant, i manteniu les vostres notes originals fora de vista una
+vegada que el vostre sistema estigui en funcionament.
+
+## La línia d'ordres
+
+Treballarem en la línia de comandament del PC, que pot ser nova per a tu.
+Trobareu informació bàsica a continuació. T'ajudarà a navegar i interactuar amb
+el teu PC.
+
+Introduïu ordres i el PC respon imprimint els resultats sota la vostra ordre.
+
+Per a aclarir on comença una ordre, totes les ordres d'aquesta guia es troben en
+un quadre ressaltat:
+
+```sh
+ordre exemple # no em facis servir en el terminal real
+```
+
+La resposta del sistema està marcada amb el títol `output` al quadre:
+
+```sh filename="output"
+sortida exemple # sóc el resultat de "ordre exemple".
+```
+
+Alguns quadres tenen el camí al fitxer que necessitem editar, amb els
+`canvis desitjats` també ressaltats:
+
+```nginx filename="/path/to/config/file" {2}
+# Comentari
+config_variable="canvis desitjats"
+```
+
+* **Compleció automàtica d'ordres**: Podeu utilitzar la tecla `<Tab>` per a la
+compleció automàtica quan introduïu ordres, és a dir, per a ordres, directoris o
+noms de fitxer.
+* **Historial d'ordres**: en prémer ⬆️ (fletxa amunt) i ⬇️ (fletxa avall) al
+teclat, podreu trobar les ordres introduïdes prèviament.
+* **Utilitza privilegis d'administrador**: El nostre usuari normal no té
+privilegis d'administrador directes. Si una ordre necessita editar la
+configuració del sistema, hem d'utilitzar l'ordre desitjada
+**eina privilegiada de root** com a prefix. En lloc d'editar un fitxer de
+sistema amb, `$EDITOR /path/to/config/file`, utilitzem
+`$SU $EDITOR /path/to/config/file`.
+
+<Callout type="warning">
+Per raons de seguretat, els usuaris del servei com bitcoin no poden utilitzar
+l'ordre `$SU`.
+</Callout>
+
+* **Copiar / Enganxar**: Copiar normalment funciona amb `<Ctrl><c>` o
+`<Ctrl><Shift><c>`. Enganxar normalment funciona amb `<Ctrl><v>` o
+`<Ctrl><Shift><v>`.
+
+* **Ús del vostre editor de text preferit**: No assumim l'editor de text que
+voleu utilitzar. A continuació us expliquem com utilitzar un parell d'editors de
+text populars:
+
+<Tabs items={['vi', 'nano']}>
+    <Tabs.Tab>
+Si utilitzeu l'editor `vi` (instal·lat per defecte) per a crear fitxers de text
+nous o editar-ne d'existents, heu de saber que no és complicat, però desar i
+sortir no són intuïtius.
+
+  **Insertar**: premeu `<i>`, escriviu/suprimiu/editeu/enganxeu text, i premeu
+  la tecla `<Esc>` quan hàgiu acabat d'editar
+  
+  **Desar**: premeu `<:><w>`, i premeu la tecla `<Enter>`
+  
+  **Sortir**: premeu `<:><q>`, i premeu la tecla `<Enter>`
+    </Tabs.Tab>
+    <Tabs.Tab>
+Si utilitzeu l'editor `nano` (cal instal·lar-lo manualment) per a crear fitxers
+de text nous o editar-ne d'existents, heu de saber que no és complicat, però
+desar i sortir no són intuïtius.
+  
+  **Desar**: premeu `<Ctrl><o>`, confirmeu el nom del fitxer, i premeu la tecla
+  `<Enter>`
+  
+  **Sortir**: premeu `<Ctrl><x>`
+    </Tabs.Tab>
+</Tabs>
+
+## Assegureu la vostra xarxa domèstica i els vostres dispositius
+
+Tot i que la guia us mostrarà com protegir el vostre node, interactuareu amb ell
+des del vostre ordinador i telèfon mòbil i utilitzareu la vostra xarxa
+d'internet domèstica. Abans de construir el vostre MicroBolt, es recomana
+protegir la vostra xarxa domèstica i els vostres dispositius. Seguiu les parts 1
+i 2 d'aquest tutorial ["How to Secure Your Home Network Against
+Threats"](https://restoreprivacy.com/secure-home-network/) de Heinrich Long i
+intenteu implementar tants punts com sigui possible (alguns poden no aplicar-se
+al vostre router/dispositiu).
