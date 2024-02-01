@@ -1,0 +1,531 @@
+import { Callout,Steps,Tabs } from 'nextra/components'
+
+# Sistema operatiu
+
+Configurem el PC i instal·lem el sistema operatiu Alpine Linux.
+
+<Callout type="info">
+Alpine Linux és una distribució Linux lleugera i orientada a la seguretat basada
+en `musl` libc i `busybox`.
+</Callout>
+
+Perquè aquesta guia sigui el més universal possible, només utilitza ordres
+estàndard compatibles amb POSIX. Com a resultat, hauria de funcionar sense
+problemes amb un ordinador personal tot i ser compatible amb la majoria de les
+altres plataformes de maquinari que executen un shell compatible amb POSIX.
+
+## Quin sistema operatiu utilitzar?
+
+Utilitzem Alpine Linux. Això proporciona la millor estabilitat per a l'ordinador
+i fa que la configuració inicial sigui molt fàcil.
+
+[Alpine Linux](https://docs.alpinelinux.org/user-handbook/0.1a/index.html) està
+disponible per a la majoria de plataformes de maquinari. Hi ha tan poca
+necessitat de maquinari que es pot executar en un router.
+
+### Requisits
+
+|                | Alpine | Ubuntu |
+| :------------- | :----: | :----: |
+| RAM            |  128MB |    1GB |
+| Emmagatzematge |  700MB |  2.5GB |
+
+Font(s):
+* https://wiki.alpinelinux.org/wiki/Installation
+* https://ubuntu.com/server/docs/installation
+
+### Seguretat
+
+Alpine Linux és petit, té una superfície d'atac mínima. Menys codi condueix a
+menys errors i vulnerabilitats, però no el fa més segur.
+
+Alpine Linux diu que és més segur a causa de tots els binaris del camp d'usuari:
+
+* Es compilen com a Executables Independents de Posició (PIE)
+* Per defecte té activada la protecció Stack-Smashing (SSP)
+
+Així, evitant l'explotació de zero-dia i altres vulnerabilitats. El PIE ho
+aconsegueix d'una manera interessant. Es carrega (i les seves dependències) en
+ubicacions aleatòries dins de la memòria virtual. La protecció contra
+l'eliminació de piles ajuda a detectar els excessos de la memòria intermèdia de
+la pila. L'SSP fa que els atacs de programació orientats al retorn siguin molt
+més difícils d'executar.
+
+Ubuntu també ha implementat PIE per defecte a partir de 17.10 per a totes les
+arquitectures de l'arxiu Ubuntu. A més, l'Ubuntu té activada la protecció de la
+pila al nucli.
+
+A més, Ubuntu està empaquetat amb un conjunt complet de biblioteques GNU C i
+eines estàndard. I, ja que GNU Compiler Collection conté aproximadament 15
+milions de línies de codi (a partir de 2019). Per tant, es pot entendre que amb
+una gran biblioteca arriba la sobrecàrrega de mantenir-se.
+
+En el moment d'escriure:
+
+CVE Details va informar de 6 CVE per a Alpine Linux i 90 per a Ubuntu.
+Buscant un CVE Mitre, “Alpine Linux” troba 10 registres CVE, mentre que “Ubuntu”
+troba 7063 registres CVE.
+
+Font(s):
+* https://www.cvedetails.com/vendor/16697/Alpinelinux.html
+* https://www.cvedetails.com/vendor/51/Ubuntu.html
+* https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=alpine+linux
+* https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=ubuntu
+* https://access.redhat.com/blogs/766093/posts/1975793
+* https://wiki.ubuntu.com/Security/Features#pie
+
+### Components del nucli
+
+#### musl libc vs. GNU glibc
+
+musl libc és una reescriptura completa de C i proporciona una base de codi neta
+i moderna. Com a resultat, musl libc és lleuger i requereix uns 600 KB vs. GNU,
+que requereix uns 10 MB. A més, musl libc és el més adequat en casos de
+cantonada (corner cases), especialment amb fils d'execució. La baixa memòria o
+altres condicions d'esgotament de recursos mai són fatals per a la libc musl.
+Finalment, musl libc proporciona suport de primera classe per a text
+UTF-8/multilingüe.
+
+Font(s):
+* https://musl.libc.org/about.html
+* https://www.etalabs.net/compare_libcs.html
+
+#### BusyBox vs. GNU Core Utils
+
+BusyBox combina petites versions d'utilitats UNIX comunes en un sol executable.
+I proporciona un reemplaçament minimalista per a la majoria de les utilitats que
+utilitzeu. També conté eines de GNU Coreutils, util-linux i altres. Les
+utilitats de BusyBox generalment tenen menys opcions que GNU Core Utils. Però
+les opcions proporcionen la mateixa funcionalitat esperada. I BusyBox hauria de
+comportar-se de manera similar a GNU Core Utils. BusyBox elimina algunes
+extensions de GNU, dades de localització i molt més.
+
+GNU Utilities ofereix moltes més eines i és retrocompatible. Per descomptat,
+això el fa més extens i complex que BusyBox. Podeu instal·lar GNU Core Utils a
+Alpine Linux si cal.
+
+Font(s):
+* https://www.busybox.net/downloads/BusyBox.html
+* https://en.wikipedia.org/wiki/Util-linux
+* https://pkgs.alpinelinux.org/package/edge/main/x86_64/coreutils
+
+#### APK vs. APT
+
+Ubuntu utilitza APT per a la gestió de paquets. Per tant, la instal·lació i
+eliminació del programari es gestiona mitjançant la utilitat `apt`. D'altra
+banda, Alpine utilitza l'APK per a la gestió de paquets. Per tant, la
+instal·lació del programari es gestiona mitjançant la utilitat `apk add`. De la
+mateixa manera, `apk del` es pot utilitzar per eliminar un paquet. Així, tant
+les utilitats APK com APT funcionen de manera similar.
+
+Aquestes són algunes de les diferències quan s'utilitzen aquestes ordres:
+
+|                    | APT (Ubuntu)                | APK (Alpine)              |
+| :----------------- | :-------------------------- | :------------------------ |
+| Actualització      |`apt update`                 | `apk update`              |
+| Afegir paquet      |`apt install pkg1 pkg2`      | `apk add pkg1 pkg2`       |
+| Reinstal·lar paquet|`apt install --reinstall pkg`| `apk del pkg; apk add pkg`|
+| Cercar             |`apt-cache search keyword`   | `apk search keyword`      |
+| Eliminar paquet    |`apt remove pkg`             | `apk del pkg`             |
+
+APK és més ràpid que APT. APT requereix un consum intens de recursos, ja que
+requereix tres operacions de lectura i dues escriptures. L'APK, gairebé sempre,
+es completa abans que altres gestors de paquets. El procés APK només requereix
+una lectura i una escriptura.
+
+#### Ash vs. Dash
+
+Ubuntu utilitza el shell de Debian Almquist (Dash). El shell d'Almquist (també
+conegut com ash o sh) s'utilitza a Alpine Linux. Ash és més lleuger que Dash.
+Dash i Ash no són 100% compatibles, però poques vegades trobareu
+inconsistències.
+
+Font:
+* https://en.wikipedia.org/wiki/Comparison_of_command_shells
+
+## Graveu la imatge d'Alpine Linux a USB/SD
+
+<Callout type="info">
+MicroBolt s'ha provat actualment amb **Alpine Linux \{última versió\}** en una
+arquitectura `x86_64`, no s'ha provat en altres distribucions, arquitectures o
+versions anteriors i no hi ha cap garantia que funcioni bé amb elles.
+</Callout>
+
+<Steps>
+### Baixeu Alpine Linux anant al lloc web oficial
+
+https://alpinelinux.org/downloads/
+
+| Normalment   | PC         | Raspberry Pi \{3,4,5\} |
+| :----------- | :--------: | :--------------------: |
+| versió       | `standard` | `raspberry pi`         |
+| arquitectura | `x86_64`   | `aarch64`              |
+
+<Callout type="info">
+També hi ha imatges oficials pel núvol [aquí] (https://alpinelinux.org/cloud/),
+utilitzeu-les sota la vostra propia responsabilitat
+</Callout>
+
+### Connecteu l'USB/SD al vostre ordinador amfitrió
+
+### Graveu-la
+
+<Tabs items={['Unix/Linux', 'windows']}>
+    <Tabs.Tab>
+```sh
+dd if=<arxiu-iso> of=<dispositiu-objectiu> bs=4M; eject <dispositiu-objectiu>
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+Per exemple, hi ha el programa [Rufus](https://rufus.ie/).
+
+Utilitzeu-lo amb la configuració següent:
+
+| Configuració     | Valor                  |
+| :--------------- | :--------------------: |
+| Partition scheme | `MBR`                  |
+| Target system    | `BIOS or UEFI`         |
+| File system      | `FAT32`                |
+| Cluster size     | `4096 bytes (default)` |
+
+<Callout type="info">
+Recordeu expulsar el `<dispositiu-objectiu>`
+</Callout>
+    </Tabs.Tab>
+</Tabs>
+</Steps>
+
+## Inicieu l'ordinador
+
+* Connecteu el `USB/SD` al vostre ordinador
+* Connecteu una pantalla, un teclat i un cable Ethernet
+* Entreu al menú de configuració de la BIOS o d'arrencada i seleccioneu el
+`USB/SD` que heu gravat
+
+<Callout type="info">
+Alguns ordinadors tenen l'opció d'iniciar-se automàticament després d'una pèrdua
+d'energia, és interessant activar-lo si voleu assegurar-vos que el vostre node
+estigui disponible el més aviat possible en la vostra absència.
+</Callout>
+
+## Instal·lació d'Alpine Linux
+
+<Callout type="info">
+Alpine Linux es pot utilitzar en qualsevol dels tres modes següents
+
+**Mode Diskless**
+
+Arranqueu des d'un mitjà de només lectura, com ara el CD d'instal·lació, una
+unitat USB o una targeta Compact Flash.
+
+Quan utilitzeu Alpine en aquest mode, heu d'utilitzar
+[Alpine Local Backup](https://wiki.alpinelinux.org/wiki/Alpine_local_backup)
+(lbu) per desar les vostres modificacions entre reinicis. Això requereix algun
+mitjà d'escriptura, normalment desmuntable. (Si el vostre mitjà d'arrencada és,
+per exemple, una unitat USB, podeu desar-hi les modificacions; no necessiteu una
+partició o una unitat separades.) Vegeu també
+[Caché APK local](https://wiki.alpinelinux.org/wiki/Local_APK_cache).
+
+**Mode Data**
+
+Igual que en el mode diskless, el vostre sistema operatiu s'executa des d'un
+mitjà de només lectura. Tanmateix, aquí s'utilitza una partició escrivible
+(normalment en un disc dur) per emmagatzemar les dades a /var. S'accedeix a
+aquesta partició directament, en lloc de copiar-se en un tmpfs; de manera que
+això és més adequat per a usos on s'han de conservar grans quantitats de dades
+entre reinicis.
+
+**Mode Sys**
+
+Aquesta és una instal·lació tradicional de disc dur. Tant el sistema d'arrencada
+com les vostres modificacions s'escriuen al disc dur, en una jerarquia estàndard
+de Linux.
+</Callout>
+
+* Inicieu sessió amb l'usuari `root` (no cal cap contrasenya)
+
+* Configura les variables d'entorn, els valors per defecte són:
+
+<Callout type="info">
+Els valors predeterminats no és necessari configurar-los, aquest bloc de codi és
+per a referències si voleu personalitzar la vostra instal·lació
+</Callout>
+
+```sh
+export BOOT_SIZE=100 #Size of the boot partition in MB; defaults to 100
+export SWAP_SIZE= #Size of the swap volume in MB; set to 0 to disable swap
+export ROOTFS=ext4 #Filesystem for / volume; supported: ext{2,3,4} btrfs xfs
+export BOOTFS=ext4 #Filesystem for /boot volume; supported: ext{2,3,4} btrfs xfs
+export VARFS=ext4 #Filesystem for /var volume; supported: ext{2,3,4} btrfs xfs
+export BOOTLOADER=syslinux #Bootloader to use; supported: grub syslinux zipl
+export DISKLABEL=dos #Disklabel to use; supported: dos gpt eckd
+```
+
+<Tabs items={['sys', 'data']}>
+    <Tabs.Tab>
+* Executeu `setup-alpine`
+
+Introduïu el següent a l'indicador de l'instal·lador:
+
+<Steps>
+{<h3>Keymap</h3>}
+Select keyboard layout: `none` (o el que mes et convingui)
+
+{<h3>Hostname</h3>}
+Enter system hostname `nakamoto01`
+
+{<h3>Interface</h3>}
+Which one do you want to initialize? `eth0`
+
+Ip address for eth0? `dhcp` (o el que mes et convingui)
+
+Do you want to do any manual network configuration? `n`
+
+{<h3>Root Password</h3>}
+New password: `changeme`
+
+Retype password: `changeme`
+
+{<h3>Timezone</h3>}
+Which timezone are you in? `UTC` (o el que mes et convingui)
+
+{<h3>Proxy</h3>}
+HTTP/FTP proxy URL? `none` (o el que mes et convingui)
+
+{<h3>Network Time Protocol</h3>}
+Which NTP client to run? `busybox` (o el que mes et convingui)
+
+{<h3>APK Mirror</h3>}
+Enter mirror number or URL: `f` (o el que mes et convingui)
+
+{<h3>User</h3>}
+Setup a user? `no`
+
+Which ssh server? `dropbear` (o el que mes et convingui)
+
+{<h3>Disk and install</h3>}
+Which disk would you like to use: `sdX` (trieu el disc dur, normalment sda)
+
+How would you like to use it? `sys`
+
+WARNING: Erase the above disk(s) and continue? `y`
+
+<Callout type="info">
+La vostra instal·lació haurà acabat quan vegeu això:
+`Installation is complete. Please reboot.`
+</Callout>
+</Steps>
+
+* Assigna el fitxer d'intercanvi, si cal
+
+```sh copy
+[ "$SWAP_SIZE" == 0 ] && {
+    fallocate -l 4GiB /var/swapfile
+    chmod 600 /var/swapfile
+    mkswap /var/swapfile
+    swapon /var/swapfile
+}
+```
+
+* Posa el fitxer d'intercanvi a l'arrencada, si cal
+
+```sh copy
+[ "$SWAP_SIZE" == 0 ] && {
+    printf "%s\n" \
+        "/var/swapfile none swap sw 0 0" \
+        >> /etc/fstab
+}
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+* Configura la interfície d'Internet
+
+```sh copy
+setup-interfaces
+```
+
+Which one do you want to initialize? `eth0`
+
+Ip address for eth0? `dhcp` (o el que mes et convingui)
+
+Do you want to do any manual network configuration? `n`
+
+```sh copy
+rc-service networking --quiet start
+```
+
+```sh copy
+setup-apkrepos
+```
+
+Enter mirror number or URL: `1`
+
+* Copia el modloop i desmunta `USB/SD`
+
+```sh copy
+DO_UMOUNT=1 copy-modloop
+```
+
+* Estableix la variable d'entorn al fitxer del dispositiu
+
+```sh
+mydev=/dev/sdY #Normalment /dev/sdb
+```
+
+* Particiona el disc
+
+```sh copy
+fdisk "$mydev" <<EOF
+o
+n
+p
+1
+
+
+t
+0c
+a
+1
+w
+EOF
+```
+
+* Omple particions noves creades
+
+```sh copy
+mdev -s
+```
+
+* Formateja la partició
+
+```sh copy
+mkfs.vfat -F32 "${mydev}1"
+```
+
+* Creeu un disc d'arrencada permanent per al mode diskless/data
+
+```sh copy
+url="https://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/x86_64/\
+alpine-standard-3.19.1-x86_64.iso"
+
+setup-bootable -v "$url" "${mydev}1"
+```
+
+* Munta'l
+
+```sh copy
+mount "${mydev}1" /media/usb
+```
+
+* Executeu `setup-alpine`
+
+Introduïu el següent a l'indicador de l'instal·lador:
+
+<Steps>
+{<h3>Keymap</h3>}
+Select keyboard layout: `none` (o el que mes et convingui)
+
+{<h3>Hostname</h3>}
+Enter system hostname `nakamoto01`
+
+{<h3>Interface</h3>}
+Which one do you want to initialize? `eth0`
+
+Ip address for eth0? `dhcp` (o el que mes et convingui)
+
+Do you want to do any manual network configuration? `n`
+
+{<h3>Root Password</h3>}
+New password: `changeme`
+
+Retype password: `changeme`
+
+{<h3>Timezone</h3>}
+Which timezone are you in? `UTC` (o el que mes et convingui)
+
+{<h3>Proxy</h3>}
+HTTP/FTP proxy URL? `none` (o el que mes et convingui)
+
+{<h3>Network Time Protocol</h3>}
+Which NTP client to run? `busybox` (o el que mes et convingui)
+
+{<h3>APK Mirror</h3>}
+Enter mirror number or URL: `f` (o el que mes et convingui)
+
+{<h3>User</h3>}
+Setup a user? `no`
+
+Which ssh server? `dropbear` (o el que mes et convingui)
+
+{<h3>Disk and install</h3>}
+Which disk would you like to use: `sdX` (trieu el disc dur, normalment sda)
+
+How would you like to use it? `data`
+
+WARNING: Erase the above disk(s) and continue? `y`
+
+Enter where to store configs `usb`
+
+Enter apk cache directory `/media/usb/cache`
+</Steps>
+
+* Assigna el fitxer d'intercanvi, si cal
+
+```sh copy
+[ "$SWAP_SIZE" == 0 ] && {
+    fallocate -l 4GiB /var/swapfile
+    chmod 600 /var/swapfile
+    mkswap /var/swapfile
+    swapon /var/swapfile
+}
+```
+
+* Posa el fitxer d'intercanvi a l'arrencada, si cal
+
+```sh copy
+[ "$SWAP_SIZE" == 0 ] && {
+    printf "%s\n" \
+        "/var/swapfile none swap sw 0 0" \
+        >> /etc/fstab
+}
+```
+
+* Actualitza el repositori d'apk perquè coincideixi amb els nous mitjans
+d'arrencada
+
+```sh copy
+sed "s/${mydev##\/dev\/}/usb/" /etc/apk/repositories > _
+mv -f _ /etc/apk/repositories
+```
+
+* Elimina possibles línies duplicades
+
+```sh copy_
+awk '!x[$1]++ && ! /^[[:blank:]]*$/' /etc/apk/repositories > _
+mv -f _ /etc/apk/repositories
+```
+
+* Actualitzeu, suprimiu i descarregueu la memòria cau local
+
+```sh copy
+apk update
+apk cache -v sync
+```
+
+* Visualitza i desa les modificacions
+
+```sh copy
+lbu status
+```
+
+```sh copy
+lbu commit
+```
+    </Tabs.Tab>
+</Tabs>
+
+* Reinicieu
+
+```sh copy
+reboot
+```
