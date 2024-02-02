@@ -9,8 +9,9 @@ No cal confiar en ningú més.
 
 ## Què és el MicroBolt?
 
-MicroBolt és una bifurcació de [RaspiBolt](https://raspibolt.org), feta per a
-tota mena d'ordinadors, no només Raspberry Pi's.
+MicroBolt és una bifurcació de [RaspiBolt](https://raspibolt.org) i 
+[MiniBolt](https://minibolt.info), feta per a tota mena d'ordinadors, no només
+Raspberry Pi's.
 
 Amb aquesta guia, pots configurar un node de Bitcoin i Lightning des de zero,
 fent-ho tot tu mateix.

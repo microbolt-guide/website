@@ -9,8 +9,9 @@ No need to trust anyone else.
 
 ## What is the MicroBolt?
 
-MicroBolt is a fork of [RaspiBolt](https://raspibolt.org), made for all kind of
-computers, not only Raspberry Pi's.
+MicroBolt is a fork of [RaspiBolt](https://raspibolt.org) and
+[MiniBolt](https://minibolt.info), made for all kind of computers, not only
+Raspberry Pi's.
 
 With this guide, you can set up a Bitcoin and Lightning node from scratch, doing
 everything yourself.
