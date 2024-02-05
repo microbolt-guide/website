@@ -88,7 +88,8 @@ gestió de nodes web
 
 ## Comunitat
 
-Aquest és un projecte comunitari.
+Aquest NO és un projecte comunitari. `doitwithnotepad` te l'última paraula en
+disputes o discussions dins de la comunitat.
 
 Trobeu ajuda i altres usuaris de MicroBolt a les plataformes següents:
 

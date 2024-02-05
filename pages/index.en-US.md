@@ -84,7 +84,8 @@ management
 
 ## Community
 
-This is a community project.
+This is NOT a community project. `doitwithnotepad` retain the final say in
+disputes or arguments within the community.
 
 Find help and other MicroBolt users on the following platforms:
 
