@@ -16,7 +16,7 @@ physical possession of the private certificate key can log in.
 ### Preparations on `host` system
 
 <Steps>
-{<h3>Create a new public/private key pair</h3>}
+### Create a new public/private key pair
 
 <Callout type="warning">
 Skip if you already have one
@@ -29,7 +29,7 @@ ssh-keygen -t rsa -b 4096
 Follow instructions, optionally enter a key passphrase to protect your key, you
 can use `password [A]`
 
-{<h3>The public key now needs to be copied to the PC</h3>}
+### The public key now needs to be copied to the PC
 
 ```sh copy
 cat ./.ssh/id_rsa.pub |
