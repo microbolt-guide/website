@@ -252,49 +252,62 @@ export BOOTLOADER=syslinux #Bootloader to use; supported: grub syslinux zipl
 export DISKLABEL=dos #Disklabel to use; supported: dos gpt eckd
 ```
 
-<Tabs items={['sys', 'data']}>
-    <Tabs.Tab>
 * Execute `setup-alpine`
 
 Enter the following into the prompt of the installer:
 
 <Steps>
-{<h3>Keymap</h3>}
+### Keymap
 Select keyboard layout: `none` (or whatever suits your preference)
 
-{<h3>Hostname</h3>}
+### Hostname
 Enter system hostname `nakamoto01`
 
-{<h3>Interface</h3>}
+### Interface
 Which one do you want to initialize? `eth0`
 
 Ip address for eth0? `dhcp` (or whatever suits your preference)
 
 Do you want to do any manual network configuration? `n`
 
-{<h3>Root Password</h3>}
+### Root Password
 New password: `changeme`
 
 Retype password: `changeme`
 
-{<h3>Timezone</h3>}
+### Timezone
 Which timezone are you in? `UTC` (or whatever suits your preference)
 
-{<h3>Proxy</h3>}
+### Proxy
 HTTP/FTP proxy URL? `none` (or whatever suits your preference)
 
-{<h3>Network Time Protocol</h3>}
+### Network Time Protocol
 Which NTP client to run? `busybox` (or whatever suits your preference)
 
-{<h3>APK Mirror</h3>}
+### APK Mirror
 Enter mirror number or URL: `f` (or whatever suits your preference)
 
-{<h3>User</h3>}
+### User
 Setup a user? `no`
 
 Which ssh server? `dropbear` (or whatever suits your preference)
 
-{<h3>Disk and install</h3>}
+### Disk and install
+Which disk(s) would you like to use: `none`
+
+Enter where to store configs `none`
+
+Enter apk cache directory `none`
+</Steps>
+
+<Tabs items={['sys', 'data']}>
+    <Tabs.Tab>
+* Setup installation disk
+
+```sh copy
+DEFAULT_DISK=none setup-disk -q
+```
+
 Which disk would you like to use: `sdX` (choose your hard disk, usually sda)
 
 How would you like to use it? `sys`
@@ -305,52 +318,8 @@ WARNING: Erase the above disk(s) and continue? `y`
 Your installation is done when you see this:
 `Installation is complete. Please reboot.`
 </Callout>
-</Steps>
-
-* Allocate swapfile, if necessary
-
-```sh copy
-[ "$SWAP_SIZE" == 0 ] && {
-    fallocate -l 4GiB /var/swapfile
-    chmod 600 /var/swapfile
-    mkswap /var/swapfile
-    swapon /var/swapfile
-}
-```
-
-* Put swapfile on boot, if necessary
-
-```sh copy
-[ "$SWAP_SIZE" == 0 ] && {
-    printf "%s\n" \
-        "/var/swapfile none swap sw 0 0" \
-        >> /etc/fstab
-}
-```
     </Tabs.Tab>
     <Tabs.Tab>
-* Configure internet interface
-
-```sh copy
-setup-interfaces
-```
-
-Which one do you want to initialize? `eth0`
-
-Ip address for eth0? `dhcp` (or whatever suits your preference)
-
-Do you want to do any manual network configuration? `n`
-
-```sh copy
-rc-service networking --quiet start
-```
-
-```sh copy
-setup-apkrepos
-```
-
-Enter mirror number or URL: `1`
-
 * Copy modloop and umount `USB/SD`
 
 ```sh copy
@@ -408,90 +377,38 @@ setup-bootable -v "$url" "${mydev}1"
 mount "${mydev}1" /media/usb
 ```
 
-* Execute `setup-alpine`
+* Setup data disk
 
-Enter the following into the prompt of the installer:
+```sh copy
+DEFAULT_DISK=none setup-disk -q
+```
 
-<Steps>
-{<h3>Keymap</h3>}
-Select keyboard layout: `none` (or whatever suits your preference)
-
-{<h3>Hostname</h3>}
-Enter system hostname `nakamoto01`
-
-{<h3>Interface</h3>}
-Which one do you want to initialize? `eth0`
-
-Ip address for eth0? `dhcp` (or whatever suits your preference)
-
-Do you want to do any manual network configuration? `n`
-
-{<h3>Root Password</h3>}
-New password: `changeme`
-
-Retype password: `changeme`
-
-{<h3>Timezone</h3>}
-Which timezone are you in? `UTC` (or whatever suits your preference)
-
-{<h3>Proxy</h3>}
-HTTP/FTP proxy URL? `none` (or whatever suits your preference)
-
-{<h3>Network Time Protocol</h3>}
-Which NTP client to run? `busybox` (or whatever suits your preference)
-
-{<h3>APK Mirror</h3>}
-Enter mirror number or URL: `f` (or whatever suits your preference)
-
-{<h3>User</h3>}
-Setup a user? `no`
-
-Which ssh server? `dropbear` (or whatever suits your preference)
-
-{<h3>Disk and install</h3>}
-Which disk would you like to use: `sdX` (choose your hard disk, usually sda)
+Which disk(s) would you like to use: `sdX` (choose your hard disk, usually sda)
 
 How would you like to use it? `data`
 
 WARNING: Erase the above disk(s) and continue? `y`
 
+* Setup Alpine Local Backup
+
+```sh copy
+setup-lbu
+```
+
 Enter where to store configs `usb`
 
+* Setup Alpine Local APK cache
+
+```sh copy
+setup-apkcache
+```
+
 Enter apk cache directory `/media/usb/cache`
-</Steps>
-
-* Allocate swapfile, if necessary
-
-```sh copy
-[ "$SWAP_SIZE" == 0 ] && {
-    fallocate -l 4GiB /var/swapfile
-    chmod 600 /var/swapfile
-    mkswap /var/swapfile
-    swapon /var/swapfile
-}
-```
-
-* Put swapfile on boot, if necessary
-
-```sh copy
-[ "$SWAP_SIZE" == 0 ] && {
-    printf "%s\n" \
-        "/var/swapfile none swap sw 0 0" \
-        >> /etc/fstab
-}
-```
 
 * Update apk repository to match new bootable media
 
 ```sh copy
 sed "s/${mydev##\/dev\/}/usb/" /etc/apk/repositories > _
-mv -f _ /etc/apk/repositories
-```
-
-* Remove possible duplicate lines
-
-```sh copy_
-awk '!x[$1]++ && ! /^[[:blank:]]*$/' /etc/apk/repositories > _
 mv -f _ /etc/apk/repositories
 ```
 
@@ -519,3 +436,30 @@ lbu commit
 ```sh copy
 reboot
 ```
+
+<Callout>
+If you exported `SWAP_SIZE=0` you can create a `swapfile` on next boot
+
+* Allocate swapfile
+
+```sh copy
+dd if=/dev/zero of=/var/swapfile bs=1K count=4M
+mkswap /var/swapfile
+chmod 600 /var/swapfile
+```
+
+* Put swapfile on fstab
+
+```sh copy
+printf "%s\n" \
+    "/var/swapfile none swap sw 0 0" \
+    >> /etc/fstab
+```
+
+* Start and enable swapfile on boot
+
+```sh copy
+rc-service swap start
+rc-update add swap boot
+```
+</Callout>
