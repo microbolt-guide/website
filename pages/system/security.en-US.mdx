@@ -1,0 +1,305 @@
+import { Callout,Steps,Tabs } from 'nextra/components'
+
+# Security
+
+We make sure that your MicroBolt is secured against unauthorized remote access.
+
+The MicroBolt will be visible from the internet and therefore needs to be
+secured against online attacks using various methods.
+
+## Login with SSH keys
+
+One of the best options to secure the sensitive SSH login is to disable
+passwords altogether and require an SSH key certificate. Only someone with
+physical possession of the private certificate key can log in.
+
+### Preparations on `host` system
+
+<Steps>
+{<h3>Create a new public/private key pair</h3>}
+
+<Callout type="warning">
+Skip if you already have one
+</Callout>
+
+```sh copy
+ssh-keygen -t rsa -b 4096
+```
+
+Follow instructions, optionally enter a key passphrase to protect your key, you
+can use `password [A]`
+
+{<h3>The public key now needs to be copied to the PC</h3>}
+
+```sh copy
+cat ./.ssh/id_rsa.pub |
+    ssh satoshi@nakamoto01 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+
+```
+</Steps>
+
+### Preparations on `server` system
+
+<Callout type="info">
+It's also recommended to change default `ssh` port `22`, to something else like
+`2222`
+</Callout>
+
+<Steps>
+### Disable password and root logins
+<Tabs items={['dropbear', 'openssh']}>
+    <Tabs.Tab>
+```sh copy
+sed 's/DROPBEAR_OPTS=""/DROPBEAR_OPTS="-w -s -p 2222"/' /etc/conf.d/dropbear > _
+$SU mv -f _ /etc/conf.d/dropbear
+
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+```sh copy
+printf "%s\n%s\n%s\n" \
+    "Port 2222" \
+    "PermitRootLogin no" \
+    "PasswordAuthentication no" \
+    | $SU tee -a /etc/ssh/ssh_config.d/defaults.conf
+
+```
+    </Tabs.Tab>
+</Tabs>
+### Restart service to apply changes
+```sh copy
+$SU rc-service \
+    $(which dropbear >/dev/null && {
+            printf "%s" "dropbear"
+        } || {
+            $(which openssh >/dev/null &&
+                printf "%s" "sshd"
+            )
+        }
+    ) restart
+```
+</Steps>
+
+## Disable `root` account
+
+```sh copy
+$SU passwd -l root
+```
+
+## Enabling the Uncomplicated Firewall
+
+A firewall controls what kind of outside traffic your machine accepts and which
+applications can send data out. By default, many network ports are open and
+listening for incoming connections. Closing unnecessary ports can mitigate many
+potential system vulnerabilities.
+
+<Steps>
+### Install `ufw`
+
+```sh copy
+$SU apk add ip6tables ufw
+```
+
+For now, only SSH should be reachable from the outside. Bitcoin Core and LND are
+using Tor and don't need incoming ports.
+
+### With user `satoshi`, configure and enable the firewall rules
+
+<Callout type="info">
+Replace `22` with your choosen port
+</Callout>
+
+```sh copy
+$SU ufw default deny incoming
+$SU ufw default allow outgoing
+$SU ufw allow 22/tcp comment 'allow SSH'
+```
+
+```sh copy
+$SU ufw logging off
+$SU ufw enable
+```
+
+### Make sure that the UFW is started automatically on boot
+```sh copy
+$SU rc-update add ufw default
+```
+
+### Check if the UFW is properly configured and active
+
+```sh copy
+$SU ufw status verbose
+```
+
+```output filename="output"
+Status: active
+Logging: off
+Default: deny (incoming), allow (outgoing), disabled (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+22/tcp                   ALLOW IN    Anywhere                   # allow SSH
+22/tcp (v6)              ALLOW IN    Anywhere (v6)              # allow SSH
+```
+</Steps>
+
+<Callout>
+More: [UFW Essentials](https://wiki.alpinelinux.org/wiki/Uncomplicated_Firewall)
+</Callout>
+
+<Callout type="info" emoji="ℹ️">
+If you find yourself locked out by mistake, you can connect a keyboard and
+screen to your PC to log in locally and fix these settings (especially for the
+SSH port). 
+</Callout>
+
+## fail2ban
+
+The SSH login to the node must be specially protected.
+An additional measure is to install `fail2ban`, which prevents an attacker from
+gaining access via brute force.
+It simply cuts off any remote system with five failed login attempts for ten
+minutes.
+
+* Install `fail2ban`
+
+```sh copy
+$SU apk add fail2ban
+```
+
+* Start and enable on boot
+
+```sh copy
+$SU rc-service fail2ban start
+$SU rc-update add fail2ban default
+```
+
+The initial configuration is fine, as it protects SSH by default.
+
+<Callout>
+More: [customize
+fail2ban](https://linode.com/docs/security/using-fail2ban-for-security/)
+</Callout>
+
+## Nginx
+
+Several components of this guide will expose a communication port, for example,
+the Block Explorer, or the ThunderHub web interface for your Lightning node.
+Even if you use these services only within your own home network, communication
+should always be encrypted. Otherwise, any device in the same network can listen
+to the exchanged data, including passwords.
+
+We use Ngnix to encrypt the communication with SSL/TLS (Transport Layer
+Security). This setup is called a "reverse proxy": Nginx provides secure
+communication to the outside and routes the traffic back to the internal service
+without encryption.
+
+<Steps>
+### Install `ngnix`
+
+```sh copy
+$SU apk add nginx nginx-mod-stream
+```
+
+### Create a self-signed SSL/TLS certificate (valid for 10 years)
+
+```sh copy
+$SU openssl req \
+    -x509 \
+    -nodes \
+    -newkey rsa:4096 \
+    -keyout /etc/ssl/private/nginx-selfsigned.key \
+    -out /etc/ssl/certs/nginx-selfsigned.crt \
+    -subj "/CN=localhost" \
+    -days 3650
+```
+
+### Backup and create new configuration
+
+NGINX is also a full web server. To use it only as a reverse proxy, backup the
+default configuration and paste the following configuration into the
+`nginx.conf` file
+
+```sh copy
+$SU mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.orig
+$SU $EDITOR /etc/nginx/nginx.conf
+
+```
+
+```nginx copy filename="/etc/nginx/nginx.conf"
+user nginx;
+worker_processes auto;
+
+load_module /usr/lib/nginx/modules/ngx_stream_module.so;
+
+error_log /var/log/nginx/error.log warn;
+pid /run/nginx/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
+
+events {
+  worker_connections 768;
+}
+
+http {
+  ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
+  ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+  ssl_session_cache shared:HTTP-TLS:1m;
+  ssl_session_timeout 4h;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_prefer_server_ciphers on;
+  include /etc/nginx/sites-enabled/*.conf;
+}
+
+stream {
+  ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
+  ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+  ssl_session_cache shared:STREAM-TLS:1m;
+  ssl_session_timeout 4h;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_prefer_server_ciphers on;
+  include /etc/nginx/streams-enabled/*.conf;
+}
+```
+
+### Create directories for future configuration files
+
+```sh copy
+$SU mkdir -p /etc/nginx/streams-available /etc/nginx/streams-enabled
+```
+
+### Test this barebone Nginx configuration
+
+```sh copy
+$SU nginx -t
+```
+
+```output filename="output"
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+```
+
+### Start Nginx to apply the configuration
+
+```sh copy
+$SU rc-service nginx start
+```
+
+### Add nginx service to runlevel
+
+```sh copy
+$SU rc-update add nginx default
+```
+</Steps>
+
+You can monitor the Nginx logs by entering this command. Exit with `Ctrl + C`
+
+```sh copy
+tail -f /var/log/messages | grep nginx
+```
+
+You can monitor Nginx error logs by entering this command. Exit with `Ctrl + C`
+
+```sh copy
+$SU tail -f /var/log/nginx/error.log
+```
