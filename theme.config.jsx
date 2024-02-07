@@ -63,6 +63,7 @@ export default {
     }
   },
   head: function useHead() {
+    const { locale } = useRouter()
     const { title } = useConfig()
     const url = 'https://microbolt.guide'
     const socialCard = 'https://raw.githubusercontent.com/microbolt-guide/microbolt/main/public/img/microbolt-banner.webp'
@@ -73,20 +74,31 @@ export default {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta
           name="og:title"
-          content={title ? title + ' – MicroBolt' : 'MicroBolt'}
+          content={
+            title
+              ? title === 'MicroBolt'
+                ? locale === 'ca-ES'
+                  ? 'Inici – MicroBolt'
+                  : locale === 'en-US'
+                    ? 'Home – MicroBolt'
+                    : ''
+                : title + ' – MicroBolt'
+              : 'MicroBolt'
+          }
         />
         <meta name="og:image" content={socialCard} />
         <meta name="description" content={description} />
         <meta name="og:description" content={description} />
         <meta name="og:url" content={url} />
         <meta name="og:image:width" content="1200" />
-        <meta name="og:image:height" content="627" />
+        <meta name="og:image:height" content="630" />
         <meta name="og:type" content="website" />
         <meta name="apple-mobile-web-app-title" content="MicroBolt" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:image" content={socialCard} />
         <meta name="twitter:site:domain" content="microbolt.guide" />
         <meta name="twitter:url" content={url} />
+        <meta name="twitter:site" content="@doitwithnotepad" />
         <link rel="icon" type="image/x-icon" href="/favicon.ico"></link>
       </>
     )
