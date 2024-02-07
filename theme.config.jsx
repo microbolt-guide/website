@@ -95,6 +95,21 @@ export default {
         <meta name="og:type" content="website" />
         <meta name="apple-mobile-web-app-title" content="MicroBolt" />
         <meta name="twitter:card" content="summary_large_image" />
+        <meta
+          name="twitter:title"
+          content={
+            title
+              ? title === 'MicroBolt'
+                ? locale === 'ca-ES'
+                  ? 'Inici – MicroBolt'
+                  : locale === 'en-US'
+                    ? 'Home – MicroBolt'
+                    : ''
+                : title + ' – MicroBolt'
+              : 'MicroBolt'
+          }
+        />
+        <meta name="twitter:description" content={description} />
         <meta name="twitter:image" content={socialCard} />
         <meta name="twitter:site:domain" content="microbolt.guide" />
         <meta name="twitter:url" content={url} />
