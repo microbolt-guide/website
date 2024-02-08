@@ -1,0 +1,352 @@
+import { Callout,Tabs } from 'nextra/components'
+
+# Privacitat
+
+Configurem Tor i I2P per executar el vostre node de manera anònima.
+
+Fer funcionar el vostre propi node Bitcoin i Lightning a casa us converteix en
+un parell directe i sobirà de la xarxa Bitcoin. Tanmateix, si no es configura
+sense tenir en compte la privadesa, també diu al món que hi ha algú amb Bitcoin
+a aquesta adreça.
+
+També us facilitarem la connexió al vostre node des de fora de la vostra xarxa
+domèstica com a avantatge addicional.
+
+És cert que només es revela la vostra adreça IP, però utilitzant serveis com
+[iplocation.net](https://www.iplocation.net), la vostra adreça física es pot
+determinar amb força precisió. Especialment amb Lightning, la vostra adreça IP
+seria àmpliament utilitzada. Hem d'assegurar-nos que mantingueu la vostra
+privadesa.
+
+## Projecte Tor
+
+Utilitzem Tor, un programari lliure creat pel
+[Projecte Tor](https://www.torproject.org). Us permet anonimitzar el trànsit
+d'Internet encaminant-lo a través d'una xarxa de nodes, amagant la vostra
+ubicació i perfil d'ús.
+
+Es diu "Tor" per "The Onion Router": la informació s'encamina a través de molts
+salts i es xifra diverses vegades. Cada node desxifra només la capa d'informació
+adreçada a ell, aprenent només el salt anterior i el següent de tota la ruta. El
+paquet de dades es pela com una ceba fins que arriba a la destinació final.
+
+### Preparatius
+
+Crea un grup i un usuari `tor`
+
+```sh copy
+$SU addgroup -S tor
+```
+
+```sh copy
+$SU adduser -S -D -H -h /var/lib/tor -s /sbin/nologin -G tor -g tor tor
+```
+
+### Instal·lació
+
+```sh copy
+$SU apk add tor
+```
+
+### Configuració de Tor
+
+Bitcoin Core es comunicarà directament amb el 'daemon' Tor per encaminar tot el
+trànsit a través de la xarxa Tor. Hem d'habilitar Tor perquè accepti
+instruccions a través del seu port de control, amb l'autenticació adequada.
+
+* Editeu la configuració de Tor
+
+```sh copy
+$SU cp /etc/tor/torrc.sample /etc/tor/torrc
+$SU $EDITOR /etc/tor/torrc
+```
+
+* Descomenteu les següents línies
+
+```conf filename="/etc/tor/torrc" {4,8}
+...
+## The port on which Tor will listen for local connections from Tor
+## controller applications, as documented in control-spec.txt.
+ControlPort 9051
+## If you enable the controlport, be sure to enable one of these
+## authentication methods, to prevent attackers from accessing it.
+#HashedControlPassword 24:972860B76453A77B40CA2BB8C1A7982072093276A3D701AD685353
+CookieAuthentication 1
+
+############### This section is just for location-hidden services ###
+...
+```
+
+* Afegiu sota `Cookie Authentication 1`
+
+```conf copy filename="/etc/tor/torrc"
+CookieAuthFile /var/lib/tor/control_auth_cookie
+CookieAuthFileGroupReadable 1
+DataDirectoryGroupReadable 1
+```
+
+* Inicieu Tor i afegiu el servei al nivell d'execució
+
+```sh copy
+$SU rc-service tor start
+$SU rc-update add tor default
+```
+
+* Assegureu-vos que el servei Tor funciona i escolta als ports predeterminats
+`9050` i `9051`
+
+```sh copy
+$SU netstat -lntup | grep LISTEN | grep tor
+```
+
+```output filename="output"
+tcp      0     0 127.0.0.1:9051       0.0.0.0:*             LISTEN     3359/tor
+tcp      0     0 127.0.0.1:9050       0.0.0.0:*             LISTEN     3359/tor
+```
+
+* Comproveu els registres per veure els registres de sortida de les
+actualitzacions de Tor en temps real. Sortiu amb `Ctrl-C`
+
+```sh copy
+$SU tail -f /var/log/tor/notices.log
+```
+
+No tot el trànsit de xarxa s'encamina a través de la xarxa Tor. Però ara tenim
+la base per configurar aplicacions sensibles per utilitzar-la.
+
+### SSH a través de Tor
+
+Si voleu iniciar sessió al vostre MicroBolt amb SSH quan no sou a casa, podeu
+fer-ho fàcilment afegint un servei ocult Tor. Això fa que "trucar a casa" sigui
+molt fàcil, sense necessitat de configurar res al vostre encaminador d'Internet.
+
+#### Servidor
+
+* Afegiu les línies següents a la secció "serveis d'ubicació ocults", a sota de
+"`## This section is just for location-hidden services ##`" al fitxer torrc
+
+<Callout type="warning">
+És interessant posar el mateix port que es fa a `dropbear`/`openssh`, per
+defecte `22`
+</Callout>
+
+```sh copy
+$SU $EDITOR /etc/tor/torrc
+```
+
+```conf copy filename="/etc/tor/torrc" {5}
+# Hidden Service SSH server
+HiddenServiceDir /var/lib/tor/hidden_service_sshd/
+HiddenServiceVersion 3
+HiddenServicePoWDefensesEnabled 1
+HiddenServicePort 2222 127.0.0.1:2222
+```
+
+* Torneu a carregar la configuració de Tor per aplicar la configuració
+
+```sh copy
+$SU rc-service tor reload
+```
+
+* Obteniu l'adreça SSH Onion
+
+```sh copy
+$SU cat /var/lib/tor/hidden_service_sshd/hostname
+```
+
+```output filename="output"
+abcdefg..............xyz.onion
+```
+
+* Deseu l'adreça Tor en una ubicació segura, p.ex. el vostre gestor de
+contrasenyes
+
+#### Client
+
+També heu de tenir Tor instal·lat al vostre ordinador habitual on inicieu la
+connexió SSH. L'ús de SSH a Tor difereix segons el client i el sistema operatiu.
+
+<Tabs items={['windows', 'macOS', 'linux']}>
+    <Tabs.Tab>
+Les eines populars com `torify` o `torsocks` no estan disponibles a Windows i
+`torifier` esta abandonat.
+
+Per solucionar-ho, primer, assegureu-vos que Tor estigui instal·lat i funcionant
+al vostre Windows. Executeu com a administrador:
+
+<Callout type="warning">
+Primer cal instal·lar [chocolatey](https://chocolatey.org/install)
+</Callout>
+
+```sh copy
+choco install tor
+choco install nmap --version=7.92.0.20220321
+tor --service start
+```
+
+Comproveu que el servei funcioni
+
+```sh copy
+netstat -aon | findstr ":9050"
+```
+
+```output filename="output"
+  TCP    127.0.0.1:9050         0.0.0.0:0              LISTENING       23656
+```
+
+Podeu fer SSH al vostre ordinador "out of the box" amb la següent comanda de
+proxy:
+
+```sh copy
+ssh `
+    -o "ProxyCommand ncat --proxy-type socks5 --proxy 127.0.0.1:9050 %h %p" `
+    satoshi@abcdefg..............xyz.onion -p 2222
+```
+
+* Per obtenir una solució més permanent, afegiu aquestes sis línies a
+continuació al fitxer de configuració SSH local. Trieu qualsevol HOSTNICKNAME
+que vulgueu, deseu i sortiu
+
+```sh copy
+notepad .ssh/config
+```
+
+```conf filename="~/.ssh/config"
+Host HOSTNICKNAME
+  Hostname abcdefg..............xyz.onion
+  User satoshi
+  Port 2222
+  CheckHostIP no
+  ProxyCommand ncat --proxy-type socks5 --proxy 127.0.0.1:9050 %h %p
+```
+
+* Reinicieu Tor
+
+```sh copy
+tor --service stop
+tor --service start
+```
+
+* Ara hauríeu de poder fer SSH al vostre PC amb
+
+```sh copy
+ssh HOSTNICKNAME
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+L'ús de `torify` o `torsocks` pot no funcionar a causa de la
+_Protecció d'integritat del sistema (SIP)_ d'Apple que denegarà l'accés a
+`/usr/bin/ssh`.
+
+Per solucionar-ho, primer, assegureu-vos que Tor estigui instal·lat i en
+funcionament al vostre Mac:
+
+<Callout type="warning">
+Primer heu d'instal·lar [homebrew](https://brew.sh/)
+</Callout>
+
+```sh copy
+brew install tor && brew services start tor
+```
+
+Podeu fer SSH al vostre ordinador "out of the box" amb la següent comanda de
+proxy:
+
+```sh
+ssh \
+    -o "ProxyCommand nc -X 5 -x 127.0.0.1:9050 %h %p" \
+    satoshi@abcdefg..............xyz.onion -p 2222
+```
+
+* Per obtenir una solució més permanent, afegiu aquestes sis línies a
+continuació al fitxer de configuració SSH local. Trieu qualsevol HOSTNICKNAME
+que vulgueu, deseu i sortiu
+
+```sh copy
+vi .ssh/config
+```
+
+```conf filename="~/.ssh/config"
+Host HOSTNICKNAME
+  Hostname abcdefg..............xyz.onion
+  User satoshi
+  Port 2222
+  CheckHostIP no
+  ProxyCommand /usr/bin/nc -x localhost:9050 %h %p
+```
+
+* Reinicieu Tor
+
+```sh copy
+brew services restart tor
+```
+
+* Ara hauríeu de poder fer SSH al vostre PC amb
+
+```sh copy
+ssh HOSTNICKNAME
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+* Utilitzeu `torify` o `torsocks`, tots dos funcionen de la mateixa manera;
+només utilitzeu el que tingueu disponible
+
+```sh
+torify ssh admin@abcdefg..............xyz.onion -p 2222
+```
+
+```sh
+torsocks ssh admin@abcdefg..............xyz.onion -p 2222
+```
+    </Tabs.Tab>
+</Tabs>
+
+## Projecte I2P
+
+[I2P](https://geti2p.net) és una capa de xarxa anònima universal. Totes les
+comunicacions a través d'I2P són anònimes i xifrades d'extrem a extrem, els
+participants no revelen les seves adreces IP reals. I2P permet a persones de tot
+el món comunicar-se i compartir informació sense restriccions.
+
+El client I2P és un programari utilitzat per construir i utilitzar xarxes I2P
+anònimes. Aquestes xarxes s'utilitzen habitualment per a aplicacions
+peer-to-peer anònimes (compartició de fitxers, criptomonedes) i aplicacions
+client-servidor anònimes (llocs web, missatgeria instantània, servidors de xat).
+
+Hem d'utilitzar [i2pd](https://i2pd.readthedocs.io/en/latest/) (I2P Daemon), una
+implementació C++ amb totes les funcions del client I2P, com a complement de
+xarxa Tor.
+
+### Instal·lació d'I2P
+
+```sh copy
+$SU apk add i2pd
+```
+
+* Inicieu el servei i2p i afegiu-lo al nivell d'execució
+
+```sh copy
+$SU rc-service i2pd start
+$SU rc-update add i2pd default
+```
+* Assegureu-vos que el servei i2pd funciona i escolta als ports predeterminats
+
+```sh copy
+$SU netstat -lntup | grep LISTEN | grep i2pd
+```
+
+```output filename="output"
+tcp      0     0 127.0.0.1:4447       0.0.0.0:*             LISTEN     3571/i2pd
+tcp      0     0 127.0.0.1:4444       0.0.0.0:*             LISTEN     3571/i2pd
+tcp      0     0 127.0.0.1:7656       0.0.0.0:*             LISTEN     3571/i2pd
+tcp      0     0 0.0.0.0:26697        0.0.0.0:*             LISTEN     3571/i2pd
+tcp      0     0 127.0.0.1:6668       0.0.0.0:*             LISTEN     3571/i2pd
+tcp      0     0 127.0.0.1:7070       0.0.0.0:*             LISTEN     3571/i2pd
+```
+
+* Vegeu `i2p` en acció supervisant el seu fitxer de registre. Sortiu amb
+`Ctrl-C`
+
+```sh copy
+$SU tail -f /var/log/i2pd/i2pd.log
+```
