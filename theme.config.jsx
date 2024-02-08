@@ -111,8 +111,8 @@ export default {
         />
         <meta name="twitter:description" content={description} />
         <meta name="twitter:image" content={socialCard} />
-        <meta name="twitter:site:domain" content="microbolt.guide" />
-        <meta name="twitter:url" content={url} />
+        <meta property="twitter:domain" content="microbolt.guide" />
+        <meta property="twitter:url" content={url} />
         <meta name="twitter:site" content="@doitwithnotepad" />
         <link rel="icon" type="image/x-icon" href="/favicon.ico"></link>
       </>
