@@ -1,0 +1,6 @@
+{
+    "bitcoin-client": "Client Bitcoin",
+    "electrum-server": "Servidor Electrum",
+    "desktop-wallet": "Cartera d'escriptori",
+    "blockchain-explorer": "Explorador de cadena de blocs"
+}

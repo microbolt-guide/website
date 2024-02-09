@@ -1,0 +1,32 @@
+import { Callout,Cards,Card } from 'nextra/components'
+
+import { FaBitcoin } from "react-icons/fa"
+import { GiKnot } from "react-icons/gi"
+
+# Bitcoin client
+
+Choose your client, when you're done jump to the Electrum server section
+
+<Callout type="warning">
+Installing more than one client is not recommended and not compatible, we do not
+support it
+</Callout>
+
+<Cards>
+    <Card
+        icon={<FaBitcoin />}
+        title="Bitcoin Core"
+        href="bitcoin-client/bitcoin-core"
+    />
+    <Card
+        icon={<GiKnot />}
+        title="Bitcoin Knots"
+        href="bitcoin-client/bitcoin-knots"
+    />
+    {/*
+    <Card
+        title="btcd"
+        href="bitcoin-client/btcd"
+    />
+    */}
+</Cards>
