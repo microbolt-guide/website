@@ -1,0 +1,8 @@
+{
+    "bitcoin-core": "Bitcoin Core",
+    "bitcoin-knots": "Bitcoin Knots",
+    "btcd": {
+        "title": "btcd",
+        "display": "hidden"
+    }
+}
