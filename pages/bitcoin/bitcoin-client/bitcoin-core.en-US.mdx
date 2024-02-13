@@ -658,7 +658,7 @@ $SU $EDITOR /etc/logrotate.d/bitcoind
     create 0640 bitcoin bitcoin
     sharedscripts
     postrotate
-        killall -HUP `cat /run/bitcoind/bitcoin.pid`
+        killall -HUP `cat /run/bitcoind/bitcoind.pid`
     endscript
 }
 ```
