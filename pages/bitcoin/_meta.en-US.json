@@ -1,6 +1,6 @@
 {
     "bitcoin-client": "Bitcoin client",
     "electrum-server": "Electrum server",
-    "desktop-wallet": "Desktop wallet",
+    "desktop-signing-app": "Desktop signing app",
     "blockchain-explorer": "Blockchain explorer"
 }
