@@ -37,7 +37,8 @@ $SU adduser \
     -h /dev/null \
     -s /sbin/nologin \
     -G bitcoin \
-    -g bitcoin bitcoin
+    -g bitcoin \
+    bitcoin
 ```
 
 ### Afegiu també l'usuari `satoshi` al grup `bitcoin`
@@ -216,7 +217,7 @@ Si esteu satisfet amb les comprovacions de la suma de verificació, la signatura
 i la marca de temps, extreu el codi font de Bitcoin Core
 
 ```sh copy
-tar -xzf bitcoin-$VERSION.tar.gz && cd bitcoin-$VERSION
+tar xzf bitcoin-$VERSION.tar.gz && cd bitcoin-$VERSION
 ```
 
 ### Instal·leu dependències
@@ -282,7 +283,7 @@ MAN=--disable-man
     --build=x86_64 \
     --host=x86_64 \
     --prefix=/usr \
-    ${MAN:---mandir=/usr/share/man} \
+    "${MAN:---mandir=/usr/share/man}" \
     --with-daemon \
     --with-utils \
     --without-bdb \

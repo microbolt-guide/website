@@ -34,7 +34,8 @@ $SU adduser \
     -h /dev/null \
     -s /sbin/nologin \
     -G bitcoin \
-    -g bitcoin bitcoin
+    -g bitcoin \
+    bitcoin
 ```
 
 ### Add the user `satoshi` to the group `bitcoin` as well
@@ -171,7 +172,7 @@ If you're satisfied with the checksum, and signature, extract the Bitcoin Knots
 source code
 
 ```sh copy
-tar -xzf bitcoin-$VERSION.tar.gz && cd bitcoin-$VERSION
+tar xzf bitcoin-$VERSION.tar.gz && cd bitcoin-$VERSION
 ```
 
 ### Install dependencies
@@ -227,7 +228,7 @@ MAN=--disable-man
     --build=x86_64 \
     --host=x86_64 \
     --prefix=/usr \
-    ${MAN:---mandir=/usr/share/man} \
+    "${MAN:---mandir=/usr/share/man}" \
     --with-daemon \
     --with-utils \
     --without-bdb \
