@@ -5,6 +5,30 @@ import { FaReact } from "react-icons/fa"
 
 # Electrum server
 
+We will set up an Electrum server for use with your Bitcoin software or hardware
+signing device.
+
+## Bitcoin with signing devices
+
+The best way to safely keep your bitcoin key pairs (meaning the best combination
+of security and usability) is to use a signing device (like
+[SeedSigner](https://seedsigner.com),
+[Passport](https://foundationdevices.com), 
+[BitBox](https://shiftcrypto.ch/bitbox02), [Coldcard](https://coldcard.com),
+[Jade](https://blockstream.com/jade) or [Trezor](https://trezor.io)) in
+combination with your own Bitcoin node. This gives you security, privacy and
+eliminates the need to trust a third party to verify transactions.
+
+Bitcoin client on the MicroBolt itself is not meant to hold funds.
+
+One possibility to use Bitcoin client with your Bitcoin signing devices is to
+use an Electrum server as middleware. It imports data from Bitcoin client and
+provides it to signing software supporting the Electrum protocol. Desktop
+signing apps like [Sparrow](https://sparrowwallet.com), the
+[BitBoxApp](https://shiftcrypto.ch/app), [Electrum](https://electrum.org) or
+[Specter Desktop](https://specter.solutions/desktop) that support signing
+devices can then be used with your own sovereign Bitcoin node.
+
 Choose your server, when you're done jump to the Desktop wallet section
 
 <Callout type="warning">
