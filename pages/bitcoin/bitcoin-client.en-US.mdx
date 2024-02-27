@@ -5,12 +5,15 @@ import { GiKnot } from "react-icons/gi"
 
 # Bitcoin client
 
-Choose your client, when you're done jump to the Electrum server section
+<Callout emoji="⏳">
+This may take some time
 
-<Callout type="warning">
-Installing more than one client is not recommended and not compatible, we do not
-support it
+Bitcoin will download the full Bitcoin blockchain, and validate all
+transactions since 2009. We're talking about more than 800.000 blocks with a
+size of over 500 GB, so this is not an easy task.
 </Callout>
+
+Choose your client, when you're done jump to the Electrum server section
 
 <Cards>
     <Card
@@ -24,3 +27,8 @@ support it
         href="bitcoin-client/bitcoin-knots"
     />
 </Cards>
+
+<Callout type="warning">
+Installing more than one client is not recommended and not compatible, we do not
+support it
+</Callout>
