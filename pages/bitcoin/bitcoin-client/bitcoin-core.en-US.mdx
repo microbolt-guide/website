@@ -267,8 +267,6 @@ MAN=--disable-man
 
 ```sh copy
 ./configure \
-    --build=x86_64 \
-    --host=x86_64 \
     --prefix=/usr \
     "${MAN:---mandir=/usr/share/man}" \
     --with-daemon \
@@ -899,7 +897,7 @@ v0.7.1
 To update the OpenTimestamps client, simply exec
 
 ```sh copy
-pipx upgrade opentimestamps-client
+$SU pipx upgrade opentimestamps-client
 ```
 </Callout>
 
