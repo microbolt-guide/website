@@ -70,11 +70,11 @@ printf "%s\n%s\n%s\n%s\n%s\n" \
     "export CFLAGS=\"-O3 -pipe -march=native -fPIE\"" \
     "export CXXFLAGS=\"\$CFLAGS\"" \
     "export MAKEFLAGS=\"-j$(nproc)\"" \
-    | $SU tee -a /etc/profile.d/defaults.sh
+    | $SU tee -a /etc/profile.d/compiler.sh
 ```
 
 ```sh copy
-source /etc/profile.d/defaults.sh
+source /etc/profile.d/compiler.sh
 ```
 </Steps>
 
@@ -870,22 +870,26 @@ install in a virtual isolated environment using `pipx`.
 $SU apk add pipx
 ```
 
-* Install the OpenTimestamp client
+* Add environment variables
 
 ```sh copy
-pipx install opentimestamps-client
-```
-
-* Add `~/.local/bin` to `$PATH`
-
-```sh copy
-printf "%s\n" "export PATH=\"\$PATH:\$HOME/.local/bin\"" >> ~/.profile
+printf "%s\n%s\n%s\n" \
+    "export PIPX_HOME=/var/lib/pipx" \
+    "export PIPX_BIN_DIR=/usr/bin" \
+    "export PIPX_MAN_DIR=/usr/share/man" \
+    | $SU tee -a /etc/profile.d/pipx.sh
 ```
 
 * Source changes
 
 ```sh copy
-source ~/.profile
+source /etc/profile.d/pipx.sh
+```
+
+* Install the OpenTimestamp client
+
+```sh copy
+$SU pipx install opentimestamps-client
 ```
 
 * Display the OpenTimestamps client version to check that it is properly

@@ -68,13 +68,16 @@ adduser satoshi wheel
 <Tabs items={['doas', 'sudo', 'ssu']}>
     <Tabs.Tab>
 ```sh copy
-sed 's/# permit persist :wheel/permit persist :wheel/' /etc/doas.conf > _
+sed 's/# permit persist :wheel/permit persist keepenv :wheel/' /etc/doas.conf > _
 mv -f _ /etc/doas.conf
 ```
     </Tabs.Tab>
     <Tabs.Tab>
 ```sh copy
-printf "%s\n" "%wheel ALL=(ALL) ALL" > /etc/sudoers.d/wheel
+printf "%s\n%s\n" \
+    "%wheel ALL=(ALL) ALL" \
+    "Defaults env_keep += \"*\"" \
+    > /etc/sudoers.d/wheel
 ```
     </Tabs.Tab>
     <Tabs.Tab>

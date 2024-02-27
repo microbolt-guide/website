@@ -71,11 +71,11 @@ printf "%s\n%s\n%s\n%s\n%s\n" \
     "export CFLAGS=\"-O3 -pipe -march=native -fPIE\"" \
     "export CXXFLAGS=\"\$CFLAGS\"" \
     "export MAKEFLAGS=\"-j$(nproc)\"" \
-    | $SU tee -a /etc/profile.d/defaults.sh
+    | $SU tee -a /etc/profile.d/compiler.sh
 ```
 
 ```sh copy
-source /etc/profile.d/defaults.sh
+source /etc/profile.d/compiler.sh
 ```
 </Steps>
 
@@ -880,22 +880,26 @@ així que instal·lem en un entorn virtual aïllat utilitzant `pipx`.
 $SU apk add pipx
 ```
 
-* Instal·leu el client OpenTimestamp
+* Afegeix variables d'entorn
 
 ```sh copy
-pipx install opentimestamps-client
-```
-
-* Afegiu `~/.local/bin` a `$PATH`
-
-```sh copy
-printf "%s\n" "export PATH=\"\$PATH:\$HOME/.local/bin\"" >> ~/.profile
+printf "%s\n%s\n%s\n" \
+    "export PIPX_HOME=/var/lib/pipx" \
+    "export PIPX_BIN_DIR=/usr/bin" \
+    "export PIPX_MAN_DIR=/usr/share/man" \
+    | $SU tee -a /etc/profile.d/pipx.sh
 ```
 
 * Aplica els canvis
 
 ```sh copy
-source ~/.profile
+source /etc/profile.d/pipx.sh
+```
+
+* Instal·leu el client OpenTimestamp
+
+```sh copy
+$SU pipx install opentimestamps-client
 ```
 
 * Mostra la versió del client d'OpenTimestamps per comprovar que està
