@@ -1,0 +1,568 @@
+import { Callout, Steps } from 'nextra/components'
+
+export function FAQBox({ title, children }) {
+  return (
+    <details
+      class="nx-my-4 nx-p-2 nx-rounded nx-border nx-border-gray-200 nx-bg-white dark:nx-border-neutral-800 dark:nx-bg-neutral-900"
+    >
+      <summary>
+        <strong class="text-lg">
+          {title}
+        </strong>
+      </summary>
+      <div class="nx-p-2">
+        {children}
+      </div>
+    </details>
+  )
+}
+
+# Fulcrum
+
+[Fulcrum](https://github.com/cculianu/Fulcrum) és un servidor SPV ràpid i àgil
+per a Bitcoin Cash, Bitcoin BTC i Litecoin creat per Calin Culianu. Es pot
+utilitzar com a alternativa a Electrs pel seu rendiment, com podem veure a la
+[comparació](https://www.sparrowwallet.com/docs/server-performance.html) de
+Craig Raw de servidors.
+
+![](/img/bitcoin/electrum-server/fulcrum.webp)
+
+## Requisits
+
+* [Client Bitcoin](../bitcoin-client)
+* ~130 GB d'emmagatzematge lliure per a la base de dades
+
+## Preparacions
+
+<Callout type="warning">
+Assegureu-vos que heu reduït la memòria cau de la base de dades del client
+Bitcoin
+</Callout>
+
+<Steps>
+### Instal·leu dependències
+
+* Instal·leu les eines de compilació necessàries per compilar Fulcrum des del
+codi font
+
+```sh copy
+$SU apk add clang git lz4-dev make pkgconf qt6-qtbase-dev rocksdb-dev zeromq-dev
+```
+
+* Compileu i instal·leu `jemalloc` des del codi font
+
+<Callout type="info">
+El paquet apk d'Alpine no té cap pedaç necessari per treballar amb musl lib C i
+les eines de LLVM, 
+[alpine merge request](https://gitlab.alpinelinux.org/alpine/aports/-/merge_requests/61321),
+[upstream pull request](https://github.com/jemalloc/jemalloc/pull/2338)
+</Callout>
+
+```sh copy
+cd /tmp
+VERSION=5.3.0
+wget https://github.com/jemalloc/jemalloc/releases/download/$VERSION/jemalloc-$VERSION.tar.bz2
+tar xjf jemalloc-$VERSION.tar.bz2 && cd jemalloc-$VERSION
+printf "$VERSION\n" > VERSION
+
+sed 's/  \*-\*-linux\*)/  \*-\*-linux-musl\*)\
+\tdnl syscall(2) and secure_getenv(3) are exposed by _GNU_SOURCE.\
+\tJE_APPEND_VS(CPPFLAGS, -D_GNU_SOURCE)\
+\tabi="elf"\
+\tAC_DEFINE([JEMALLOC_PURGE_MADVISE_DONTNEED_ZEROS], [ ], [ ])\
+\tAC_DEFINE([JEMALLOC_HAS_ALLOCA_H], [ ], [ ])\
+\tAC_DEFINE([JEMALLOC_PROC_SYS_VM_OVERCOMMIT_MEMORY], [ ], [ ])\
+\tAC_DEFINE([JEMALLOC_THREADED_INIT], [ ], [ ])\
+\tif test "${LG_SIZEOF_PTR}" = "3"; then\
+\t  default_retain="1"\
+\tfi\
+\tzero_realloc_default_free="1"\
+\t;;\
+  \*-\*-linux\*)/' \
+    configure.ac > _
+mv -f _ configure.ac
+
+sed 's/(__FreeBSD__))/(__FreeBSD__) || (defined(__linux__) \&\& !defined(__GLIBC__)))/' \
+    include/jemalloc/jemalloc_macros.h.in > _
+mv -f _ include/jemalloc/jemalloc_macros.h.in
+
+./autogen.sh \
+    --prefix=/usr \
+    --enable-xmalloc \
+    --enable-shared \
+    --disable-static \
+    --disable-doc \
+    --with-lg-page=12 \
+    --with-lg-hugepage=21
+make
+$SU make install_lib install_include
+
+```
+
+### Creeu l'usuari/grup `fulcrum`
+
+```sh copy
+$SU addgroup -S fulcrum
+```
+
+```sh copy
+$SU adduser \
+    -S \
+    -D \
+    -H \
+    -h /dev/null \
+    -s /sbin/nologin \
+    -G fulcrum \
+    -g fulcrum \
+    fulcrum
+```
+
+### Afegeix l'usuari `fulcrum` al grup `bitcoin`
+
+```sh copy
+$SU adduser fulcrum bitcoin
+```
+
+### Afegiu també l'usuari `satoshi` al grup `fulcrum`
+
+```sh copy
+$SU adduser satoshi fulcrum
+```
+
+### Creeu un enllaç simbòlic de fulcrum al directori principal de `satoshi`
+
+```sh copy
+ln -s /var/lib/fulcrum "$HOME/.fulcrum"
+```
+
+### Tallafoc i servidor intermediari invers
+
+A la secció [Seguretat](/system/security#nginx), ja hem configurat NGINX com a
+servidor intermediari invers. Ara podem afegir la configuració de Fulcrum.
+
+* Habiliteu el servidor intermediari invers NGINX per afegir xifratge SSL/TLS a
+la comunicació Fulcrum. Creeu el fitxer de configuració i enganxeu el contingut
+següent
+
+```sh copy
+$SU $EDITOR /etc/nginx/streams-enabled/fulcrum-reverse-proxy.conf
+```
+
+```nginx copy filename="/etc/nginx/streams-enabled/fulcrum-reverse-proxy.conf"
+upstream fulcrum {
+  server 127.0.0.1:50001;
+}
+
+server {
+  listen 50002 ssl;
+  proxy_pass fulcrum;
+}
+```
+
+* Prova i torna a carregar la configuració de NGINX
+
+```sh copy
+$SU nginx -t
+```
+
+```sh copy
+$SU rc-service nginx restart
+```
+
+* Configura el tallafoc per permetre les sol·licituds entrants
+
+```sh copy
+$SU ufw allow 50002/tcp comment 'permet Fulcrum SSL des de qualsevol lloc'
+```
+
+### Configura el client Bitcoin
+
+Hem de configurar els paràmetres al fitxer de configuració del client Bitcoin:
+afegiu línies noves si no estan presents
+
+* Editeu la línia següent. Guardeu i sortiu
+
+```sh copy
+$SU $EDITOR /etc/bitcoin/bitcoin.conf
+```
+
+```conf copy filename="/etc/bitcoin/bitcoin.conf" {3}
+[...]
+# Enable publish hash block in <address>
+zmqpubhashblock=tcp://127.0.0.1:8433
+[...]
+```
+
+* Reinicieu el client Bitcoin per aplicar els canvis
+
+```sh copy
+$SU rc-service bitcoind restart
+```
+
+* Comproveu que el client Bitcoin estigui habilitat `zmqpubhashblock` al port
+`8433`
+
+```sh copy
+$SU netstat -lntup | grep LISTEN | grep bitcoind | grep 8433
+```
+
+```output filename="output"
+tcp        0      0 127.0.0.1:8433          0.0.0.0:*               LISTEN      4003/bitcoind
+```
+</Steps>
+
+## Instal·lació
+
+<Steps>
+### Descarrega el codi font
+
+Tenim el nostre fitxer de configuració del client de Bitcoin configurat i ara
+podem passar a la següent part de la instal·lació de Fulcrum.
+
+* Canvieu a un directori temporal que s'esborra en reiniciar
+
+```sh copy
+cd /tmp
+```
+
+* Establiu una variable d'entorn de versió temporal a la instal·lació
+
+```sh copy
+VERSION=1.9.8
+```
+
+* Baixeu el codi font
+
+```sh copy
+git clone --branch v$VERSION https://github.com/cculianu/Fulcrum.git && cd Fulcrum
+```
+
+### Comprovació de la signatura
+
+* Obteniu la clau pública del desenvolupador de Fulcrum
+
+```sh copy
+wget -qO- https://raw.githubusercontent.com/Electron-Cash/keys-n-hashes/master/pubkeys/calinkey.txt \
+    | gpg --import
+```
+
+```sh copy
+git verify-commit v$VERSION
+```
+
+### Configurar, compilar i instal·lar
+
+```sh copy
+qmake6 \
+    Fulcrum.pro \
+    -spec "linux-$CC" \
+    -o build/
+```
+
+```sh copy
+make -C build
+```
+
+```sh copy
+$SU install -m 0755 -o root -g root -t /usr/bin ./build/Fulcrum
+```
+
+```sh copy
+$SU install -m 0755 -o root -g root -t /usr/bin ./FulcrumAdmin
+```
+
+### "Strip" els binaris instal·lats
+
+```sh copy
+$SU strip -v /usr/bin/Fulcrum
+```
+</Steps>
+
+## Configuració
+
+* Creeu un directori de configuració de Fulcrum
+
+```sh copy
+$SU mkdir /etc/fulcrum
+```
+
+* Baixeu el banner personalitzat de Fulcrum basat en MicroBolt. Crea el teu
+propi si vols
+[aquí](https://patorjk.com/software/taag/#p=display\&f=Slant\&t=Fulcrum)
+
+```sh copy
+$SU wget \
+    https://gist.githubusercontent.com/doitwithnotepad/\
+4472a92414223672d9ab4c3b55d0cd23/raw/5241bfb860e709d4f6cf8eb436c264f9cc264d79/\
+banner.txt \
+    -O /etc/fulcrum/banner.txt
+```
+
+* Copia la configuració d'exemple
+
+```sh copy
+$SU cp -v doc/fulcrum-example-config.conf /etc/fulcrum/fulcrum.conf
+```
+
+* Editeu les línies següents. Guardar i sortir
+
+<Callout type = "info">
+Recordeu que heu d'acomodar el paràmetre `fast-sync` segons el vostre maquinari
+</Callout>
+
+```sh copy
+$SU $EDITOR /etc/fulcrum/fulcrum.conf
+```
+
+```conf filename="/etc/fulcrum/fulcrum.conf" {2,4,6,8,10,12,14}
+[...]
+#rpcuser = Bob_The_Banker
+[...]
+#rpcpassword = hunter1
+[...]
+rpccookie = /var/lib/bitcoind/.cookie
+[...]
+tcp = 0.0.0.0:50001
+[...]
+banner = /etc/fulcrum/banner.txt
+[...]
+peering = false
+[...]
+fast-sync = 24576
+[...]
+```
+
+<FAQBox title = "Dispositius de baix rendiment">
+```conf filename="/etc/fulcrum/fulcrum.conf" {2,4,6,8,10,12}
+[...]
+bitcoind_clients = 1
+[...]
+bitcoind_timeout = 600
+[...]
+db_max_open_files = # RAM: 4GB -> 200 | 8GB -> 400
+[...]
+db_mem = 1024.0
+[...]
+worker_threads = 1
+[...]
+```
+</FAQBox>
+
+<FAQBox title = "Accés remot per Tor">
+* Afegiu les línies següents a la secció "location hidden services", a sota de
+"`## This section is just for location-hidden services ##`" al fitxer torrc.
+Guardar i sortir
+
+```sh copy
+$SU $EDITOR /etc/tor/torrc
+```
+
+```torrc copy filename="/etc/tor/torrc"
+# Hidden Service Fulcrum
+HiddenServiceDir /var/lib/tor/hidden_service_fulcrum/
+HiddenServiceVersion 3
+HiddenServicePoWDefensesEnabled 1
+HiddenServicePort 50002 127.0.0.1:50002
+```
+
+* Torneu a carregar la configuració de Tor per aplicar els canvis
+
+```sh copy
+$SU rc-service tor reload
+```
+
+* Obteniu la vostra adreça Onion
+
+```sh copy
+$SU cat /var/lib/tor/hidden_service_fulcrum/hostname
+```
+
+```output filename="output"
+abcdefg..............xyz.onion
+```
+
+* Ara hauríeu de poder connectar-vos al vostre servidor Fulcrum de manera remota
+mitjançant Tor, el vostre nom d'amfitrió i el port `50002`
+</FAQBox>
+
+## Crea el servei init.d
+
+Fulcrum s'ha d'iniciar automàticament a l'arrencada del sistema.
+
+* Introduïu la configuració següent completa. Guardar i sortir
+
+```sh copy
+$SU $EDITOR /etc/init.d/fulcrum
+```
+
+```ini copy filename="/etc/init.d/fulcrum"
+#!/sbin/openrc-run
+
+: ${FULCRUM_CONFIGFILE:=/etc/fulcrum/fulcrum.conf}
+: ${FULCRUM_PIDDIR:=/run/fulcrum}
+: ${FULCRUM_PIDFILE:=${FULCRUM_PIDDIR}/${SVCNAME}.pid}
+: ${FULCRUM_DATADIR:=/var/lib/fulcrum}
+: ${FULCRUM_LOGDIR:=/var/log/fulcrum}
+: ${FULCRUM_LOGFILE:=${FULCRUM_LOGDIR}/debug.log}
+: ${FULCRUM_USER:=fulcrum}
+: ${FULCRUM_GROUP:=fulcrum}
+: ${FULCRUM_BIN:=/usr/bin/Fulcrum}
+: ${FULCRUM_NICE:=${NICELEVEL:-0}}
+: ${FULCRUM_ADMINPORT:=8000}
+: ${FULCRUM_OPTS=${FULCRUM_OPTS}}
+: ${FULCRUM_SIGTERM_TIMEOUT:=600}
+
+name="Fulcrum"
+description="A fast & nimble SPV Server for BCH, BTC, and LTC"
+
+required_files="${FULCRUM_CONFIGFILE}"
+pidfile="${FULCRUM_PIDFILE}"
+in_background_fake="start"
+
+depend() {
+    use bitcoind
+    after bitcoind
+}
+
+start_pre() {
+    checkpath -f --mode 0660 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_CONFIGFILE}"
+    checkpath -d --mode 0750 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_DATADIR}"
+    checkpath -d --mode 0755 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_LOGDIR}"
+    checkpath -f --mode 0640 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_LOGFILE}"
+    checkpath -d --mode 0755 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_PIDDIR}"
+    checkconfig
+}
+
+start() {
+    ebegin "Starting ${name}"
+    mark_service_inactive
+    if start-stop-daemon \
+        --pidfile="${FULCRUM_PIDFILE}" \
+        --chdir="${FULCRUM_DATADIR}" \
+        --user="${FULCRUM_USER}:${FULCRUM_GROUP}" \
+        --nice="${FULCRUM_NICE}" \
+        --exec="${FULCRUM_BIN}" \
+        -- \
+        "${FULCRUM_CONFIGFILE}" \
+        --datadir "${FULCRUM_DATADIR}" \
+        --admin "${FULCRUM_ADMINPORT}" \
+        --pidfile "${FULCRUM_PIDFILE}" \
+        ${FULCRUM_OPTS} \
+        >> "${FULCRUM_LOGFILE}" 2>&1
+    then
+        IN_BACKGROUND=yes rc-service "${SVCNAME}" --quiet start
+    else
+        rc-service "${SVCNAME}" --quiet zap
+    fi &
+}
+
+stop() {
+	ebegin "Stopping ${name}"
+	start-stop-daemon \
+        --stop \
+		--pidfile="${FULCRUM_PIDFILE}" \
+		--retry="${FULCRUM_SIGTERM_TIMEOUT}" \
+		--exec="${FULCRUM_BIN}Admin" \
+        -- \
+        -p "${FULCRUM_ADMINPORT}" \
+        stop
+	eend $?
+}
+
+checkconfig() {
+    if ! grep -qs '^rpccookie = ' "${FULCRUM_CONFIGFILE}"
+    then
+        eerror ""
+        eerror "ERROR: You must set a rpccookie path to run Fulcrum."
+        eerror "The setting must appear in ${FULCRUM_CONFIGFILE}"
+        eerror ""
+        return 1
+    fi
+}
+```
+
+* Habilita el permís d'execució
+
+```sh copy
+$SU chmod +x /etc/init.d/fulcrum
+```
+
+* Habilita l'arrencada automàtica
+
+```sh copy
+$SU rc-update add fulcrum default
+```
+
+## Crea la configuració de logrotate
+
+* Introduïu la configuració següent completa. Guardar i sortir
+
+```sh copy
+$SU $EDITOR /etc/logrotate.d/fulcrum
+```
+
+```sh copy filename="/etc/logrotate.d/fulcrum"
+/var/log/fulcrum/*.log {
+    weekly
+    missingok
+    rotate 104
+    compress
+    delaycompress
+    notifempty
+    create 0640 fulcrum fulcrum
+    sharedscripts
+    postrotate
+        killall -HUP `cat /run/fulcrum/fulcrum.pid`
+    endscript
+}
+```
+
+* Prova
+
+```sh copy
+$SU logrotate /etc/logrotate.d/fulcrum --debug
+```
+
+## Executa
+
+<Callout emoji="⏳">
+Això pot trigar una mica
+
+Fulcrum primer ha d'indexar completament la cadena de blocs i compactar la seva
+base de dades abans de poder connectar-hi amb els vostres dispositius de
+signatura. Això pot trigar fins a ~1,5 - 4 dies o més, depenent del maquinari.
+</Callout>
+
+* Iniciar el servei
+
+```sh copy
+$SU rc-service fulcrum start
+```
+
+* Quan veieu registres com aquest
+`<Controller> XXXX mempool txs involving XXXX addresses`, significa que Fulcrum
+està completament indexat
+
+* Assegureu-vos que el servei funciona i escolta als ports predeterminats
+`50001` i al port d'administració `8000`
+
+```sh copy
+$SU netstat -lntup | grep LISTEN | grep Fulcrum
+```
+
+```output filename="output"
+tcp        0      0 127.0.0.1:8000          0.0.0.0:*               LISTEN      3734/Fulcrum
+tcp        0      0 0.0.0.0:50001           0.0.0.0:*               LISTEN      3734/Fulcrum
+```
+
+## Actualització
+
+Torneu a seguir la pàgina [Fulcrum](./fulcrum) substituint el valor de la
+variable d'entorn `VERSION=x.xx` per l'últim si encara no s'ha modificat en
+aquesta guia.
+
+* Reinicieu el servei per aplicar els canvis
+
+```sh copy
+$SU rc-service fulcrum restart
+```
