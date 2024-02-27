@@ -8,6 +8,10 @@ import { FaReact } from "react-icons/fa"
 We will set up an Electrum server for use with your Bitcoin software or hardware
 signing device.
 
+<Callout type="warning">
+Make sure that you have reduced the database cache of Bitcoin client
+</Callout>
+
 ## Bitcoin with signing devices
 
 The best way to safely keep your bitcoin key pairs (meaning the best combination
@@ -31,11 +35,6 @@ devices can then be used with your own sovereign Bitcoin node.
 
 Choose your server, when you're done jump to the Desktop wallet section
 
-<Callout type="warning">
-Installing more than one server is not recommended and not compatible, we do not
-support it
-</Callout>
-
 <Cards>
     <Card
         icon={<FaFulcrum />}
@@ -48,3 +47,8 @@ support it
         href="electrum-server/electrs"
     />
 </Cards>
+
+<Callout type="warning">
+Installing more than one server is not recommended and not compatible, we do not
+support it
+</Callout>
