@@ -37,13 +37,19 @@ of servers.
 <Steps>
 ### Install dependencies
 
-* Install build tools needed to compile Fulcrum from the source code
+These are make dependencies (safe to remove after installation, if you want)
 
 ```sh copy
-$SU apk add clang git lz4-dev make pkgconf qt6-qtbase-dev rocksdb-dev zeromq-dev
+$SU apk add autoconf clang git lz4-dev make pkgconf qt6-qtbase-dev rocksdb-dev zeromq-dev
 ```
 
-* Compile and install `jemalloc` from source
+These are runtime dependencies
+
+```sh copy
+$SU apk add libzmq qt6-qtbase rocksdb
+```
+
+Compile and install `jemalloc` from source
 
 <Callout type="info">
 Alpine apk package doesn't have a patch necessary to work with musl lib C and

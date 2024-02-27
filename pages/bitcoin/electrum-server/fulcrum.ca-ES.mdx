@@ -37,14 +37,20 @@ Craig Raw de servidors.
 <Steps>
 ### Instal·leu dependències
 
-* Instal·leu les eines de compilació necessàries per compilar Fulcrum des del
-codi font
+Aquestes són dependències de creació (es pot eliminar després de la
+instal·lació, si voleu)
 
 ```sh copy
-$SU apk add clang git lz4-dev make pkgconf qt6-qtbase-dev rocksdb-dev zeromq-dev
+$SU apk add autoconf clang git lz4-dev make pkgconf qt6-qtbase-dev rocksdb-dev zeromq-dev
 ```
 
-* Compileu i instal·leu `jemalloc` des del codi font
+Aquestes són dependències en temps d'execució
+
+```sh copy
+$SU apk add libzmq qt6-qtbase rocksdb
+```
+
+Compileu i instal·leu `jemalloc` des del codi font
 
 <Callout type="info">
 El paquet apk d'Alpine no té cap pedaç necessari per treballar amb musl lib C i
