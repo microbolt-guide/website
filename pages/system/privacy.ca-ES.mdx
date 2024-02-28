@@ -1,5 +1,22 @@
 import { Callout,Tabs } from 'nextra/components'
 
+export function FAQBox({ title, children }) {
+  return (
+    <details
+      class="nx-my-4 nx-p-2 nx-rounded nx-border nx-border-gray-200 nx-bg-white dark:nx-border-neutral-800 dark:nx-bg-neutral-900"
+    >
+      <summary>
+        <strong class="text-lg">
+          {title}
+        </strong>
+      </summary>
+      <div class="nx-p-2">
+        {children}
+      </div>
+    </details>
+  )
+}
+
 # Privacitat
 
 Configurem Tor i I2P per executar el vostre node de manera anònima.
@@ -39,7 +56,15 @@ $SU addgroup -S tor
 ```
 
 ```sh copy
-$SU adduser -S -D -H -h /var/lib/tor -s /sbin/nologin -G tor -g tor tor
+$SU adduser \
+    -S \
+    -D \
+    -H \
+    -h /dev/null \
+    -s /sbin/nologin \
+    -G tor \
+    -g tor \
+    tor
 ```
 
 ### Instal·lació
@@ -50,8 +75,8 @@ $SU apk add tor
 
 ### Configuració de Tor
 
-Bitcoin Core es comunicarà directament amb el 'daemon' Tor per encaminar tot el
-trànsit a través de la xarxa Tor. Hem d'habilitar Tor perquè accepti
+El client Bitcoin es comunicarà directament amb el 'daemon' Tor per encaminar
+tot el trànsit a través de la xarxa Tor. Hem d'habilitar Tor perquè accepti
 instruccions a través del seu port de control, amb l'autenticació adequada.
 
 * Editeu la configuració de Tor
@@ -114,13 +139,12 @@ $SU tail -f /var/log/tor/notices.log
 No tot el trànsit de xarxa s'encamina a través de la xarxa Tor. Però ara tenim
 la base per configurar aplicacions sensibles per utilitzar-la.
 
-### SSH a través de Tor
-
+<FAQBox title="SSH a través de Tor">
 Si voleu iniciar sessió al vostre MicroBolt amb SSH quan no sou a casa, podeu
 fer-ho fàcilment afegint un servei ocult Tor. Això fa que "trucar a casa" sigui
 molt fàcil, sense necessitat de configurar res al vostre encaminador d'Internet.
 
-#### Servidor
+{<h4>Servidor</h4>}
 
 * Afegiu les línies següents a la secció "serveis d'ubicació ocults", a sota de
 "`## This section is just for location-hidden services ##`" al fitxer torrc
@@ -136,7 +160,7 @@ $SU $EDITOR /etc/tor/torrc
 
 ```conf copy filename="/etc/tor/torrc" {5}
 # Hidden Service SSH server
-HiddenServiceDir /var/lib/tor/hidden_service_sshd/
+HiddenServiceDir /var/lib/tor/ssh/
 HiddenServiceVersion 3
 HiddenServicePoWDefensesEnabled 1
 HiddenServicePort 2222 127.0.0.1:2222
@@ -151,7 +175,7 @@ $SU rc-service tor reload
 * Obteniu l'adreça SSH Onion
 
 ```sh copy
-$SU cat /var/lib/tor/hidden_service_sshd/hostname
+$SU cat /var/lib/tor/ssh/hostname
 ```
 
 ```output filename="output"
@@ -161,7 +185,7 @@ abcdefg..............xyz.onion
 * Deseu l'adreça Tor en una ubicació segura, p.ex. el vostre gestor de
 contrasenyes
 
-#### Client
+{<h4>Client</h4>}
 
 També heu de tenir Tor instal·lat al vostre ordinador habitual on inicieu la
 connexió SSH. L'ús de SSH a Tor difereix segons el client i el sistema operatiu.
@@ -300,6 +324,7 @@ torsocks ssh admin@abcdefg..............xyz.onion -p 2222
 ```
     </Tabs.Tab>
 </Tabs>
+</FAQBox>
 
 ## Projecte I2P
 

@@ -1,5 +1,22 @@
 import { Callout,Tabs } from 'nextra/components'
 
+export function FAQBox({ title, children }) {
+  return (
+    <details
+      class="nx-my-4 nx-p-2 nx-rounded nx-border nx-border-gray-200 nx-bg-white dark:nx-border-neutral-800 dark:nx-bg-neutral-900"
+    >
+      <summary>
+        <strong class="text-lg">
+          {title}
+        </strong>
+      </summary>
+      <div class="nx-p-2">
+        {children}
+      </div>
+    </details>
+  )
+}
+
 # Privacy
 
 We configure Tor and I2P to run your node anonymously.
@@ -39,7 +56,15 @@ $SU addgroup -S tor
 ```
 
 ```sh copy
-$SU adduser -S -D -H -h /var/lib/tor -s /sbin/nologin -G tor -g tor tor
+$SU adduser \
+    -S \
+    -D \
+    -H \
+    -h /dev/null \
+    -s /sbin/nologin \
+    -G tor \
+    -g tor \
+    tor
 ```
 
 ### Install
@@ -50,9 +75,9 @@ $SU apk add tor
 
 ### Tor configuration
 
-Bitcoin Core will communicate directly with the Tor daemon to route all traffic
-through the Tor network. We need to enable Tor to accept instructions through
-its control port, with the proper authentication.
+Bitcoin client will communicate directly with the Tor daemon to route all
+traffic through the Tor network. We need to enable Tor to accept instructions
+through its control port, with the proper authentication.
 
 * Edit the Tor configuration
 
@@ -113,13 +138,12 @@ $SU tail -f /var/log/tor/notices.log
 Not all network traffic is routed over the Tor network. But we now have the base
 to configure sensitive applications to use it.
 
-### SSH through Tor
-
+<FAQBox title="SSH through Tor">
 If you want to log into your MicroBolt with SSH when you're away, you can easily
 do so by adding a Tor hidden service. This makes "calling home" very easy,
 without the need to configure anything on your internet router.
 
-#### Server
+{<h4>Server</h4>}
 
 * Add the following lines in the "location hidden services" section, below
 "`## This section is just for location-hidden services ##`" in the torrc file
@@ -135,7 +159,7 @@ $SU $EDITOR /etc/tor/torrc
 
 ```conf copy filename="/etc/tor/torrc" {5}
 # Hidden Service SSH server
-HiddenServiceDir /var/lib/tor/hidden_service_sshd/
+HiddenServiceDir /var/lib/tor/ssh/
 HiddenServiceVersion 3
 HiddenServicePoWDefensesEnabled 1
 HiddenServicePort 2222 127.0.0.1:2222
@@ -150,7 +174,7 @@ $SU rc-service tor reload
 * Get the SSH Onion address
 
 ```sh copy
-$SU cat /var/lib/tor/hidden_service_sshd/hostname
+$SU cat /var/lib/tor/ssh/hostname
 ```
 
 ```output filename="output"
@@ -159,7 +183,7 @@ abcdefg..............xyz.onion
 
 * Save the Tor address in a secure location, e.g. your password manager
 
-#### Client
+{<h4>Client</h4>}
 
 You also need to have Tor installed on your regular computer where you start the
 SSH connection. Usage of SSH over Tor differs by client and operating system.
@@ -292,6 +316,7 @@ torsocks ssh admin@abcdefg..............xyz.onion -p 2222
 ```
     </Tabs.Tab>
 </Tabs>
+</FAQBox>
 
 ## I2P Project
 
