@@ -74,7 +74,7 @@ ln -s /var/lib/bitcoind "$HOME/.bitcoin"
 ### Modificar els indicadors del compilador
 
 ```sh copy
-printf "%s\n%s\n%s\n%s\n%s\n%s\n" \
+printf "%s\n" \
     "export CC=\"clang\"" \
     "export CXX=\"\${CC}++\"" \
     "export CFLAGS=\"-O3 -pipe -march=native -fPIE\"" \
