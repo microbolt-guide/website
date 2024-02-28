@@ -21,7 +21,7 @@ Afegiu en un fitxer de configuració de perfil, substituïu `<...>` per la vostr
 pròpia elecció
 
 ```sh
-printf "%s\n%s\n" \
+printf "%s\n" \
     "export EDITOR=<notepad,vi,vim,neovim,nano,micro,emacs...>" \
     "export SU=<sudo,doas,ssu...>" \
     > /etc/profile.d/defaults.sh
@@ -74,7 +74,7 @@ mv -f _ /etc/doas.conf
     </Tabs.Tab>
     <Tabs.Tab>
 ```sh copy
-printf "%s\n%s\n" \
+printf "%s\n" \
     "%wheel ALL=(ALL) ALL" \
     "Defaults env_keep += \"*\"" \
     > /etc/sudoers.d/wheel
