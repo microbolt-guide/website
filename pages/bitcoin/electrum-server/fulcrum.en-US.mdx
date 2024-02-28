@@ -74,7 +74,7 @@ sed 's/  \*-\*-linux\*)/  \*-\*-linux-musl\*)\
 \tAC_DEFINE([JEMALLOC_PROC_SYS_VM_OVERCOMMIT_MEMORY], [ ], [ ])\
 \tAC_DEFINE([JEMALLOC_THREADED_INIT], [ ], [ ])\
 \tif test "${LG_SIZEOF_PTR}" = "3"; then\
-\t  default_retain="1"\
+\t\tdefault_retain="1"\
 \tfi\
 \tzero_realloc_default_free="1"\
 \t;;\
@@ -144,17 +144,17 @@ reverse proxy. Now we can add the Fulcrum configuration.
 communication. Create the configuration file and paste the following content
 
 ```sh copy
-$SU $EDITOR /etc/nginx/streams-enabled/fulcrum-reverse-proxy.conf
+$SU $EDITOR /etc/nginx/streams-enabled/electrum-reverse-proxy.conf
 ```
 
-```nginx copy filename="/etc/nginx/streams-enabled/fulcrum-reverse-proxy.conf"
-upstream fulcrum {
+```nginx copy filename="/etc/nginx/streams-enabled/electrum-reverse-proxy.conf"
+upstream electrum {
   server 127.0.0.1:50001;
 }
 
 server {
   listen 50002 ssl;
-  proxy_pass fulcrum;
+  proxy_pass electrum;
 }
 ```
 
@@ -162,16 +162,14 @@ server {
 
 ```sh copy
 $SU nginx -t
-```
-
-```sh copy
 $SU rc-service nginx restart
+
 ```
 
 * Configure the firewall to allow incoming requests
 
 ```sh copy
-$SU ufw allow 50002/tcp comment 'allow Fulcrum SSL from anywhere'
+$SU ufw allow 50002/tcp comment 'allow Electrum SSL from anywhere'
 ```
 
 ### Configure Bitcoin client
@@ -355,8 +353,8 @@ $SU $EDITOR /etc/tor/torrc
 ```
 
 ```torrc copy filename="/etc/tor/torrc"
-# Hidden Service Fulcrum
-HiddenServiceDir /var/lib/tor/hidden_service_fulcrum/
+# Hidden Service Electrum
+HiddenServiceDir /var/lib/tor/electrum/
 HiddenServiceVersion 3
 HiddenServicePoWDefensesEnabled 1
 HiddenServicePort 50002 127.0.0.1:50002
@@ -371,7 +369,7 @@ $SU rc-service tor reload
 * Get your Onion address
 
 ```sh copy
-$SU cat /var/lib/tor/hidden_service_fulcrum/hostname
+$SU cat /var/lib/tor/electrum/hostname
 ```
 
 ```output filename="output"

@@ -75,7 +75,7 @@ sed 's/  \*-\*-linux\*)/  \*-\*-linux-musl\*)\
 \tAC_DEFINE([JEMALLOC_PROC_SYS_VM_OVERCOMMIT_MEMORY], [ ], [ ])\
 \tAC_DEFINE([JEMALLOC_THREADED_INIT], [ ], [ ])\
 \tif test "${LG_SIZEOF_PTR}" = "3"; then\
-\t  default_retain="1"\
+\t\tdefault_retain="1"\
 \tfi\
 \tzero_realloc_default_free="1"\
 \t;;\
@@ -146,17 +146,17 @@ la comunicació Fulcrum. Creeu el fitxer de configuració i enganxeu el contingu
 següent
 
 ```sh copy
-$SU $EDITOR /etc/nginx/streams-enabled/fulcrum-reverse-proxy.conf
+$SU $EDITOR /etc/nginx/streams-enabled/electrum-reverse-proxy.conf
 ```
 
-```nginx copy filename="/etc/nginx/streams-enabled/fulcrum-reverse-proxy.conf"
-upstream fulcrum {
+```nginx copy filename="/etc/nginx/streams-enabled/electrum-reverse-proxy.conf"
+upstream electrum {
   server 127.0.0.1:50001;
 }
 
 server {
   listen 50002 ssl;
-  proxy_pass fulcrum;
+  proxy_pass electrum;
 }
 ```
 
@@ -164,16 +164,14 @@ server {
 
 ```sh copy
 $SU nginx -t
-```
-
-```sh copy
 $SU rc-service nginx restart
+
 ```
 
 * Configura el tallafoc per permetre les sol·licituds entrants
 
 ```sh copy
-$SU ufw allow 50002/tcp comment 'permet Fulcrum SSL des de qualsevol lloc'
+$SU ufw allow 50002/tcp comment 'permet Electrum SSL des de qualsevol lloc'
 ```
 
 ### Configura el client Bitcoin
@@ -359,8 +357,8 @@ $SU $EDITOR /etc/tor/torrc
 ```
 
 ```torrc copy filename="/etc/tor/torrc"
-# Hidden Service Fulcrum
-HiddenServiceDir /var/lib/tor/hidden_service_fulcrum/
+# Hidden Service Electrum
+HiddenServiceDir /var/lib/tor/electrum/
 HiddenServiceVersion 3
 HiddenServicePoWDefensesEnabled 1
 HiddenServicePort 50002 127.0.0.1:50002
@@ -375,7 +373,7 @@ $SU rc-service tor reload
 * Obteniu la vostra adreça Onion
 
 ```sh copy
-$SU cat /var/lib/tor/hidden_service_fulcrum/hostname
+$SU cat /var/lib/tor/electrum/hostname
 ```
 
 ```output filename="output"
