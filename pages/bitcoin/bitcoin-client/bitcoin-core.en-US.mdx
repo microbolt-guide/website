@@ -1,7 +1,24 @@
 import { Callout,Cards,Card,Steps } from 'nextra/components'
 
 import { TbSum } from "react-icons/tb"
-import { FaStamp } from "react-icons/fa";
+import { FaStamp } from "react-icons/fa"
+
+export function FAQBox({ title, children }) {
+  return (
+    <details
+      class="nx-my-4 nx-p-2 nx-rounded nx-border nx-border-gray-200 nx-bg-white dark:nx-border-neutral-800 dark:nx-bg-neutral-900"
+    >
+      <summary>
+        <strong class="text-lg">
+          {title}
+        </strong>
+      </summary>
+      <div class="nx-p-2">
+        {children}
+      </div>
+    </details>
+  )
+}
 
 # Bitcoin Core
 
@@ -444,21 +461,23 @@ Check this Bitcoin Core sample [config
 web browser
 </Callout>
 
-<Callout type="info">
-If you want to reject non-private networks, change these lines on
-`/etc/bitcoin/bitcoin.conf`
-
-```
+<FAQBox title="Reject non-private networks">
+```conf filename="/etc/bitcoin/bitcoin.conf" {2,4,6,8}
+[...]
 onlynet=onion
+[...]
 onlynet=i2p
+[...]
 dns=0
+[...]
 dnsseed=0
+[...]
 ```
 
 And add seed nodes, check a list of seed nodes
 [here](https://github.com/bitcoin/bitcoin/blob/master/contrib/seeds/nodes_main_manual.txt)
 
-```
+```conf filename="/etc/bitcoin/bitcoin.conf" {2,5}
 ##Tor seed nodes
 seednode=2bqghnldu6mcug...tvci6klcwzepnjd46ikjyd.onion:8333
 [...]
@@ -466,33 +485,28 @@ seednode=2bqghnldu6mcug...tvci6klcwzepnjd46ikjyd.onion:8333
 seednode=255fhcp6ajvftn...3bamyh2iu5r3gnr2rq.b32.i2p:0
 [...]
 ```
-</Callout>
+</FAQBox>
 
-### Slow device mode if needed
-
-* Edit `bitcoin.conf` file
-
-```sh copy
-$SU $EDITOR /etc/bitcoin/bitcoin.conf
-```
-
-```conf filename="/etc/bitcoin/bitcoin.conf"
+<FAQBox title="Slow device mode">
+```conf filename="/etc/bitcoin/bitcoin.conf" {4,7,10,13,15,17}
+[...]
 # Slow devices optimizations
 ## Limit the number of max peers connections
 maxconnections=40
+[...]
 ## Tries to keep outbound traffic under the given target per 24h
 maxuploadtarget=5000
+[...]
 ## Increase the number of threads to service RPC calls (default: 4)
 rpcthreads=128
+[...]
 ## Increase the depth of the work queue to service RPC calls (default: 16)
 rpcworkqueue=256
-```
-
-* Comment these lines
-
-```
+[...]
 #coinstatsindex=1
+[...]
 #assumevalid=0
+[...]
 ```
 
 <Callout>
@@ -502,6 +516,7 @@ the connection to Electrs and Bisq by adding these parameter to `bitcoin.conf`:
 * Electrs: `whitelist=download@127.0.0.1`
 * Bisq: `whitelist=bloomfilter@192.168.0.0/16`
 </Callout>
+</FAQBox>
 
 ## Create init.d service
 
