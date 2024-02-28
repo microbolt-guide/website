@@ -267,6 +267,10 @@ $SU install -m 0755 -o root -g root -t /usr/bin ./build/Fulcrum
 $SU install -m 0755 -o root -g root -t /usr/bin ./FulcrumAdmin
 ```
 
+```sh copy
+$SU install -D -m 0660 -o fulcrum -g fulcrum ./doc/fulcrum-example-config.conf /etc/fulcrum/fulcrum.conf
+```
+
 ### Strip installed binaries
 
 ```sh copy
@@ -275,12 +279,6 @@ $SU strip -v /usr/bin/Fulcrum
 </Steps>
 
 ## Configuration
-
-* Create a Fulcrum config directory
-
-```sh copy
-$SU mkdir /etc/fulcrum
-```
 
 * Download the custom Fulcrum banner based on MicroBolt. Create your own if you
 want [here](https://patorjk.com/software/taag/#p=display\&f=Slant\&t=Fulcrum)
@@ -291,12 +289,6 @@ $SU wget \
 4472a92414223672d9ab4c3b55d0cd23/raw/5241bfb860e709d4f6cf8eb436c264f9cc264d79/\
 banner.txt \
     -O /etc/fulcrum/banner.txt
-```
-
-* Copy example config
-
-```sh copy
-$SU cp -v doc/fulcrum-example-config.conf /etc/fulcrum/fulcrum.conf
 ```
 
 * Edit the following lines. Save and exit

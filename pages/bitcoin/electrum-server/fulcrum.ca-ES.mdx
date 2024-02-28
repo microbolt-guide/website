@@ -270,6 +270,10 @@ $SU install -m 0755 -o root -g root -t /usr/bin ./build/Fulcrum
 $SU install -m 0755 -o root -g root -t /usr/bin ./FulcrumAdmin
 ```
 
+```sh copy
+$SU install -D -m 0660 -o fulcrum -g fulcrum ./doc/fulcrum-example-config.conf /etc/fulcrum/fulcrum.conf
+```
+
 ### "Strip" els binaris instal·lats
 
 ```sh copy
@@ -278,12 +282,6 @@ $SU strip -v /usr/bin/Fulcrum
 </Steps>
 
 ## Configuració
-
-* Creeu un directori de configuració de Fulcrum
-
-```sh copy
-$SU mkdir /etc/fulcrum
-```
 
 * Baixeu el banner personalitzat de Fulcrum basat en MicroBolt. Crea el teu
 propi si vols
@@ -295,12 +293,6 @@ $SU wget \
 4472a92414223672d9ab4c3b55d0cd23/raw/5241bfb860e709d4f6cf8eb436c264f9cc264d79/\
 banner.txt \
     -O /etc/fulcrum/banner.txt
-```
-
-* Copia la configuració d'exemple
-
-```sh copy
-$SU cp -v doc/fulcrum-example-config.conf /etc/fulcrum/fulcrum.conf
 ```
 
 * Editeu les línies següents. Guardar i sortir
