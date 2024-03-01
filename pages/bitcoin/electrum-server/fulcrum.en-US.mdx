@@ -27,11 +27,6 @@ of servers.
 
 ![](/img/bitcoin/electrum-server/fulcrum.webp)
 
-## Requirements
-
-* [Bitcoin Client](../bitcoin-client)
-* ~130GB of free storage for the database
-
 ## Preparations
 
 <Steps>
@@ -129,25 +124,19 @@ $SU adduser fulcrum bitcoin
 $SU adduser satoshi fulcrum
 ```
 
-### Create a symbolic link fulcrum to `satoshi` home
-
-```sh copy
-ln -s /var/lib/fulcrum "$HOME/.fulcrum"
-```
-
 ### Firewall & reverse proxy
 
-In the [Security](/system/security#nginx) section, we already set up NGINX as a
-reverse proxy. Now we can add the Fulcrum configuration.
+In the [Security section](/system/security#nginx), we already set up NGINX as a
+reverse proxy. Now we can add the Electrum server configuration.
 
-* Enable NGINX reverse proxy to add SSL/TLS encryption to the Fulcrum
+* Enable NGINX reverse proxy to add SSL/TLS encryption to the Electrum server
 communication. Create the configuration file and paste the following content
 
 ```sh copy
-$SU $EDITOR /etc/nginx/streams-enabled/electrum-reverse-proxy.conf
+$SU $EDITOR /etc/nginx/streams-available/electrum-reverse-proxy.conf
 ```
 
-```nginx copy filename="/etc/nginx/streams-enabled/electrum-reverse-proxy.conf"
+```nginx copy filename="/etc/nginx/streams-available/electrum-reverse-proxy.conf"
 upstream electrum {
   server 127.0.0.1:50001;
 }
@@ -156,6 +145,13 @@ server {
   listen 50002 ssl;
   proxy_pass electrum;
 }
+```
+
+```sh copy
+$SU ln \
+    -s \
+    ../streams-available/electrum-reverse-proxy.conf \
+    /etc/nginx/streams-enabled/electrum-reverse-proxy.conf
 ```
 
 * Test and reload NGINX configuration
@@ -171,63 +167,33 @@ $SU rc-service nginx restart
 ```sh copy
 $SU ufw allow 50002/tcp comment 'allow Electrum SSL from anywhere'
 ```
-
-### Configure Bitcoin client
-
-We need to set up settings in the Bitcoin client configuration file - add new
-lines if they are not present
-
-* Edit the following line. Save and exit
-
-```sh copy
-$SU $EDITOR /etc/bitcoin/bitcoin.conf
-```
-
-```conf copy filename="/etc/bitcoin/bitcoin.conf" {3}
-[...]
-# Enable publish hash block in <address>
-zmqpubhashblock=tcp://127.0.0.1:8433
-[...]
-```
-
-* Restart Bitcoin client to apply changes
-
-```sh copy
-$SU rc-service bitcoind restart
-```
-
-* Check Bitcoin client is enabled `zmqpubhashblock` on the `8433` port
-
-```sh copy
-$SU netstat -lntup | grep LISTEN | grep bitcoind | grep 8433
-```
-
-```output filename="output"
-tcp        0      0 127.0.0.1:8433          0.0.0.0:*               LISTEN      4003/bitcoind
-```
 </Steps>
 
 ## Installation
 
+An easy and performant way to run an Electrum server is to use
+[Fulcrum](https://github.com/cculianu/Fulcrum), the fast & nimble Electrum
+Server. There are no compatible binaries available, so we will compile the
+application ourselves.
+
 <Steps>
 ### Download source code
 
-We have our Bitcoin client configuration file set up and can now move on to the
-next part of the Fulcrum installation.
+We get the latest release of the Fulcrum source code, verify it, compile it to
+an executable binary and install it.
 
-* Change to a temporary directory which is cleared on reboot
+* Download the source code for the latest Fulcrum release. You can check the
+[release page](https://github.com/cculianu/Fulcrum/releases) to see if a newer
+release is available. Other releases might not have been properly tested with
+the rest of the MicroBolt configuration, though.
 
 ```sh copy
 cd /tmp
 ```
 
-* Set a temporary version environment variable to the installation
-
 ```sh copy
 VERSION=1.9.8
 ```
-
-* Download the source code
 
 ```sh copy
 git clone --branch v$VERSION https://github.com/cculianu/Fulcrum.git && cd Fulcrum
@@ -235,11 +201,12 @@ git clone --branch v$VERSION https://github.com/cculianu/Fulcrum.git && cd Fulcr
 
 ### Signature check
 
-* Get the public key from the Fulcrum developer
+* To avoid using bad source code, verify that the release has been properly
+signed by the main developer [Calin Culianu](https://github.com/cculianu).
 
 ```sh copy
-wget -qO- https://raw.githubusercontent.com/Electron-Cash/keys-n-hashes/master/pubkeys/calinkey.txt \
-    | gpg --import
+url="https://raw.githubusercontent.com/Electron-Cash/keys-n-hashes/master/pubkeys/calinkey.txt"
+wget -qO- "$url" | gpg --import
 ```
 
 ```sh copy
@@ -247,6 +214,8 @@ git verify-commit v$VERSION
 ```
 
 ### Configure, compile and install
+
+* Now compile the source code into an executable binary and install it.
 
 ```sh copy
 qmake6 \
@@ -271,15 +240,6 @@ $SU install -m 0755 -o root -g root -t /usr/bin ./FulcrumAdmin
 $SU install -D -m 0660 -o fulcrum -g fulcrum ./doc/fulcrum-example-config.conf /etc/fulcrum/fulcrum.conf
 ```
 
-### Strip installed binaries
-
-```sh copy
-$SU strip -v /usr/bin/Fulcrum
-```
-</Steps>
-
-## Configuration
-
 * Download the custom Fulcrum banner based on MicroBolt. Create your own if you
 want [here](https://patorjk.com/software/taag/#p=display\&f=Slant\&t=Fulcrum)
 
@@ -291,7 +251,16 @@ banner.txt \
     -O /etc/fulcrum/banner.txt
 ```
 
-* Edit the following lines. Save and exit
+### Strip installed binaries
+
+```sh copy
+$SU strip -v /usr/bin/Fulcrum
+```
+</Steps>
+
+## Configuration
+
+* Modify the config file with the following content
 
 <Callout type = "info">
 Remember to accommodate the `fast-sync` parameter depending on your hardware
@@ -336,9 +305,8 @@ worker_threads = 1
 </FAQBox>
 
 <FAQBox title = "Remote access over Tor">
-* Add the following lines in the "location hidden services" section, below
-"`## This section is just for location-hidden services ##`" in the torrc file.
-Save and exit
+* Add the following lines in the "location hidden services" section in the torrc
+file
 
 ```sh copy
 $SU $EDITOR /etc/tor/torrc
@@ -372,17 +340,17 @@ abcdefg..............xyz.onion
 using your hostname and port `50002`
 </FAQBox>
 
-## Create init.d service
+### Autostart on boot
 
 Fulcrum needs to start automatically on system boot.
 
-* Enter the complete next configuration. Save and exit
+* Create the Fulcrum init.d unit and copy/paste the following configuration
 
 ```sh copy
 $SU $EDITOR /etc/init.d/fulcrum
 ```
 
-```ini copy filename="/etc/init.d/fulcrum"
+```sh copy filename="/etc/init.d/fulcrum"
 #!/sbin/openrc-run
 
 : ${FULCRUM_CONFIGFILE:=/etc/fulcrum/fulcrum.conf}
@@ -390,11 +358,9 @@ $SU $EDITOR /etc/init.d/fulcrum
 : ${FULCRUM_PIDFILE:=${FULCRUM_PIDDIR}/${SVCNAME}.pid}
 : ${FULCRUM_DATADIR:=/var/lib/fulcrum}
 : ${FULCRUM_LOGDIR:=/var/log/fulcrum}
-: ${FULCRUM_LOGFILE:=${FULCRUM_LOGDIR}/debug.log}
 : ${FULCRUM_USER:=fulcrum}
 : ${FULCRUM_GROUP:=fulcrum}
 : ${FULCRUM_BIN:=/usr/bin/Fulcrum}
-: ${FULCRUM_NICE:=${NICELEVEL:-0}}
 : ${FULCRUM_ADMINPORT:=8000}
 : ${FULCRUM_OPTS=${FULCRUM_OPTS}}
 : ${FULCRUM_SIGTERM_TIMEOUT:=600}
@@ -402,9 +368,21 @@ $SU $EDITOR /etc/init.d/fulcrum
 name="Fulcrum"
 description="A fast & nimble SPV Server for BCH, BTC, and LTC"
 
+command="${FULCRUM_BIN}"
+command_args="${FULCRUM_CONFIGFILE}
+              --datadir ${FULCRUM_DATADIR}
+              --admin ${FULCRUM_ADMINPORT}
+              --pidfile ${FULCRUM_PIDFILE}
+              ${FULCRUM_OPTS}"
+command_user="${FULCRUM_USER}:${FULCRUM_GROUP}"
+command_background="true"
+
 required_files="${FULCRUM_CONFIGFILE}"
 pidfile="${FULCRUM_PIDFILE}"
-in_background_fake="start"
+retry="${FULCRUM_SIGTERM_TIMEOUT}"
+
+start_stop_daemon_args="--stdout ${FULCRUM_LOGDIR}/debug.log
+                        --stderr ${FULCRUM_LOGDIR}/debug.log"
 
 depend() {
     use bitcoind
@@ -412,48 +390,15 @@ depend() {
 }
 
 start_pre() {
-    checkpath -f --mode 0660 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_CONFIGFILE}"
-    checkpath -d --mode 0750 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_DATADIR}"
-    checkpath -d --mode 0755 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_LOGDIR}"
-    checkpath -f --mode 0640 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_LOGFILE}"
-    checkpath -d --mode 0755 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_PIDDIR}"
+    checkpath --file      --mode 0660 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_CONFIGFILE}"
+    checkpath --directory --mode 0750 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_DATADIR}"
+    checkpath --directory --mode 0755 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_PIDDIR}"
     checkconfig
 }
 
-start() {
-    ebegin "Starting ${name}"
-    mark_service_inactive
-    if start-stop-daemon \
-        --pidfile="${FULCRUM_PIDFILE}" \
-        --chdir="${FULCRUM_DATADIR}" \
-        --user="${FULCRUM_USER}:${FULCRUM_GROUP}" \
-        --nice="${FULCRUM_NICE}" \
-        --exec="${FULCRUM_BIN}" \
-        -- \
-        "${FULCRUM_CONFIGFILE}" \
-        --datadir "${FULCRUM_DATADIR}" \
-        --admin "${FULCRUM_ADMINPORT}" \
-        --pidfile "${FULCRUM_PIDFILE}" \
-        ${FULCRUM_OPTS} \
-        >> "${FULCRUM_LOGFILE}" 2>&1
-    then
-        IN_BACKGROUND=yes rc-service "${SVCNAME}" --quiet start
-    else
-        rc-service "${SVCNAME}" --quiet zap
-    fi &
-}
-
-stop() {
-	ebegin "Stopping ${name}"
-	start-stop-daemon \
-        --stop \
-		--pidfile="${FULCRUM_PIDFILE}" \
-		--retry="${FULCRUM_SIGTERM_TIMEOUT}" \
-		--exec="${FULCRUM_BIN}Admin" \
-        -- \
-        -p "${FULCRUM_ADMINPORT}" \
-        stop
-	eend $?
+start_post() {
+    checkpath --file --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_PIDFILE}"
 }
 
 checkconfig() {
@@ -474,13 +419,7 @@ checkconfig() {
 $SU chmod +x /etc/init.d/fulcrum
 ```
 
-* Enable autoboot
-
-```sh copy
-$SU rc-update add fulcrum default
-```
-
-## Create logrotate config
+### Enable logrotate
 
 * Enter the complete next configuration. Save and exit
 
@@ -510,43 +449,36 @@ $SU $EDITOR /etc/logrotate.d/fulcrum
 $SU logrotate /etc/logrotate.d/fulcrum --debug
 ```
 
-## Run
-
-<Callout emoji="⏳">
-This may take some time
-
-Fulcrum must first fully index the blockchain and compact its database before
-you can connect to it with your signing devices. This can take up to ~1.5 - 4
-days or more, depending on the hardware.
-</Callout>
-
-* Start the service
+## Enable and start Fulcrum
 
 ```sh copy
+$SU rc-update add fulcrum
 $SU rc-service fulcrum start
+
 ```
 
-* When you see logs like this
-`<Controller> XXXX mempool txs involving XXXX addresses`, which means that
-Fulcrum is fully indexed
-
-* Ensure the service is working and listening at the default `50001` ports and
-the `8000` admin port
+* Check the log to see Fulcrum output. Exit with `Ctrl-C`
 
 ```sh copy
-$SU netstat -lntup | grep LISTEN | grep Fulcrum
+tail -f /var/log/fulcrum/debug.log
 ```
 
-```output filename="output"
-tcp        0      0 127.0.0.1:8000          0.0.0.0:*               LISTEN      3734/Fulcrum
-tcp        0      0 0.0.0.0:50001           0.0.0.0:*               LISTEN      3734/Fulcrum
-```
+Fulcrum will now index the whole Bitcoin blockchain so that it can provide all
+necessary information to signing devices. With this, the signing devices you use
+no longer need to connect to any third-party server to communicate with the
+Bitcoin peer-to-peer network.
 
-## Upgrade
+## For the future: Fulcrum upgrade
 
 Follow again [Fulcrum](./fulcrum) page replacing the environment variable
 `VERSION=x.xx` value for the latest if it has not been already changed in this
 guide.
+
+* Update the Fulcrum configuration if necessary (see release notes)
+
+```sh copy
+$SU $EDITOR /etc/fulcrum/fulcrum.conf
+```
 
 * Restart the service to apply the changes
 

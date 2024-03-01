@@ -27,11 +27,6 @@ Craig Raw de servidors.
 
 ![](/img/bitcoin/electrum-server/fulcrum.webp)
 
-## Requisits
-
-* [Client Bitcoin](../bitcoin-client)
-* ~130 GB d'emmagatzematge lliure per a la base de dades
-
 ## Preparacions
 
 <Steps>
@@ -53,7 +48,7 @@ $SU apk add libzmq qt6-qtbase rocksdb
 Compileu i instal·leu `jemalloc` des del codi font
 
 <Callout type="info">
-El paquet apk d'Alpine no té cap pedaç necessari per treballar amb musl lib C i
+El paquet apk d'Alpine no té el pedaç necessari per treballar amb musl lib C i
 les eines de LLVM, 
 [alpine merge request](https://gitlab.alpinelinux.org/alpine/aports/-/merge_requests/61321),
 [upstream pull request](https://github.com/jemalloc/jemalloc/pull/2338)
@@ -130,26 +125,21 @@ $SU adduser fulcrum bitcoin
 $SU adduser satoshi fulcrum
 ```
 
-### Creeu un enllaç simbòlic de fulcrum al directori principal de `satoshi`
-
-```sh copy
-ln -s /var/lib/fulcrum "$HOME/.fulcrum"
-```
-
 ### Tallafoc i servidor intermediari invers
 
 A la secció [Seguretat](/system/security#nginx), ja hem configurat NGINX com a
-servidor intermediari invers. Ara podem afegir la configuració de Fulcrum.
+servidor intermediari invers. Ara podem afegir la configuració del servidor
+Electrum.
 
 * Habiliteu el servidor intermediari invers NGINX per afegir xifratge SSL/TLS a
-la comunicació Fulcrum. Creeu el fitxer de configuració i enganxeu el contingut
-següent
+la comunicació del servidor Electrum. Creeu el fitxer de configuració i enganxeu
+el contingut següent
 
 ```sh copy
-$SU $EDITOR /etc/nginx/streams-enabled/electrum-reverse-proxy.conf
+$SU $EDITOR /etc/nginx/streams-available/electrum-reverse-proxy.conf
 ```
 
-```nginx copy filename="/etc/nginx/streams-enabled/electrum-reverse-proxy.conf"
+```nginx copy filename="/etc/nginx/streams-available/electrum-reverse-proxy.conf"
 upstream electrum {
   server 127.0.0.1:50001;
 }
@@ -158,6 +148,13 @@ server {
   listen 50002 ssl;
   proxy_pass electrum;
 }
+```
+
+```sh copy
+$SU ln \
+    -s \
+    ../streams-available/electrum-reverse-proxy.conf \
+    /etc/nginx/streams-enabled/electrum-reverse-proxy.conf
 ```
 
 * Prova i torna a carregar la configuració de NGINX
@@ -173,64 +170,34 @@ $SU rc-service nginx restart
 ```sh copy
 $SU ufw allow 50002/tcp comment 'permet Electrum SSL des de qualsevol lloc'
 ```
-
-### Configura el client Bitcoin
-
-Hem de configurar els paràmetres al fitxer de configuració del client Bitcoin:
-afegiu línies noves si no estan presents
-
-* Editeu la línia següent. Guardeu i sortiu
-
-```sh copy
-$SU $EDITOR /etc/bitcoin/bitcoin.conf
-```
-
-```conf copy filename="/etc/bitcoin/bitcoin.conf" {3}
-[...]
-# Enable publish hash block in <address>
-zmqpubhashblock=tcp://127.0.0.1:8433
-[...]
-```
-
-* Reinicieu el client Bitcoin per aplicar els canvis
-
-```sh copy
-$SU rc-service bitcoind restart
-```
-
-* Comproveu que el client Bitcoin estigui habilitat `zmqpubhashblock` al port
-`8433`
-
-```sh copy
-$SU netstat -lntup | grep LISTEN | grep bitcoind | grep 8433
-```
-
-```output filename="output"
-tcp        0      0 127.0.0.1:8433          0.0.0.0:*               LISTEN      4003/bitcoind
-```
 </Steps>
 
 ## Instal·lació
 
+Una manera fàcil i eficient d'executar un servidor Electrum és utilitzar
+[Fulcrum](https://github.com/cculianu/Fulcrum), el servidor Electrum ràpid i
+àgil. No hi ha binaris compatibles disponibles, així que compilarem l'aplicació
+nosaltres mateixos.
+
 <Steps>
 ### Descarrega el codi font
 
-Tenim el nostre fitxer de configuració del client de Bitcoin configurat i ara
-podem passar a la següent part de la instal·lació de Fulcrum.
+Obtenim l'última versió del codi font de Fulcrum, el verifiquem, el compilem en
+un binari executable i l'instal·lem.
 
-* Canvieu a un directori temporal que s'esborra en reiniciar
+* Baixeu el codi font de la darrera versió de Fulcrum. Podeu consultar la
+[pàgina de llançament](https://github.com/cculianu/Fulcrum/releases) per veure
+si hi ha disponible una versió més recent. Tanmateix, és possible que altres
+versions no s'hagin provat correctament amb la resta de la configuració de
+MicroBolt.
 
 ```sh copy
 cd /tmp
 ```
 
-* Establiu una variable d'entorn de versió temporal a la instal·lació
-
 ```sh copy
 VERSION=1.9.8
 ```
-
-* Baixeu el codi font
 
 ```sh copy
 git clone --branch v$VERSION https://github.com/cculianu/Fulcrum.git && cd Fulcrum
@@ -238,11 +205,13 @@ git clone --branch v$VERSION https://github.com/cculianu/Fulcrum.git && cd Fulcr
 
 ### Comprovació de la signatura
 
-* Obteniu la clau pública del desenvolupador de Fulcrum
+* Per evitar l'ús d'un codi font maliciós, verifiqueu que la versió hagi estat
+signada correctament pel desenvolupador principal
+[Calin Culianu](https://github.com/cculianu).
 
 ```sh copy
-wget -qO- https://raw.githubusercontent.com/Electron-Cash/keys-n-hashes/master/pubkeys/calinkey.txt \
-    | gpg --import
+url="https://raw.githubusercontent.com/Electron-Cash/keys-n-hashes/master/pubkeys/calinkey.txt"
+wget -qO- "$url" | gpg --import
 ```
 
 ```sh copy
@@ -250,6 +219,8 @@ git verify-commit v$VERSION
 ```
 
 ### Configurar, compilar i instal·lar
+
+* Ara compileu el codi font en un binari executable i instal·leu-lo.
 
 ```sh copy
 qmake6 \
@@ -274,15 +245,6 @@ $SU install -m 0755 -o root -g root -t /usr/bin ./FulcrumAdmin
 $SU install -D -m 0660 -o fulcrum -g fulcrum ./doc/fulcrum-example-config.conf /etc/fulcrum/fulcrum.conf
 ```
 
-### "Strip" els binaris instal·lats
-
-```sh copy
-$SU strip -v /usr/bin/Fulcrum
-```
-</Steps>
-
-## Configuració
-
 * Baixeu el banner personalitzat de Fulcrum basat en MicroBolt. Crea el teu
 propi si vols
 [aquí](https://patorjk.com/software/taag/#p=display\&f=Slant\&t=Fulcrum)
@@ -295,7 +257,16 @@ banner.txt \
     -O /etc/fulcrum/banner.txt
 ```
 
-* Editeu les línies següents. Guardar i sortir
+### "Strip" els binaris instal·lats
+
+```sh copy
+$SU strip -v /usr/bin/Fulcrum
+```
+</Steps>
+
+## Configuració
+
+* Modifiqueu el fitxer de configuració amb el contingut següent
 
 <Callout type = "info">
 Recordeu que heu d'acomodar el paràmetre `fast-sync` segons el vostre maquinari
@@ -340,9 +311,8 @@ worker_threads = 1
 </FAQBox>
 
 <FAQBox title = "Accés remot per Tor">
-* Afegiu les línies següents a la secció "location hidden services", a sota de
-"`## This section is just for location-hidden services ##`" al fitxer torrc.
-Guardar i sortir
+* Afegiu les línies següents a la secció "location hidden services" al fitxer
+torrc
 
 ```sh copy
 $SU $EDITOR /etc/tor/torrc
@@ -376,17 +346,17 @@ abcdefg..............xyz.onion
 mitjançant Tor, el vostre nom d'amfitrió i el port `50002`
 </FAQBox>
 
-## Crea el servei init.d
+### Inici automàtic a l'arrencada
 
 Fulcrum s'ha d'iniciar automàticament a l'arrencada del sistema.
 
-* Introduïu la configuració següent completa. Guardar i sortir
+* Creeu la unitat Fulcrum init.d i copieu/enganxeu la configuració següent
 
 ```sh copy
 $SU $EDITOR /etc/init.d/fulcrum
 ```
 
-```ini copy filename="/etc/init.d/fulcrum"
+```sh copy filename="/etc/init.d/fulcrum"
 #!/sbin/openrc-run
 
 : ${FULCRUM_CONFIGFILE:=/etc/fulcrum/fulcrum.conf}
@@ -394,11 +364,9 @@ $SU $EDITOR /etc/init.d/fulcrum
 : ${FULCRUM_PIDFILE:=${FULCRUM_PIDDIR}/${SVCNAME}.pid}
 : ${FULCRUM_DATADIR:=/var/lib/fulcrum}
 : ${FULCRUM_LOGDIR:=/var/log/fulcrum}
-: ${FULCRUM_LOGFILE:=${FULCRUM_LOGDIR}/debug.log}
 : ${FULCRUM_USER:=fulcrum}
 : ${FULCRUM_GROUP:=fulcrum}
 : ${FULCRUM_BIN:=/usr/bin/Fulcrum}
-: ${FULCRUM_NICE:=${NICELEVEL:-0}}
 : ${FULCRUM_ADMINPORT:=8000}
 : ${FULCRUM_OPTS=${FULCRUM_OPTS}}
 : ${FULCRUM_SIGTERM_TIMEOUT:=600}
@@ -406,9 +374,21 @@ $SU $EDITOR /etc/init.d/fulcrum
 name="Fulcrum"
 description="A fast & nimble SPV Server for BCH, BTC, and LTC"
 
+command="${FULCRUM_BIN}"
+command_args="${FULCRUM_CONFIGFILE}
+              --datadir ${FULCRUM_DATADIR}
+              --admin ${FULCRUM_ADMINPORT}
+              --pidfile ${FULCRUM_PIDFILE}
+              ${FULCRUM_OPTS}"
+command_user="${FULCRUM_USER}:${FULCRUM_GROUP}"
+command_background="true"
+
 required_files="${FULCRUM_CONFIGFILE}"
 pidfile="${FULCRUM_PIDFILE}"
-in_background_fake="start"
+retry="${FULCRUM_SIGTERM_TIMEOUT}"
+
+start_stop_daemon_args="--stdout ${FULCRUM_LOGDIR}/debug.log
+                        --stderr ${FULCRUM_LOGDIR}/debug.log"
 
 depend() {
     use bitcoind
@@ -416,48 +396,15 @@ depend() {
 }
 
 start_pre() {
-    checkpath -f --mode 0660 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_CONFIGFILE}"
-    checkpath -d --mode 0750 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_DATADIR}"
-    checkpath -d --mode 0755 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_LOGDIR}"
-    checkpath -f --mode 0640 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_LOGFILE}"
-    checkpath -d --mode 0755 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_PIDDIR}"
+    checkpath --file      --mode 0660 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_CONFIGFILE}"
+    checkpath --directory --mode 0750 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_DATADIR}"
+    checkpath --directory --mode 0755 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_PIDDIR}"
     checkconfig
 }
 
-start() {
-    ebegin "Starting ${name}"
-    mark_service_inactive
-    if start-stop-daemon \
-        --pidfile="${FULCRUM_PIDFILE}" \
-        --chdir="${FULCRUM_DATADIR}" \
-        --user="${FULCRUM_USER}:${FULCRUM_GROUP}" \
-        --nice="${FULCRUM_NICE}" \
-        --exec="${FULCRUM_BIN}" \
-        -- \
-        "${FULCRUM_CONFIGFILE}" \
-        --datadir "${FULCRUM_DATADIR}" \
-        --admin "${FULCRUM_ADMINPORT}" \
-        --pidfile "${FULCRUM_PIDFILE}" \
-        ${FULCRUM_OPTS} \
-        >> "${FULCRUM_LOGFILE}" 2>&1
-    then
-        IN_BACKGROUND=yes rc-service "${SVCNAME}" --quiet start
-    else
-        rc-service "${SVCNAME}" --quiet zap
-    fi &
-}
-
-stop() {
-	ebegin "Stopping ${name}"
-	start-stop-daemon \
-        --stop \
-		--pidfile="${FULCRUM_PIDFILE}" \
-		--retry="${FULCRUM_SIGTERM_TIMEOUT}" \
-		--exec="${FULCRUM_BIN}Admin" \
-        -- \
-        -p "${FULCRUM_ADMINPORT}" \
-        stop
-	eend $?
+start_post() {
+    checkpath --file --owner "${FULCRUM_USER}:${FULCRUM_GROUP}" "${FULCRUM_PIDFILE}"
 }
 
 checkconfig() {
@@ -478,13 +425,7 @@ checkconfig() {
 $SU chmod +x /etc/init.d/fulcrum
 ```
 
-* Habilita l'arrencada automàtica
-
-```sh copy
-$SU rc-update add fulcrum default
-```
-
-## Crea la configuració de logrotate
+### Habilita logrotate
 
 * Introduïu la configuració següent completa. Guardar i sortir
 
@@ -514,43 +455,36 @@ $SU $EDITOR /etc/logrotate.d/fulcrum
 $SU logrotate /etc/logrotate.d/fulcrum --debug
 ```
 
-## Executa
-
-<Callout emoji="⏳">
-Això pot trigar una mica
-
-Fulcrum primer ha d'indexar completament la cadena de blocs i compactar la seva
-base de dades abans de poder connectar-hi amb els vostres dispositius de
-signatura. Això pot trigar fins a ~1,5 - 4 dies o més, depenent del maquinari.
-</Callout>
-
-* Iniciar el servei
+## Activa i inicia Fulcrum
 
 ```sh copy
+$SU rc-update add fulcrum
 $SU rc-service fulcrum start
+
 ```
 
-* Quan veieu registres com aquest
-`<Controller> XXXX mempool txs involving XXXX addresses`, significa que Fulcrum
-està completament indexat
-
-* Assegureu-vos que el servei funciona i escolta als ports predeterminats
-`50001` i al port d'administració `8000`
+* Comproveu el registre per veure la sortida de Fulcrum. Sortiu amb `Ctrl-C`
 
 ```sh copy
-$SU netstat -lntup | grep LISTEN | grep Fulcrum
+tail -f /var/log/fulcrum/debug.log
 ```
 
-```output filename="output"
-tcp        0      0 127.0.0.1:8000          0.0.0.0:*               LISTEN      3734/Fulcrum
-tcp        0      0 0.0.0.0:50001           0.0.0.0:*               LISTEN      3734/Fulcrum
-```
+Ara Fulcrum indexarà tota la cadena de blocs de Bitcoin perquè pugui
+proporcionar tota la informació necessària als dispositius de signatura. Amb
+això, els dispositius de signatura que utilitzeu ja no necessiten connectar-se a
+cap servidor de tercers per comunicar-se amb la xarxa peer-to-peer de Bitcoin.
 
-## Actualització
+## Per al futur: actualització de Fulcrum
 
 Torneu a seguir la pàgina [Fulcrum](./fulcrum) substituint el valor de la
 variable d'entorn `VERSION=x.xx` per l'últim si encara no s'ha modificat en
 aquesta guia.
+
+* Actualitzeu la configuració de Fulcrum si cal (vegeu les notes de la versió)
+
+```sh copy
+$SU $EDITOR /etc/fulcrum/fulcrum.conf
+```
 
 * Reinicieu el servei per aplicar els canvis
 
