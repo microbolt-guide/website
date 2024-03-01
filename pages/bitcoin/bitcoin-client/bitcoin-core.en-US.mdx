@@ -527,7 +527,6 @@ start_pre() {
 
 start_post() {
     chmod -R u=rwX,g=rX,o= "${BITCOIND_DATADIR}" "${BITCOIND_LOGDIR}"
-    chmod g+r "${BITCOIND_DATADIR}/.cookie"
 }
 
 checkconfig() {
