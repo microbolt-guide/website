@@ -522,6 +522,8 @@ retry="${BITCOIND_SIGTERM_TIMEOUT}"
 depend() {
     use net
     need localmount
+    checkdepend onion tor
+    checkdepend i2psam i2pd
     after logger firewall
 }
 
@@ -554,6 +556,12 @@ checkconfig() {
             "admin@foo.com"
         eerror ""
         return 1
+    fi
+}
+
+checkdepend() {
+    if grep -qs "^${1}=" "${BITCOIND_CONFIGFILE}"; then
+        need "${2:-$1}"
     fi
 }
 ```
