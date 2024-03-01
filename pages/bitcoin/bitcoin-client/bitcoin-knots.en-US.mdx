@@ -323,7 +323,7 @@ read -r username password; \
 $SU $EDITOR /etc/bitcoin/bitcoin.conf
 ```
 
-```nginx filename="/etc/bitcoin/bitcoin.conf" {2,4,6,8,10,12,14,16,18,20,22,23,25}
+```nginx filename="/etc/bitcoin/bitcoin.conf" {2,4,6,8,10,12,14,16,18,20,22,24,25,27}
 [...]
 assumevalid=0
 [...]
@@ -344,6 +344,8 @@ onion=127.0.0.1:9050
 peerblockfilters=1
 [...]
 peerbloomfilters=1
+[...]
+zmqpubhashblock=tcp://127.0.0.1:8433
 [...]
 debug=i2p
 debug=tor
@@ -648,10 +650,12 @@ $SU netstat -lntup | grep LISTEN | grep bitcoind
 ```
 
 ```output filename="output"
-tcp        0      0 127.0.0.1:8334          0.0.0.0:*               LISTEN      20182/bitcoind
-tcp        0      0 127.0.0.1:8332          0.0.0.0:*               LISTEN      20182/bitcoind
-tcp        0      0 127.0.0.1:8333          0.0.0.0:*               LISTEN      20182/bitcoind
-tcp        0      0 ::1:8332                :::*                    LISTEN      20182/bitcoind
+tcp        0      0 0.0.0.0:8333            0.0.0.0:*               LISTEN      5700/bitcoind
+tcp        0      0 127.0.0.1:8433          0.0.0.0:*               LISTEN      5700/bitcoind
+tcp        0      0 127.0.0.1:8334          0.0.0.0:*               LISTEN      5700/bitcoind
+tcp        0      0 127.0.0.1:8332          0.0.0.0:*               LISTEN      5700/bitcoind
+tcp        0      0 :::8333                 :::*                    LISTEN      5700/bitcoind
+tcp        0      0 ::1:8332                :::*                    LISTEN      5700/bitcoind
 ```
 
 <Callout type="info">
