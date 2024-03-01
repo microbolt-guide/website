@@ -305,14 +305,19 @@ worker_threads = 1
 </FAQBox>
 
 <FAQBox title = "Remote access over Tor">
-* Add the following lines in the "location hidden services" section in the torrc
-file
+To use your Electrum server when you're on the go, you can easily create a Tor
+hidden service. This way, you can connect the BitBoxApp or Electrum wallet also
+remotely, or even share the connection details with friends and family. Note
+that the remote device needs to have Tor installed as well.
+
+* Add the following lines in the section for "location-hidden services" in the
+`torrc` file.
 
 ```sh copy
 $SU $EDITOR /etc/tor/torrc
 ```
 
-```torrc copy filename="/etc/tor/torrc"
+```sh copy filename="/etc/tor/torrc"
 # Hidden Service Electrum
 HiddenServiceDir /var/lib/tor/electrum/
 HiddenServiceVersion 3
@@ -320,15 +325,10 @@ HiddenServicePoWDefensesEnabled 1
 HiddenServicePort 50002 127.0.0.1:50002
 ```
 
-* Reload the Tor configuration to apply changes
+* Reload Tor configuration and get your connection address.
 
 ```sh copy
 $SU rc-service tor reload
-```
-
-* Get your Onion address
-
-```sh copy
 $SU cat /var/lib/tor/electrum/hostname
 ```
 
@@ -336,7 +336,7 @@ $SU cat /var/lib/tor/electrum/hostname
 abcdefg..............xyz.onion
 ```
 
-* You should now be able to connect to your Fulcrum server remotely via Tor
+* You should now be able to connect to your Electrum server remotely via Tor
 using your hostname and port `50002`
 </FAQBox>
 

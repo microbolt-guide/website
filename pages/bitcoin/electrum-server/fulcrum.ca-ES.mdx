@@ -311,8 +311,14 @@ worker_threads = 1
 </FAQBox>
 
 <FAQBox title = "Accés remot per Tor">
-* Afegiu les línies següents a la secció "location hidden services" al fitxer
-torrc
+Per utilitzar el vostre servidor Electrum quan esteu en remot, podeu crear
+fàcilment un servei ocult Tor. D'aquesta manera, podeu connectar la cartera
+BitBoxApp o Electrum també de manera remota, o fins i tot compartir els detalls
+de la connexió amb amics i familiars. Tingueu en compte que el dispositiu remot
+també ha de tenir Tor instal·lat.
+
+* Afegiu les línies següents a la secció de "serveis ocults per la ubicació" al
+fitxer `torrc`.
 
 ```sh copy
 $SU $EDITOR /etc/tor/torrc
@@ -326,15 +332,11 @@ HiddenServicePoWDefensesEnabled 1
 HiddenServicePort 50002 127.0.0.1:50002
 ```
 
-* Torneu a carregar la configuració de Tor per aplicar els canvis
+* Torneu a carregar la configuració de Tor i obteniu la vostra adreça de
+connexió.
 
 ```sh copy
 $SU rc-service tor reload
-```
-
-* Obteniu la vostra adreça Onion
-
-```sh copy
 $SU cat /var/lib/tor/electrum/hostname
 ```
 
@@ -342,8 +344,8 @@ $SU cat /var/lib/tor/electrum/hostname
 abcdefg..............xyz.onion
 ```
 
-* Ara hauríeu de poder connectar-vos al vostre servidor Fulcrum de manera remota
-mitjançant Tor, el vostre nom d'amfitrió i el port `50002`
+* Ara hauríeu de poder connectar-vos al vostre servidor Electrum de manera
+remota mitjançant Tor, el vostre nom d'amfitrió i el port `50002`
 </FAQBox>
 
 ### Inici automàtic a l'arrencada
