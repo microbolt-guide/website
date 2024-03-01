@@ -1,0 +1,391 @@
+import { Callout,Steps } from 'nextra/components'
+
+export function FAQBox({ title, children }) {
+  return (
+    <details
+      class="nx-my-4 nx-p-2 nx-rounded nx-border nx-border-gray-200 nx-bg-white dark:nx-border-neutral-800 dark:nx-bg-neutral-900"
+    >
+      <summary>
+        <strong class="text-lg">
+          {title}
+        </strong>
+      </summary>
+      <div class="nx-p-2">
+        {children}
+      </div>
+    </details>
+  )
+}
+
+# Electrs
+
+We set up [Electrs](https://github.com/romanz/electrs) to serve as a full
+Electrum server for use with your Bitcoin software or hardware signing device.
+
+![](/img/bitcoin/electrum-server/electrs.webp)
+
+## Preparations
+
+<Steps>
+### Install dependencies
+
+These are make dependencies (safe to remove after installation, if you want)
+
+```sh copy
+$SU apk add cargo cargo-auditable clang-dev cmake rocksdb-dev
+```
+
+These are runtime dependencies
+
+```sh copy
+$SU apk add rocksdb
+```
+
+### Create the `electrs` user/group
+
+```sh copy
+$SU addgroup -S electrs
+```
+
+```sh copy
+$SU adduser \
+    -S \
+    -D \
+    -H \
+    -h /dev/null \
+    -s /sbin/nologin \
+    -G electrs \
+    -g electrs \
+    electrs
+```
+
+### Add `electrs` user to the `bitcoin` group
+
+```sh copy
+$SU adduser electrs bitcoin
+```
+
+### Add the user `satoshi` to the group `electrs` as well
+
+```sh copy
+$SU adduser satoshi electrs
+```
+
+### Firewall & reverse proxy
+
+In the [Security section](/system/security#nginx), we already set up NGINX as a
+reverse proxy. Now we can add the Electrum server configuration.
+
+* Enable NGINX reverse proxy to add SSL/TLS encryption to the Electrum server
+communication. Create the configuration file and paste the following content
+
+```sh copy
+$SU $EDITOR /etc/nginx/streams-available/electrum-reverse-proxy.conf
+```
+
+```nginx copy filename="/etc/nginx/streams-available/electrum-reverse-proxy.conf"
+upstream electrum {
+  server 127.0.0.1:50001;
+}
+
+server {
+  listen 50002 ssl;
+  proxy_pass electrum;
+}
+```
+
+```sh copy
+$SU ln \
+    -s \
+    ../streams-available/electrum-reverse-proxy.conf \
+    /etc/nginx/streams-enabled/electrum-reverse-proxy.conf
+```
+
+* Test and reload NGINX configuration
+
+```sh copy
+$SU nginx -t
+$SU rc-service nginx restart
+
+```
+
+* Configure the firewall to allow incoming requests
+
+```sh copy
+$SU ufw allow 50002/tcp comment 'allow Electrum SSL from anywhere'
+```
+</Steps>
+
+## Installation
+
+An easy and performant way to run an Electrum server is to use
+[Electrs](https://github.com/romanz/electrs), the Electrum Server in Rust. There
+are no binaries available, so we will compile the application ourselves.
+
+<Steps>
+### Download source code
+
+We get the latest release of the Electrs source code, verify it, compile it to
+an executable binary and install it.
+
+* Download the source code for the latest Electrs release. You can check the
+[release page](https://github.com/romanz/electrs/releases) to see if a newer
+release is available. Other releases might not have been properly tested with
+the rest of the MicroBolt configuration, though.
+
+```sh copy
+cd /tmp
+```
+
+```sh copy
+VERSION=0.10.3
+```
+
+```sh copy
+git clone --branch v$VERSION https://github.com/romanz/electrs.git && cd electrs
+```
+
+### Signature check
+
+* To avoid using bad source code, verify that the release has been properly
+signed by the main developer [Roman Zeyde](https://github.com/romanz).
+
+```sh copy
+wget -qO- https://romanzey.de/pgp.txt | gpg --import
+```
+
+```sh copy
+git verify-tag v$VERSION
+```
+
+### Configure, compile and install
+
+* Now compile the source code into an executable binary and install it. The
+compilation process can take up to one hour.
+
+```sh copy
+ROCKSDB_INCLUDE_DIR=/usr/include \
+ROCKSDB_LIB_DIR=/usr/lib \
+CARGO_HOME="$PWD/.cargo" \
+cargo auditable build \
+    --bin electrs \
+    --features "metrics_process" \
+    --release \
+    --locked \
+    --jobs "$(nproc)"
+```
+
+```sh copy
+$SU install -m 0755 -o root -g root -t /usr/bin ./target/release/electrs
+```
+
+```sh copy
+$SU install -D -m 0660 -o electrs -g electrs ./doc/config_example.toml /etc/electrs/config.toml
+```
+
+### Strip installed binaries
+
+```sh copy
+$SU strip -v /usr/bin/electrs
+```
+</Steps>
+
+## Configuration
+
+* Modify the config file with the following content
+
+```sh copy
+$SU $EDITOR /etc/electrs/config.toml
+```
+
+```toml filename="/etc/electrs/config.toml" {2,4,6,7}
+[...]
+cookie_file = "/var/lib/bitcoind/.cookie"
+[...]
+#db_dir = "/some/fast/storage/with/big/size"
+[...]
+daemon_dir = "/var/lib/bitcoind"
+```
+
+<FAQBox title="Remote access over Tor">
+To use your Electrum server when you're on the go, you can easily create a Tor
+hidden service. This way, you can connect the BitBoxApp or Electrum wallet also
+remotely, or even share the connection details with friends and family. Note
+that the remote device needs to have Tor installed as well.
+
+* Add the following lines in the section for "location-hidden services" in the
+`torrc` file.
+
+```sh copy
+$SU $EDITOR /etc/tor/torrc
+```
+
+```sh copy filename="/etc/tor/torrc"
+# Hidden Service Electrum
+HiddenServiceDir /var/lib/tor/electrum/
+HiddenServiceVersion 3
+HiddenServicePoWDefensesEnabled 1
+HiddenServicePort 50002 127.0.0.1:50002
+```
+
+* Reload Tor configuration and get your connection address.
+
+```sh copy
+$SU rc-service tor reload
+$SU cat /var/lib/tor/electrum/hostname
+```
+
+```output filename="output"
+abcdefg..............xyz.onion
+```
+
+* You should now be able to connect to your Electrum server remotely via Tor
+using your hostname and port `50002`
+</FAQBox>
+
+### Autostart on boot
+
+Electrs needs to start automatically on system boot.
+
+* Create the Electrs init.d unit and copy/paste the following configuration.
+Save and exit.
+
+```sh copy
+$SU $EDITOR /etc/init.d/electrs
+```
+
+```sh copy filename="/etc/init.d/electrs"
+#!/sbin/openrc-run
+
+: ${ELECTRS_CONFIGFILE:=/etc/electrs/config.toml}
+: ${ELECTRS_PIDDIR:=/run/electrs}
+: ${ELECTRS_PIDFILE:=${ELECTRS_PIDDIR}/${SVCNAME}.pid}
+: ${ELECTRS_DATADIR:=/var/lib/electrs}
+: ${ELECTRS_LOGDIR:=/var/log/electrs}
+: ${ELECTRS_USER:=electrs}
+: ${ELECTRS_GROUP:=electrs}
+: ${ELECTRS_BIN:=/usr/bin/electrs}
+: ${ELECTRS_OPTS=${ELECTRS_OPTS}}
+: ${ELECTRS_SIGTERM_TIMEOUT:=600}
+
+name="Electrs"
+description="Efficient re-implementation of Electrum Server in Rust"
+
+command="${ELECTRS_BIN}"
+command_args="--conf ${ELECTRS_CONFIGFILE}
+              --skip-default-conf-files
+              --db-dir ${ELECTRS_DATADIR}
+              --timestamp
+              --skip-block-download-wait
+              ${ELECTRS_OPTS}"
+command_user="${ELECTRS_USER}:${ELECTRS_GROUP}"
+command_background="true"
+
+required_files="${ELECTRS_CONFIGFILE}"
+pidfile="${ELECTRS_PIDFILE}"
+retry="${ELECTRS_SIGTERM_TIMEOUT}"
+
+start_stop_daemon_args="--stdout ${ELECTRS_LOGDIR}/debug.log
+                        --stderr ${ELECTRS_LOGDIR}/debug.log"
+
+depend() {
+    use bitcoind
+    after bitcoind
+}
+
+start_pre() {
+    checkpath --file      --mode 0660 --owner "${ELECTRS_USER}:${ELECTRS_GROUP}" "${ELECTRS_CONFIGFILE}"
+    checkpath --directory --mode 0750 --owner "${ELECTRS_USER}:${ELECTRS_GROUP}" "${ELECTRS_DATADIR}"
+    checkpath --directory --mode 0755 --owner "${ELECTRS_USER}:${ELECTRS_GROUP}" "${ELECTRS_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${ELECTRS_USER}:${ELECTRS_GROUP}" "${ELECTRS_PIDDIR}"
+    checkconfig
+}
+
+start_post() {
+    checkpath --file --owner "${ELECTRS_USER}:${ELECTRS_GROUP}" "${ELECTRS_PIDFILE}"
+}
+
+checkconfig() {
+    if ! grep -qs '^cookie_file = ' "${ELECTRS_CONFIGFILE}"
+    then
+        eerror ""
+        eerror "ERROR: You must set a cookie_file path to run Electrs."
+        eerror "The setting must appear in ${ELECTRS_CONFIGFILE}"
+        eerror ""
+        return 1
+    fi
+}
+```
+
+* Enable execution permission
+
+```sh copy
+$SU chmod +x /etc/init.d/electrs
+```
+
+### Enable logrotate
+
+* Enter the complete next configuration. Save and exit
+
+```sh copy
+$SU $EDITOR /etc/logrotate.d/electrs
+```
+
+```sh copy filename="/etc/logrotate.d/electrs"
+/var/log/electrs/*.log {
+    weekly
+    missingok
+    rotate 104
+    compress
+    delaycompress
+    notifempty
+    create 0640 electrs electrs
+    sharedscripts
+    postrotate
+        killall -HUP `cat /run/electrs/electrs.pid`
+    endscript
+}
+```
+
+* Test
+
+```sh copy
+$SU logrotate /etc/logrotate.d/electrs --debug
+```
+
+## Enable and start Electrs
+
+```sh copy
+$SU rc-update add electrs
+$SU rc-service electrs start
+
+```
+
+* Check the log to see Electrs output. Exit with `Ctrl-C`
+
+```sh copy
+tail -f /var/log/electrs/debug.log
+```
+
+Electrs will now index the whole Bitcoin blockchain so that it can provide all
+necessary information to signing devices. With this, the signing devices you use
+no longer need to connect to any third-party server to communicate with the
+Bitcoin peer-to-peer network.
+
+## For the future: Electrs upgrade
+
+Follow again [Electrs](./electrs) page replacing the environment variable
+`VERSION=x.xx` value for the latest if it has not been already changed in this
+guide.
+
+* Update the Electrs configuration if necessary (see release notes)
+
+```sh copy
+$SU $EDITOR /etc/electrs/electrs.toml
+```
+
+* Restart the service to apply the changes
+
+```sh copy
+$SU rc-service electrs restart
+```
