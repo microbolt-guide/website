@@ -518,10 +518,10 @@ depend() {
 }
 
 start_pre() {
-    checkpath -f --mode 0660 --owner "${BITCOIND_USER}:${BITCOIND_GROUP}" "${BITCOIND_CONFIGFILE}"
-    checkpath -d --mode 0750 --owner "${BITCOIND_USER}:${BITCOIND_GROUP}" "${BITCOIND_DATADIR}"
-    checkpath -d --mode 0755 --owner "${BITCOIND_USER}:${BITCOIND_GROUP}" "${BITCOIND_LOGDIR}"
-    checkpath -d --mode 0755 --owner "${BITCOIND_USER}:${BITCOIND_GROUP}" "${BITCOIND_PIDDIR}"
+    checkpath --file      --mode 0660 --owner "${BITCOIND_USER}:${BITCOIND_GROUP}" "${BITCOIND_CONFIGFILE}"
+    checkpath --directory --mode 0750 --owner "${BITCOIND_USER}:${BITCOIND_GROUP}" "${BITCOIND_DATADIR}"
+    checkpath --directory --mode 0755 --owner "${BITCOIND_USER}:${BITCOIND_GROUP}" "${BITCOIND_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${BITCOIND_USER}:${BITCOIND_GROUP}" "${BITCOIND_PIDDIR}"
     checkconfig
 }
 
