@@ -317,6 +317,10 @@ $SU make install
 [ -z $MAN ] && $SU apk add mandoc man-pages
 ```
 
+```sh copy
+$SU install -D -m 0660 -o bitcoin -g bitcoin ./share/examples/bitcoin.conf /etc/bitcoin/bitcoin.conf
+```
+
 ### Strip installed binaries
 
 ```sh copy
@@ -346,120 +350,64 @@ read -r username password; \
 [ ! "$username" ] || [ ! "$password" ] && { 
     printf "%s\n" "Error, must provide username and password"
 } || {
-    printf "rpcauth=%s:%s\$%s\n" \
-        "${username}" \
-        "${salt=$(openssl rand -hex 16)}" \
-        "$(\
+    sed "s/^#*rpcauth=.*$/rpcauth=${username}:${salt=$(openssl rand -hex 16)}\$$(\
             printf "%s" "${password}" | \
             openssl dgst -sha256 -hmac "$salt" | \
             awk '{print $2}' \
-        )"; \
-    unset salt
+        )/" /etc/bitcoin/bitcoin.conf > _; \
+    unset salt; \
+    $SU mv -f _ /etc/bitcoin/bitcoin.conf
 }
 
 ```
 
-```output filename="output"
-rpcauth=microbolt:00d8682ce66c9ef3dd9d0c0a6516b10e$c3...1b27558348eb73efe0699afa
-```
-
-* Copy the `rpcauth` line, we'll need to paste it into the Bitcoin config file
-
 ## Configuration
 
-Now, the configuration file `bitcoind` needs to be created.
-
-* Copy sample `bitcoin.conf` file
-
-```sh copy
-$SU mkdir /etc/bitcoin
-$SU cp -v share/examples/bitcoin.conf /etc/bitcoin/bitcoin.conf
-```
-
-* Modify/uncomment these lines. Save and exit.
-
-<Callout type="warning">
-Replace the whole line starting with `"rpcauth=..."` the connection string you
-just generated
-</Callout>
-
-<Callout type="warning">
+<Callout type="info">
 `"dbcache=..."` need to be adjusted to your hardware capacity
 </Callout>
+
+* Modify/uncomment these lines. Save and exit.
 
 ```sh copy
 $SU $EDITOR /etc/bitcoin/bitcoin.conf
 ```
 
-```nginx filename="/etc/bitcoin/bitcoin.conf" {3,8,12,15,19,23,27,31,35,39,43,47,51-52,56,60}
+```nginx filename="/etc/bitcoin/bitcoin.conf" {2,4,6,8,10,12,14,16,18,20,22,24,25,27}
 [...]
-# 0000013d778ba3f914530f11f6b69869c9fab54acff85acd7b8201d111f19b7f)
 assumevalid=0
-
-# Maintain an index of compact filters by block (default: 0, values:
-# basic). If <type> is not supplied or if <type> = 1, indexes for
-# all known types are enabled.
+[...]
 blockfilterindex=1
-
 [...]
-# transactions are not affected. (default: 0)
 blocksonly=1
-
-# Maintain coinstats index used by the gettxoutsetinfo RPC (default: 0)
+[...]
 coinstatsindex=1
-
 [...]
-# -maxmempool).
 dbcache=8192
-
 [...]
-# Execute command on startup.
-startupnotify=chmod -R u=rwX,g=rX,o= /var/lib/bitcoind /var/log/bitcoind
-
-# Maintain a full transaction index, used by the getrawtransaction rpc
-# call (default: 0)
 txindex=1
-
 [...]
-# none)
 i2psam=127.0.0.1:7656
-
 [...]
-# -noonion to disable (default: -proxy)
 onion=127.0.0.1:9050
-
 [...]
-# Serve compact block filters to peers per BIP 157 (default: 0)
 peerblockfilters=1
-
-# Support filtering of blocks and transaction with bloom filters (default:
-# 0)
+[...]
 peerbloomfilters=1
-
 [...]
-# Support v2 transport (default: 0)
 v2transport=1
-
 [...]
-# can be specified multiple times to output multiple categories.
 debug=i2p
 debug=tor
-
 [...]
-# option can be specified multiple times
-rpcauth=microbolt:00d8682ce66c9ef3dd9d0c0a6516b10e$c3...3ac8fd69d8eb73efe0699afa
-
-[...]
-# Accept command line and JSON-RPC commands
 server=1
-
 [...]
 ```
 
 <Callout>
-Check this Bitcoin Core sample [config
-](https://gist.github.com/doitwithnotepad/455c18a06aed59ee2a42951c34f77d89) on
-web browser
+Check this Bitcoin Core sample
+[config](https://gist.github.com/doitwithnotepad/455c18a06aed59ee2a42951c34f77d89)
+on web browser
 </Callout>
 
 <FAQBox title="Reject non-private networks">
@@ -544,82 +492,62 @@ $SU $EDITOR /etc/init.d/bitcoind
 : ${BITCOIND_USER:=${BITCOIN_USER:-bitcoin}}
 : ${BITCOIND_GROUP:=bitcoin}
 : ${BITCOIND_BIN:=/usr/bin/bitcoind}
-: ${BITCOIND_NICE:=${NICELEVEL:-0}}
 : ${BITCOIND_OPTS=${BITCOIN_OPTS}}
 : ${BITCOIND_SIGTERM_TIMEOUT:=600}
 
 name="Bitcoin Core daemon"
 description="Bitcoin cryptocurrency P2P network daemon"
 
+command="${BITCOIND_BIN}"
+command_args="-pid=${BITCOIND_PIDFILE}
+              -conf=${BITCOIND_CONFIGFILE}
+              -datadir=${BITCOIND_DATADIR}
+              -debuglogfile=${BITCOIND_LOGDIR}/debug.log
+              ${BITCOIND_OPTS}"
+command_args_background="-daemonwait"
+command_user="${BITCOIND_USER}:${BITCOIND_GROUP}"
+
 required_files="${BITCOIND_CONFIGFILE}"
 pidfile="${BITCOIND_PIDFILE}"
-in_background_fake="start"
+retry="${BITCOIND_SIGTERM_TIMEOUT}"
 
 depend() {
     use net
-	need localmount
-	after logger firewall
+    need localmount
+    after logger firewall
 }
 
 start_pre() {
-	checkpath -f --mode 0660 --owner "${BITCOIND_USER}:${BITCOIND_GROUP}" "${BITCOIND_CONFIGFILE}"
-	checkpath -d --mode 0750 --owner "${BITCOIND_USER}:${BITCOIND_GROUP}" "${BITCOIND_DATADIR}"
-	checkpath -d --mode 0755 --owner "${BITCOIND_USER}:${BITCOIND_GROUP}" "${BITCOIND_LOGDIR}"
-	checkpath -d --mode 0755 --owner "${BITCOIND_USER}:${BITCOIND_GROUP}" "${BITCOIND_PIDDIR}"
-	checkconfig
+    checkpath -f --mode 0660 --owner "${BITCOIND_USER}:${BITCOIND_GROUP}" "${BITCOIND_CONFIGFILE}"
+    checkpath -d --mode 0750 --owner "${BITCOIND_USER}:${BITCOIND_GROUP}" "${BITCOIND_DATADIR}"
+    checkpath -d --mode 0755 --owner "${BITCOIND_USER}:${BITCOIND_GROUP}" "${BITCOIND_LOGDIR}"
+    checkpath -d --mode 0755 --owner "${BITCOIND_USER}:${BITCOIND_GROUP}" "${BITCOIND_PIDDIR}"
+    checkconfig
 }
 
-start() {
-	ebegin "Starting ${name}"
-	mark_service_inactive
-	if start-stop-daemon \
-		--pidfile="${BITCOIND_PIDFILE}" \
-		--chdir="${BITCOIND_DATADIR}" \
-		--user="${BITCOIND_USER}:${BITCOIND_GROUP}" \
-		--nice="${BITCOIND_NICE}" \
-		--exec="${BITCOIND_BIN}" \
-		-- \
-		-daemonwait \
-		-pid="${BITCOIND_PIDFILE}" \
-		-conf="${BITCOIND_CONFIGFILE}" \
-		-datadir="${BITCOIND_DATADIR}" \
-		-debuglogfile="${BITCOIND_LOGDIR}/debug.log" \
-		${BITCOIND_OPTS}
-	then
-		chmod g+r "${BITCOIND_DATADIR}/.cookie"
-		IN_BACKGROUND=yes rc-service "${SVCNAME}" --quiet start
-	else
-		rc-service "${SVCNAME}" --quiet zap
-	fi &
-}
-
-stop() {
-	ebegin "Stopping ${name}"
-	start-stop-daemon --stop \
-		--pidfile="${BITCOIND_PIDFILE}" \
-		--retry="${BITCOIND_SIGTERM_TIMEOUT}" \
-		--exec="${BITCOIND_BIN}"
-	eend $?
+start_post() {
+    chmod -R u=rwX,g=rX,o= "${BITCOIND_DATADIR}" "${BITCOIND_LOGDIR}"
+    chmod g+r "${BITCOIND_DATADIR}/.cookie"
 }
 
 checkconfig() {
-	if ! grep -qs '^rpcauth=' "${BITCOIND_CONFIGFILE}"
-	then
-		eerror ""
-		eerror "ERROR: You must set a secure rpcauth to run bitcoind."
-		eerror "The setting must appear in ${BITCOIND_CONFIGFILE}"
-		eerror ""
-		eerror "This auth is security critical to securing wallets "
-		eerror "and must not be the same as the rpcuser setting."
-		eerror ""
-		eerror "It is recommended that you also set alertnotify so you are "
-		eerror "notified of problems:"
-		eerror ""
-		eerror "ie: alertnotify=echo %%s | mail -s \"Bitcoin Alert\"" \
-			"admin@foo.com"
-		eerror ""
-		return 1
-	fi
+    if ! grep -qs '^rpcauth=' "${BITCOIND_CONFIGFILE}"
+    then
+        eerror ""
+        eerror "ERROR: You must set a secure rpcauth to run bitcoind."
+        eerror "The setting must appear in ${BITCOIND_CONFIGFILE}"
+        eerror ""
+        eerror "This auth is security critical to securing wallets "
+        eerror "and must not be the same as the rpcuser setting."
+        eerror ""
+        eerror "It is recommended that you also set alertnotify so you are "
+        eerror "notified of problems:"
+        eerror ""
+        eerror "ie: alertnotify=echo %%s | mail -s \"Bitcoin Alert\"" \
+            "admin@foo.com"
+        eerror ""
+        return 1
+    fi
 }
 ```
 
