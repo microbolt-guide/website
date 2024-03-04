@@ -1,0 +1,311 @@
+import { Callout, Tabs } from 'nextra/components'
+
+export function FAQBox({ title, children }) {
+  return (
+    <details
+      class="nx-my-4 nx-p-2 nx-rounded nx-border nx-border-gray-200 nx-bg-white dark:nx-border-neutral-800 dark:nx-bg-neutral-900"
+    >
+      <summary>
+        <strong class="text-lg">
+          {title}
+        </strong>
+      </summary>
+      <div class="nx-p-2">
+        {children}
+      </div>
+    </details>
+  )
+}
+
+# Desktop signing app
+
+We install [Sparrow Wallet](https://github.com/sparrowwallet/sparrow) on a
+computer and connect it to your Electrum server on your node for private bitcoin
+on-chain transactions.
+
+![Sparrow wallet](/img/bitcoin/desktop-signing-app/sparrow.webp)
+
+## Introduction
+
+Sparrow Wallet is an excellent software signing device to use with your
+MicroBolt: it's reliable and transparently shows what it's doing under the hood.
+
+You can also use the following alternatives instead of Sparrow Wallet, according
+to your preferences and needs:
+
+* **Electrum Wallet Desktop**: a well-established poweruser wallet
+* **Specter Desktop**: a multisig-focused wallet (this wallet connects
+directly to Bitcoin Core)
+* **BitBoxApp**: wallet for users of BitBox hardware signing devices
+
+We will connect Sparrow Wallet to our own Electrum server as it is the most
+private option. For more information about the privacy and security trade-offs
+of the various server connection options, read the following
+[article](https://www.sparrowwallet.com/docs/best-practices.html) by Craig Raw,
+the author of the software.
+
+![Sparrow stages](/img/bitcoin/desktop-signing-app/sparrow-stages.webp)
+
+We will set up Sparrow to connect to the Electum server within your local
+network. There is also an optional section that explains how to connect Sparrow
+to the Electrum server using Tor for when you're on the move.
+
+Sparrow also connects to a couple of external services to get the Bitcoin price
+and communicate with the Whirlpool server during CoinJoin operations. By
+default, it uses clearnet which leaks your computer IP address to these services
+and degrade your privacy. However, Sparrow can also connect to them using a Tor
+proxy. There is an optional section that explains how to set this proxy up.
+
+## Installation
+
+On your local computer, download, verify and install Sparrow Wallet.
+
+* Using the instructions on [this page](https://www.sparrowwallet.com/download): 
+  * Download the required version for your OS
+  * Download the manifest and manifest signature files
+  * Verify the release
+  * Install Sparrow Wallet
+
+## Connection
+
+We now configure Sparrow to connect to your node within your local network.
+
+### Launch Sparrow
+
+* Launch Sparrow
+* Read carefully the introductory messages and click on "Next" several times
+* When you reach the "Connecting to a Private Electrum Server" message, click on
+"Configure Server"
+
+### Connect to Electrum server
+
+* Click on the "Private Electrum" tab
+* On the "URL" line, paste `nakamoto01`, `nakamoto01.local` or your node IP
+(e.g., `192.168.X.Y`) in the first box and `50002` in the second box
+* Enable SSL by clicking on the slider
+* Click on "Test Connection". A green tick should appear on the button and you
+should see something similar to the following output:
+
+```output filename="output"
+Connected to [...] on protocol version 1.4
+[...]
+```
+
+![Sparrow connect to Electrum](/img/bitcoin/desktop-signing-app/sparrow-electrum-no-proxy.webp)
+
+If there is a connection error message, try the following troubleshooting:
+
+* Make sure that your computer is not connected to any "guest" WiFi network at
+home. A "guest" WiFi network prevents the computer to connect to any other
+devices on the local network, such as your node.
+* If you have used Sparrow Wallet before on this computer, try to connect again
+after deleting the existing certificates that are stored within the `certs`
+folder:
+
+<Tabs items={['windows', 'unix/linux']}>
+    <Tabs.Tab>
+`%AppData%\Sparrow\certs`
+    </Tabs.Tab>
+    <Tabs.Tab>
+`~/.sparrow/certs`
+    </Tabs.Tab>
+</Tabs>
+
+Let's go back to the signing app and check that it is connected to our own
+Electrum server.
+
+* Close the server configuration window
+* Check the icon in the bottom right corner of the window status icon
+  * The icon should be a blue slider button and a mouse over should display
+
+`Connected to ssl://nakamoto01:50002 at height [...]`
+
+🎉 You're set! Sparrow is now configured to connect to your Electrum server from
+within your local network.
+
+<Callout type="info">
+For maximal privacy, we highly recommend that you set up the Tor proxy when
+using Sparrow within your local network over clearnet.
+</Callout>
+
+<FAQBox title="Remote connection over Tor">
+If you want to use Sparrow outside your home network, when you're on the go, you
+can use a connection over Tor.
+
+{<h3>Server Tor address</h3>}
+
+To connect via Tor to Electrum, the server must have a Tor hidden service
+connection address. Make sure you have set up a Tor hidden service as explained
+in the "Electrum server" guide.
+
+If you've already set up the hidden service but lost the connection address,
+you can obtain it again by running the following command on your node:
+
+```sh copy
+$SU cat /var/lib/tor/electrum/hostname
+```
+
+```output filename="output"
+abcd...1234.onion
+```
+
+{<h3>Sparrow configuration</h3>}
+
+* Open Sparrow
+* Navigate to the server configuration page by hitting `<Ctrl><P>` or `<Cmd><,>`
+on macOS, then click on "Server"
+* Click on the "Private Electrum" tab. If you've already have an existing
+clearnet connection, click on "Edit Existing Connection".
+* On the "URL" line, paste your Tor hidden service connection address (e.g.
+"abcd...1234.onion") in the first box and `50002` in the second box
+* Enable SSL by clicking on the slider
+* Click on "Test Connection". A green tick should appear on the button and you
+should see something similar to the following output:
+
+```output filename="output"
+Connected to [...] on protocol version 1.4
+[...]
+```
+
+![Sparrow connect to Electrum via Tor](/img/bitcoin/desktop-signing-app/sparrow-electrum-tor-no-proxy.webp)
+
+🎉 You're set! Sparrow is now configured to connect to your node over Tor and
+you can use it wherever you are.
+</FAQBox>
+
+<FAQBox title="Set up a Tor proxy for external services">
+If a Tor proxy is configured in Sparrow, all external connections use Tor. This
+includes rate fetching, coinjoin etc - even transaction broadcasting is then
+done via external service (like blockstream.info) over Tor for additional
+privacy. Where-ever possible, the onion URLs of these services are used.
+
+Sparrow can be configured to use an internal (bundled) or external Tor proxy. To
+use the internal proxy, an onion Electrum server URL must be specified, and the
+'Use Proxy' toggle must be off. Therefore, the following section only applies if
+you connect to your Electrum server using the local IP address within your local
+network (e.g., `nakamoto01`, `nakamoto01.local` or `192.168.X.Y`). If you're
+using a Tor onion address to connect to your node, then Sparrow is already using
+the internal proxy and there is nothing else to be done!
+
+If you're using a local connection, we recommend that you set up this external
+Tor proxy as described below for maximal privacy.
+
+{<h3>Preparations on your computer</h3>}
+
+For Sparrow Wallet to connect to the external services via Tor, Tor has to be
+running on your computer. You can run the Tor Browser and use port 9150 on
+localhost or else run Tor as a background service and use port 9050.
+
+Here, we'll use the Tor as a background service and port 9050 as it is easier
+and simpler to set up.
+
+<Tabs items={['windows', 'macOS', 'linux']}>
+    <Tabs.Tab>
+To work around this, first, make sure Tor is installed and running on your
+Windows. Run as admin:
+
+<Callout type="warning">
+First you need to install [chocolatey](https://chocolatey.org/install)
+</Callout>
+
+```sh copy
+choco install tor
+tor --service start
+```
+
+Check tor service are working
+
+```sh copy
+netstat -aon | findstr ":9050"
+```
+
+```output filename="output"
+  TCP    127.0.0.1:9050         0.0.0.0:0              LISTENING       23656
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+To work around this, first, make sure Tor is installed and running on your Mac:
+
+<Callout type="warning">
+First you need to install [homebrew](https://brew.sh/)
+</Callout>
+
+```sh copy
+brew install tor && brew services start tor
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+There are countless Linux distributions, but the instructions for some of the
+most notable Linux families are:
+
+* Alpine-based OS: `apk add tor` and `rc-service tor start`
+* Gentoo-based OS: `emerge net-vpn/tor` and `rc-service tor start`
+* openSUSE-based OS: `zypper install tor` and `systemctl start tor`
+* RedHat-based OS: `yum install tor` and `systemctl start tor`
+* Debian-based OS: `apt install tor` and `systemctl start tor`
+
+Done
+    </Tabs.Tab>
+</Tabs>
+
+{<h3>Signing app configuration</h3>}
+
+* Open Sparrow
+* Navigate to the server configuration page by hitting `<Ctrl><P>` or `<Cmd><,>`
+on macOS, then click on "Server"
+* Click on the "Private Electrum" tab. If you've already have an existing
+clearnet connection, click on "Edit Existing Connection".
+* Enable the Tor proxy by clicking on the "Use proxy" slider
+* On the "Proxy URL" line, paste `127.0.0.1` in the first box and either `9050`
+in the second box.
+* Click on "Test Connection". A green tick should appear on the button and you
+should see something similar to the following output:
+
+```output filename="output"
+Connected to [...] on protocol version 1.4
+[...]
+```
+
+![Tor daemon proxy usage](/img/bitcoin/desktop-signing-app/sparrow-tor-proxy.webp)
+
+Now, let's go back to the signing app and check that the proxy is working
+properly.
+
+* Close the server configuration window
+* Check the two icons in the bottom right corner of the signing app window
+status icons
+  * The first icon should be grey, not red; and a mouse hover should display
+"External Tor proxy enabled"
+
+🎉 You're set! Sparrow Wallet is now configured to use the Tor proxy when
+fetching the Bitcoin price and when communicating with the Whirlpool server
+during CoinJoins.
+</FAQBox>
+
+## Sparrow in action
+
+Congratulations, you have now a Bitcoin desktop signing app, capable of securing
+your bitcoin keys, running with your own trustless Bitcoin full node!
+
+Sparrow is a powerful signing app that allows you to use the most advanced
+features for securing your bitcoin keys and preserve your privacy.
+
+With Sparrow you can:
+
+* Connect any hardware signing device
+* "Send" and "receive" bitcoins
+* Have full control throughout the transaction creation and signing process:
+coin control, PSBT, labelling, byte level transaction viewer...
+* Create batched transactions to save on miner fees
+* Create multisig for improved security
+* Coinjoin your coins for improved privacy
+* Analyse your tansactions with the built-in blockchain explorer
+
+For more information, tutorials and support, visit the Sparrow documentation
+[webpage](https://sparrowwallet.com/docs) and their Telegram
+[group](https://t.me/sparrowwallet).
+
+## For the future: Sparrow update
+
+Sparrow will automatically notify you when an update is available. Simply
+install the updates using the usual method for your OS.

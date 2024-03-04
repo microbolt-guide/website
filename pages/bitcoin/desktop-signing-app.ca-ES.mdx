@@ -1,0 +1,331 @@
+import { Callout, Tabs } from 'nextra/components'
+
+export function FAQBox({ title, children }) {
+  return (
+    <details
+      class="nx-my-4 nx-p-2 nx-rounded nx-border nx-border-gray-200 nx-bg-white dark:nx-border-neutral-800 dark:nx-bg-neutral-900"
+    >
+      <summary>
+        <strong class="text-lg">
+          {title}
+        </strong>
+      </summary>
+      <div class="nx-p-2">
+        {children}
+      </div>
+    </details>
+  )
+}
+
+# Aplicació de signatura d'escriptori
+
+Instal·lem [Sparrow Wallet](https://github.com/sparrowwallet/sparrow) en un
+ordinador i el connectem al vostre servidor Electrum del vostre node per a
+transaccions privades de bitcoins on-chain.
+
+![Sparrow wallet](/img/bitcoin/desktop-signing-app/sparrow.webp)
+
+## Introducció
+
+Sparrow Wallet és un excel·lent dispositiu de signatura de programari per
+utilitzar amb el vostre MicroBolt: és fiable i mostra de manera transparent què
+està fent sota el capó.
+
+També podeu utilitzar les alternatives següents en lloc de Sparrow Wallet,
+segons les vostres preferències i necessitats:
+
+* **Electrum Wallet Desktop**: una cartera d'usuari avançats ben establerta
+* **Specter Desktop**: una cartera centrada en múlti-signatura (aquesta cartera
+es connecta directament a Bitcoin Core)
+* **BitBoxApp**: cartera per als usuaris de dispositius de signatura de
+maquinari BitBox
+
+Connectarem Sparrow Wallet al nostre propi servidor Electrum ja que és l'opció
+més privada. Per obtenir més informació sobre les compensacions entre privadesa
+i seguretat de les diferents opcions de connexió del servidor, llegiu el següent
+[article](https://www.sparrowwallet.com/docs/best-practices.html) de Craig Raw,
+l'autor del programari.
+
+![Etapes d'Sparrow](/img/bitcoin/desktop-signing-app/sparrow-stages.webp)
+
+Configurarem Sparrow per connectar-se al servidor Electum dins de la vostra
+xarxa local. També hi ha una secció opcional que explica com connectar Sparrow
+al servidor Electrum mitjançant Tor quan esteu en remot.
+
+Sparrow també es connecta a un parell de serveis externs per obtenir el preu de
+Bitcoin i comunicar-se amb el servidor Whirlpool durant les operacions de
+CoinJoin. De manera predeterminada, utilitza clearnet que filtra l'adreça IP del
+vostre ordinador a aquests serveis i degrada la vostra privadesa. Tanmateix,
+Sparrow també es pot connectar amb ells mitjançant un servidor intermediari Tor.
+Hi ha una secció opcional que explica com configurar aquest servidor
+intermediari.
+
+## Instal·lació
+
+Al vostre ordinador local, descarregueu, verifiqueu i instal·leu Sparrow Wallet.
+
+* Utilitzant les instruccions d'[aquesta
+pàgina](https://www.sparrowwallet.com/download):
+   * Baixeu la versió necessària per al vostre sistema operatiu
+   * Baixeu els fitxers de signatura del manifest i del manifest
+   * Verifiqueu el release
+   * Instal·leu Sparrow Wallet
+
+## Connexió
+
+Ara configurem Sparrow perquè es connecti al vostre node dins de la vostra xarxa
+local.
+
+### Llançeu Sparrow
+
+* Llançeu Sparrow
+* Llegiu atentament els missatges introductoris i feu clic a "Next" diverses
+vegades
+* Quan arribeu al missatge "Connecting to a Private Electrum Server", feu clic a
+"Configure Server"
+
+### Connecteu-vos al servidor Electrum
+
+* Feu clic a la pestanya "Private Electrum".
+* A la línia "URL", enganxeu `nakamoto01`, `nakamoto01.local` o la vostra IP del
+node (p. ex., `192.168.X.Y`) al primer quadre i `50002` al segon quadre
+* Activeu SSL fent clic al control lliscant
+* Feu clic a "Test Connection". Hauria d'aparèixer una marca verda al botó i
+hauríeu de veure alguna cosa semblant a la sortida següent:
+
+```output filename="output"
+Connected to [...] on protocol version 1.4
+[...]
+```
+
+![Sparrow connecta a Electrum](/img/bitcoin/desktop-signing-app/sparrow-electrum-no-proxy.webp)
+
+Si hi ha un missatge d'error de connexió, proveu la resolució de problemes
+següent:
+
+* Assegureu-vos que el vostre ordinador no estigui connectat a cap xarxa WiFi de
+"convidats" de casa. Una xarxa WiFi de "convidats" impedeix que l'ordinador es
+connecti a qualsevol altre dispositiu de la xarxa local, com ara el vostre node.
+* Si ja heu utilitzat Sparrow Wallet en aquest ordinador, proveu de
+connectar-vos de nou després d'eliminar els certificats existents que
+s'emmagatzemen a la carpeta `certs`:
+
+<Tabs items={['windows', 'unix/linux']}>
+    <Tabs.Tab>
+`%AppData%\Sparrow\certs`
+    </Tabs.Tab>
+    <Tabs.Tab>
+`~/.sparrow/certs`
+    </Tabs.Tab>
+</Tabs>
+
+Tornem a l'aplicació de signatura i comprovem que està connectada al nostre
+propi servidor Electrum.
+
+* Tanqueu la finestra de configuració del servidor
+* Comproveu la icona a l'extrem inferior dret de la icona d'estat de la finestra
+  * La icona hauria de ser un botó lliscant blau i s'hauria de mostrar el
+següent en passar el ratolí
+
+`Connected to ssl://nakamoto01:50002 at height [...]`
+
+🎉 Estàs preparat! Ara Sparrow està configurat per connectar-se al vostre
+servidor Electrum des de la vostra xarxa local.
+
+<Callout type="info">
+Per obtenir la màxima privadesa, us recomanem que configureu el servidor
+intermediari Tor quan utilitzeu Sparrow a la vostra xarxa local a través de
+Clearnet.
+</Callout>
+
+<FAQBox title="Accés remot per Tor">
+Si voleu utilitzar Sparrow fora de la vostra xarxa domèstica, quan esteu en
+remot, podeu utilitzar una connexió a través de Tor.
+
+{<h3>Adreça Tor del servidor</h3>}
+
+Per connectar-se mitjançant Tor a Electrum, el servidor ha de tenir una adreça
+de connexió de servei oculta Tor. Assegureu-vos que heu configurat un servei
+ocult Tor tal com s'explica a la guia "Servidor Electrum".
+
+Si ja heu configurat el servei ocult però heu perdut l'adreça de connexió, podeu
+tornar-la a obtenir executant l'ordre següent al vostre node:
+
+```sh copy
+$SU cat /var/lib/tor/electrum/hostname
+```
+
+```output filename="output"
+abcd...1234.onion
+```
+
+{<h3>Configuració d'Sparrow</h3>}
+
+* Obre Sparrow
+* Navegueu a la pàgina de configuració del servidor prement `<Ctrl><P>` o
+`<Cmd><,>` a macOS i, a continuació, feu clic a "Server".
+* Feu clic a la pestanya "Private Electrum". Si ja teniu una connexió Clearnet
+existent, feu clic a "Edit Existing Connection".
+* A la línia "URL", enganxeu la vostra adreça de connexió de servei oculta de
+Tor (p.ex., "abcd...1234.onion") a la primera casella i `50002` a la segona.
+* Activeu SSL fent clic al control lliscant
+* Feu clic a "Test Connection". Hauria d'aparèixer una marca verda al botó i
+hauríeu de veure alguna cosa semblant a la sortida següent:
+
+```output filename="output"
+Connected to [...] on protocol version 1.4
+[...]
+```
+
+![Sparrow es connecta a Electrum a través de Tor](/img/bitcoin/desktop-signing-app/sparrow-electrum-tor-no-proxy.webp)
+
+🎉 Estàs preparat! Ara Sparrow està configurat per connectar-se al vostre node a
+través de Tor i podeu utilitzar-lo allà on siguis.
+</FAQBox>
+
+<FAQBox title="Configureu un servidor intermediari Tor per a serveis externs">
+Si es configura un servidor intermediari Tor a Sparrow, totes les connexions
+externes utilitzen Tor. Això inclou l'obtenció de tarifes, coinjoin, etc., fins
+i tot la transmissió de transaccions es fa mitjançant un servei extern (com
+blockstream.info) a Tor per obtenir més privadesa. Sempre que sigui possible,
+s'utilitzen els URL onion d'aquests serveis.
+
+Sparrow es pot configurar per utilitzar un servidor intermediari Tor intern
+(empaquetat) o extern. Per utilitzar el servidor intermediari intern, s'ha
+d'especificar un URL del servidor onion Electrum i l'opció "Use Proxy" ha
+d'estar desactivada. Per tant, la secció següent només s'aplica si us connecteu
+al vostre servidor Electrum mitjançant l'adreça IP local de la vostra xarxa
+local (p.ex., `nakamoto01`, `nakamoto01.local` o `192.168.X.Y`). Si utilitzeu
+una adreça Tor onion per connectar-vos al vostre node, llavors Sparrow ja està
+utilitzant el servidor intermediari intern i no hi ha res més a fer!
+
+Si utilitzeu una connexió local, us recomanem que configureu aquest servidor
+intermediari Tor extern tal com es descriu a continuació per obtenir la màxima
+privadesa.
+
+{<h3>Preparatius al vostre ordinador</h3>}
+
+Perquè Sparrow Wallet es connecti als serveis externs mitjançant Tor, Tor s'ha
+d'executar al vostre ordinador. Podeu executar el navegador Tor i utilitzar el
+port 9150 a localhost o bé executar Tor com a servei de fons i utilitzar el port
+9050.
+
+Aquí, utilitzarem el Tor com a servei de fons i el port 9050, ja que és més
+fàcil i senzill de configurar.
+
+<Tabs items={['windows', 'macOS', 'linux']}>
+    <Tabs.Tab>
+Per solucionar-ho, primer, assegureu-vos que Tor estigui instal·lat i funcionant
+al vostre Windows. Executeu com a administrador:
+
+<Callout type="warning">
+Primer heu d'instal·lar [chocolatey](https://chocolatey.org/install)
+</Callout>
+
+```sh copy
+choco install tor
+tor --service start
+```
+
+Comproveu que el servei funcioni
+
+```sh copy
+netstat -aon | findstr ":9050"
+```
+
+```output filename="output"
+  TCP    127.0.0.1:9050         0.0.0.0:0              LISTENING       23656
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+Per solucionar-ho, primer, assegureu-vos que Tor estigui instal·lat i en
+funcionament al vostre Mac:
+
+<Callout type="warning">
+Primer heu d'instal·lar [homebrew](https://brew.sh/)
+</Callout>
+
+```sh copy
+brew install tor && brew services start tor
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+Hi ha innombrables distribucions de Linux, però les instruccions per a algunes
+de les famílies Linux més notables són:
+
+* Alpine-based OS: `apk add tor` i `rc-service tor start`
+* Gentoo-based OS: `emerge net-vpn/tor` i `rc-service tor start`
+* openSUSE-based OS: `zypper install tor` i `systemctl start tor`
+* RedHat-based OS: `yum install tor` i `systemctl start tor`
+* Debian-based OS: `apt install tor` i `systemctl start tor`
+
+Fet
+    </Tabs.Tab>
+</Tabs>
+
+{<h3>Configuració de l'aplicació de signatura</h3>}
+
+* Obre Sparrow
+* Navegueu a la pàgina de configuració del servidor prement `<Ctrl><P>` o
+`<Cmd><,>` a macOS i, a continuació, feu clic a "Server"
+* Feu clic a la pestanya "Private Electrum". Si ja teniu una connexió clearnet
+existent, feu clic a "Edit Existing Connection".
+* Habiliteu el servidor intermediari Tor fent clic al control lliscant "Use
+proxy".
+* A la línia "Proxy URL", enganxeu `127.0.0.1` al primer quadre i `9050` al
+segon quadre.
+* Feu clic a "Test Connection". Hauria d'aparèixer una marca verda al botó i
+hauríeu de veure alguna cosa semblant a la sortida següent:
+
+```output filename="output"
+Connected to [...] on protocol version 1.4
+[...]
+```
+
+![Ús del servidor intermediari del dimoni Tor](/img/bitcoin/desktop-signing-app/sparrow-tor-proxy.webp)
+
+Ara, tornem a l'aplicació de signatura i comprovem que el servidor intermediari
+funciona correctament.
+
+* Tanqueu la finestra de configuració del servidor
+* Comproveu les dues icones a l'extrem inferior dret de les icones d'estat de la
+finestra de l'applicació de signatura
+  * La primera icona ha de ser grisa, no vermella; i el ratolí hauria de mostrar
+"External Tor proxy enabled"
+
+🎉 Estàs preparat! Sparrow Wallet ara està configurat per utilitzar el servidor
+intermediari Tor quan obteniu el preu de Bitcoin i quan es comuniqui amb el
+servidor Whirlpool durant CoinJoins.
+</FAQBox>
+
+## Sparrow en acció
+
+Enhorabona, ara tens una aplicació de signatura d'escriptori de Bitcoin, capaç
+de protegir les teves claus de bitcoins, que funciona amb el teu propi node
+complet de Bitcoin sense confiança!
+
+Sparrow és una potent aplicació de signatura que us permet utilitzar les
+funcions més avançades per protegir les vostres claus bitcoin i preservar la
+vostra privadesa.
+
+Amb Sparrow pots:
+
+* Connecteu qualsevol dispositiu de signatura de maquinari
+* "Enviar" i "rebre" bitcoins
+* Tingueu un control total durant tot el procés de creació i signatura de
+transaccions: control de monedes, PSBT, etiquetatge, visualitzador de
+transaccions a nivell de bytes...
+* Creeu transaccions per lots per estalviar en les tarifes dels miners
+* Creeu multisig per millorar la seguretat
+* Uniu les vostres monedes per millorar la privadesa amb Coinjoin
+* Analitzeu les vostres accions amb l'explorador de cadena de blocs integrat
+
+Per obtenir més informació, tutorials i suport, visiteu la documentació de
+Sparrow [pàgina web](https://sparrowwallet.com/docs) i el seu
+[grup](https://t.me/sparrowwallet) de Telegram.
+
+## Per al futur: actualització d'Sparrow
+
+Sparrow us notificarà automàticament quan hi hagi una actualització disponible.
+Simplement instal·leu les actualitzacions utilitzant el mètode habitual per al
+vostre sistema operatiu.
