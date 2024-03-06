@@ -248,6 +248,7 @@ http {
   ssl_session_timeout 4h;
   ssl_protocols TLSv1.2 TLSv1.3;
   ssl_prefer_server_ciphers on;
+  include /etc/nginx/mime.types;
   include /etc/nginx/sites-enabled/*.conf;
 }
 
