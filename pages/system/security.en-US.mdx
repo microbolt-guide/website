@@ -265,7 +265,11 @@ stream {
 ### Create directories for future configuration files
 
 ```sh copy
-$SU mkdir -p /etc/nginx/streams-available /etc/nginx/streams-enabled
+$SU mkdir -p \
+    /etc/nginx/sites-available \
+    /etc/nginx/sites-enabled \
+    /etc/nginx/streams-available \
+    /etc/nginx/streams-enabled
 ```
 
 ### Test this barebone Nginx configuration
