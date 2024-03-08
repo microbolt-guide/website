@@ -4,10 +4,16 @@ const withNextra = require('nextra')({
     //defaultShowCopyCode: true,
 })
 
+const path = require('path')
+
 module.exports = withNextra({
     i18n: {
         locales: ['ca-ES', 'en-US'],
         defaultLocale: 'ca-ES'
+    },
+    webpack: (config) => {
+        config.resolve.alias['@components'] = path.join(__dirname, 'components');
+        return config;
     },
 })
 

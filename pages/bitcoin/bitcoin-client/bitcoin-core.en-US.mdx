@@ -1,24 +1,8 @@
 import { Callout,Cards,Card,Steps } from 'nextra/components'
+import { FAQBox } from '@components'
 
 import { TbSum } from "react-icons/tb"
 import { FaStamp } from "react-icons/fa"
-
-export function FAQBox({ title, children }) {
-  return (
-    <details
-      class="nx-my-4 nx-p-2 nx-rounded nx-border nx-border-gray-200 nx-bg-white dark:nx-border-neutral-800 dark:nx-bg-neutral-900"
-    >
-      <summary>
-        <strong class="text-lg">
-          {title}
-        </strong>
-      </summary>
-      <div class="nx-p-2">
-        {children}
-      </div>
-    </details>
-  )
-}
 
 # Bitcoin Core
 
