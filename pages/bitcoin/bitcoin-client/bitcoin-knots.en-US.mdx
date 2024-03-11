@@ -331,6 +331,10 @@ peerbloomfilters=1
 [...]
 zmqpubhashblock=tcp://127.0.0.1:8433
 [...]
+zmqpubrawblock=tcp://127.0.0.1:28332
+[...]
+zmqpubrawtx=tcp://127.0.0.1:28333
+[...]
 debug=i2p
 debug=tor
 [...]
@@ -642,12 +646,14 @@ $SU netstat -lntup | grep LISTEN | grep bitcoind
 ```
 
 ```output filename="output"
-tcp        0      0 0.0.0.0:8333            0.0.0.0:*               LISTEN      5700/bitcoind
-tcp        0      0 127.0.0.1:8433          0.0.0.0:*               LISTEN      5700/bitcoind
-tcp        0      0 127.0.0.1:8334          0.0.0.0:*               LISTEN      5700/bitcoind
-tcp        0      0 127.0.0.1:8332          0.0.0.0:*               LISTEN      5700/bitcoind
-tcp        0      0 :::8333                 :::*                    LISTEN      5700/bitcoind
-tcp        0      0 ::1:8332                :::*                    LISTEN      5700/bitcoind
+tcp        0      0 0.0.0.0:8333            0.0.0.0:*               LISTEN      28295/bitcoind
+tcp        0      0 127.0.0.1:8334          0.0.0.0:*               LISTEN      28295/bitcoind
+tcp        0      0 127.0.0.1:8332          0.0.0.0:*               LISTEN      28295/bitcoind
+tcp        0      0 127.0.0.1:8433          0.0.0.0:*               LISTEN      28295/bitcoind
+tcp        0      0 127.0.0.1:28332         0.0.0.0:*               LISTEN      28295/bitcoind
+tcp        0      0 127.0.0.1:28333         0.0.0.0:*               LISTEN      28295/bitcoind
+tcp        0      0 :::8333                 :::*                    LISTEN      28295/bitcoind
+tcp        0      0 ::1:8332                :::*                    LISTEN      28295/bitcoind
 ```
 
 <Callout type="info">
