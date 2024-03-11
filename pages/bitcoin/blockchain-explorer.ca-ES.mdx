@@ -420,7 +420,8 @@ checkconfig() {
     if ! grep -qs '^BTCEXP_BITCOIND_COOKIE=' "${BTCRPCEXPL_CONFIGFILE}"
     then
         eerror ""
-        eerror "ERROR: You must set a cookie_file path to run Electrs."
+        eerror "ERROR: You must set a BTCEXP_BITCOIND_COOKIE path to run"
+        eerror "BTC RPC Explorer."
         eerror "The setting must appear in ${BTCRPCEXPL_CONFIGFILE}"
         eerror ""
         return 1
