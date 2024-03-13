@@ -1,0 +1,608 @@
+import { Callout, Steps } from 'nextra/components'
+import { FAQBox } from '@components'
+
+# Còpia de seguretat dels canals
+
+Establim una còpia de seguretat local o remota del "Static Channel Backup" per a
+Lightning. Un script de monitoratge el manté actualitzat per permetre la
+recuperació dels vostres fons de Lightning en cas de fallada de maquinari.
+
+![Còpia de seguretat remota de GitHub](/img/lightning/lnd/remote-scb-backup.webp)
+
+## Per què són importants les còpies de seguretat dels canals de Lightning?
+
+La Còpia de Seguretat dels Canals Estàtics (SCB) és una característica de LND
+que permet la recuperació en cadena dels saldos dels canals de lightning en cas
+que el node quedi inutilitzable. Malgrat el seu nom, no permet la recuperació
+dels vostres canals LN, però augmenta les possibilitats que recuperareu tots (o
+la major part) dels vostres saldos fora de cadena (locals).
+
+La SCB conté tota la informació del canal necessària utilitzada pel procés de
+recuperació anomenat Protecció contra la Pèrdua de Dades (DLP). És un mecanisme
+de còpia de seguretat segur sense risc de provocar transaccions de penalització
+que podrien conduir a la pèrdua de saldos del canal. La SCB conté tota la
+informació dels parells i canals necessària, permetent que LND envii una
+sol·licitud per tancar forçosament el canal per part seva a tots els vostres
+parells anteriors en línia. Sense aquest mètode, hauríeu de contactar manualment
+amb els vostres parells o esperar que tancassin forçosament per ells mateixos
+eventualment.
+
+Aquest mètode de recuperació basat en SCB té diverses conseqüències que cal
+tenir en compte:
+
+* Aquest mètode depèn de la bona voluntat del parell: un parell maliciós podria
+negar-se a tancar forçosament el canal, i els fons quedarien bloquejats.
+
+* La recuperació només funciona amb parells en línia: LND no pot enviar una
+sol·licitud per tancar forçosament el canal si un parell està desconnectat. Per
+tant, els fons en aquest canal restaran bloquejats fins que aquest parell torni
+en línia, o potser per sempre si aquest parell no torna.
+
+* La còpia de seguretat ha d'estar actualitzada: Com que LND ha de conèixer els
+vostres parells i canals, la SCB ha de ser actualitzada cada vegada que obriu un
+nou canal.
+
+Heu de configurar un mecanisme de actualització automàtica de la SCB que:
+
+* Creï o actualitzi el vostre fitxer SCB cada vegada que obríu un canal (o en
+tanqueu un, encara que això és menys important).
+* Emmagatzemi el fitxer SCB en una ubicació de còpia de seguretat diferent per
+assegurar-vos que estigui disponible en cas d'un SSD defectuós.
+
+Podeu llegir més sobre les SCB en [aquesta secció de 'Mastering the Lighning
+Network'](https://github.com/lnbook/lnbook/blob/ec806916edd6f4d1b2f9da2fef08684f80acb671/05_node_operations.asciidoc#node-and-channel-backups).
+
+## Trieu el vostre mètode de còpia de seguretat preferit
+
+Aquesta guia cobreix dos mètodes de còpia de seguretat automatitzats:
+
+* **LOCAL**: emmagatzemeu la còpia de seguretat en una memòria USB o targeta
+microSD connectada al vostre ordinador
+* **REMOTE**: envieu la còpia de seguretat xifrada a un repositori privat de
+GitHub
+
+|                     | LOCAL            | REMOTE                           |
+| :------------------ | :--------------: | :------------------------------: |
+| Requereix maquinari | SÍ               | NO                               |
+| Requereix Github    | NO               | SÍ                               |
+| Protegeix contra    | Fallida del disc | Fallida del disc i danys al node |
+| Depèn de tercers    | NO               | SÍ                               |
+
+Recomanem utilitzar tots dos mètodes, però podeu triar qualsevol d'ells segons
+les vostres pròpies necessitats i preferències.
+
+## Preparatius
+
+Preparem un script de shell que actualitzi automàticament el fitxer SCB de LND
+quan hi ha un canvi en la ubicació de la vostra còpia de seguretat.
+
+### Creeu l'script
+
+Creem un script de shell per monitorar `channel.backup` i fer una còpia a les
+nostres ubicacions de còpia de seguretat si canvia.
+
+* Creeu un nou fitxer d'script de shell
+
+```sh copy
+$SU $EDITOR /usr/bin/scbb
+```
+
+* Comproveu les següents línies de codi i les enganxeu a l'editor de text. Per
+defecte, els mètodes de còpia de seguretat local i remot estan desactivats.
+Habilitarem un o tots dos en les següents seccions, segons les vostres
+preferències. Després, deseu i sortiu.
+
+```sh copy filename="/usr/bin/scbb"
+#!/bin/sh
+#
+# Simple script to do Static Channel Backup backup
+#
+# The MIT License (MIT)
+#
+# Copyright (c) 2024 doitwithnotepad
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+state()
+{
+    stat -c "%s-%Y" "$file"
+}
+
+usage()
+{
+    cat << EOF
+usage: ${0##*/} [options ...]
+       -r, --remote  <path>  enable and set remote
+                             backup path
+
+       -l, --local   <path>  enable and set local
+                             backup path
+                                    
+       -t, --target  <file>  set file to monitor default is
+                             \$lnddir/data/chain/bitcoin/mainnet/channel.backup
+
+       -d, --debug           enable debug mode
+       -h, --help            show this help
+
+EOF
+}
+
+prepare_env()
+{
+    while [ "$1" ]; do case "$1" in
+        -r | --remote)
+            rbk="${2:?}";  shift 2;;
+        -l | --local)
+            lbk="${2:?}";  shift 2;;
+        -t | --target)
+            file="${2:?}"; shift 2;;
+        -d | --debug)
+            debug=1;       shift 1;;
+        -h | --help)
+            usage; exit 0;;
+        *)
+            printf "invalid option: %s\n\n" "$1"
+            usage; exit 1;;
+    esac; done
+
+    [ -z "$lbk" ] && [ -z "$rbk" ] && {
+        printf "%b \033[1;34m%s\033[m\n\n" \
+            "\033[1;31m!!\033[m" \
+            "must provide local or remote path"
+        usage; exit 1
+    }
+
+    file="${file:=/var/lib/lnd/data/chain/bitcoin/mainnet/channel.backup}"
+
+    old_state="$(state)"
+
+    # false positive
+    # shellcheck disable=2015
+    [ "$debug" = 1 ] && set -ex || :
+}
+
+bk()
+{
+    while [ "${new_state:=$(state)}" = "$old_state" ]; do
+        new_state="$(state)" && sleep 1
+    done
+
+    old_state="$new_state"
+    timestamp="$(date +%Y%m%d-%H%M%S)"
+
+    if [ -n "$lbk" ]; then
+        printf "%s\n" \
+            "Local backup is enabled" \
+            "Copying backup file to local storage..." \
+            "channel-$timestamp.backup"
+        install -D "$file" "$lbk/channel-$timestamp.backup" || continue
+
+        printf "%s\n\n" "Completed!"
+    fi
+    
+    if [ -n "$rbk" ]; then
+        printf "%s\n" \
+            "Remote backup is enabled" \
+            "Copying backup file to remote storage..." \
+            "channel-$timestamp.backup"
+        install -D "$file" "$rbk/channel-$timestamp.backup" || continue
+
+        printf "%s\n" "Committing changes"
+        git -C "$rbk" add "channel-$timestamp.backup" || continue
+        git -C "$rbk" commit -m "Static Channel Backup $timestamp" || continue
+
+        printf "%s\n" "Pushing changes to remote repository..."
+        git -C "$rbk" push --set-upstream origin main || continue
+
+        printf "%s\n\n" "Completed!"
+    fi
+}
+
+# int main()
+{
+    # disable globbing
+    set -f
+
+    prepare_env "$@"
+    printf "%s\n" "Watches established."
+    while :; do bk; done
+}
+```
+
+* Habilita el permís d'execució
+
+```sh copy
+$SU chmod +x /usr/bin/scbb
+```
+
+### Inici automàtic en l'arrencada
+
+Configurem l'script de còpia de seguretat com a servei openrc perquè s'executi
+en segon pla i s'inici automàticament en l'arrencada del sistema.
+
+* Creeu la unitat init.d i copieu/enganxeu la següent configuració. Després,
+deseu i sortiu.
+
+```sh copy
+$SU $EDITOR /etc/init.d/scbb
+```
+
+```sh copy filename="/etc/init.d/scbb"
+#!/sbin/openrc-run
+
+: ${SCBB_BIN:=/usr/bin/scbb}
+: ${SCBB_LOCAL=${SCBB_LOCAL}}
+: ${SCBB_REMOTE=${SCBB_REMOTE}}
+: ${SCBB_OPTS=${SCBB_OPTS}}
+
+name="SCBB"
+description="SCBB Backup daemon"
+
+command="${SCBB_BIN}"
+command_args="${SCBB_LOCAL}
+              ${SCBB_REMOTE}
+              ${SCBB_OPTS}"
+command_user="lnd:lnd"
+command_background="true"
+
+pidfile="/run/${SVCNAME}.pid"
+
+start_stop_daemon_args="--stdout-logger 'logger -t scbb[$$] -p daemon.info'
+                        --stderr-logger 'logger -t scbb[$$] -p daemon.err'"
+
+depend() {
+    use lnd
+    after lnd
+}
+```
+
+* Habilita el permís d'execució
+
+```sh copy
+$SU chmod +x /etc/init.d/scbb
+```
+
+## Còpia de seguretat local
+
+Seguiu aquesta secció si voleu una còpia de seguretat local. Si només voleu una
+còpia de seguretat remota, salteu a la [següent
+secció](#còpia-de-seguretat-remota).
+
+### Formatació
+
+<Callout>
+El fitxer `channel.backup` és molt petit en mida (< 1 MB), així que fins i tot
+la memòria USB o la targeta microSD més petita serà suficient.
+</Callout>
+
+* Connecteu el dispositiu d'emmagatzematge i trobeu-lo
+
+```sh copy
+$SU fdisk -l
+```
+
+* Establiu una variable d'entorn per al fitxer del dispositiu
+
+```sh
+mydev=/dev/sdY #Usually /dev/sdb or /dev/sdc
+```
+
+* Particiona el disc
+
+```sh copy
+fdisk "$mydev" <<EOF
+o
+n
+p
+1
+
+
+t
+0c
+a
+1
+w
+EOF
+```
+
+* Ompliu les particions creades
+
+```sh copy
+mdev -s
+```
+
+* Formatació de la partició
+
+```sh copy
+mkfs.vfat -F32 -n "SCB backup" "${mydev}1"
+```
+
+### Establiu un punt de muntatge per al dispositiu d'emmagatzematge
+
+* Creeu el directori de muntatge i feu-lo immutable
+
+```sh copy
+$SU mkdir /mnt/scbb-local
+$SU chattr +i /mnt/scbb-local
+```
+
+* Llistegeu els dispositius de bloc actius i copieu el `UUID` del vostre
+dispositiu de còpia de seguretat en un editor de text al vostre ordinador local
+(p.e., aquí `1234-5678`).
+
+```sh copy
+$SU blkid
+```
+
+```output filename="output"
+/dev/loop0: TYPE="squashfs"
+/dev/loop/0: TYPE="squashfs"
+/dev/sda1: UUID="b73b1dc9-6e12-4e68-9d06-1a1892663226" TYPE="xfs"
+/dev/sdb1: UUID="6C12-4B68" TYPE="vfat"
+/dev/sdc1: UUID="1234-5678" TYPE="vfat"
+```
+
+* Obtingueu el identificador d'usuari (UID) i el identificador de grup (GID) de
+l'usuari "lnd" de la base de dades `/etc/passwd` de tots els comptes d'usuari.
+Copieu aquests valors en un editor de text al vostre ordinador local (p.e., aquí
+GID `XXXX` i UID `YYYY`).
+
+```sh copy
+awk -F ':' '$1=="lnd" {print "GID: "$3" / UID: "$4}' /etc/passwd
+```
+
+```output filename="output"
+GID: XXXX / UID: YYYY
+```
+
+* Editeu el fitxer de configuració de la Taula del Sistema de Fitxers i afegiu
+el següent com a nova línia al final, substituint `1234-5678`, `XXXX` i `YYYY`
+amb el vostre propi `UUID`, `GID` i `UID`.
+
+```sh
+printf "%s " \
+    "UUID=1234-5678" \
+    "/mnt/scbb-local" \
+    "vfat" \
+    "auto,noexec,nouser,rw,sync,nosuid,nodev,noatime,nodiratime,nofail,umask=022,gid=XXXX,uid=YYYY" \
+    "0 0" \
+    "\n" \
+    | $SU tee -a /etc/fstab
+```
+
+<Callout>
+Més: [guis de fstab](https://wiki.gentoo.org/wiki//etc/fstab)
+</Callout>
+
+* Munteu el disc i comproveu que el sistema de fitxers és "/mnt/scb-local"
+
+```sh copy
+$SU mount -a
+```
+
+```sh copy
+$SU df -h /mnt/scbb-local
+```
+
+```output filename="output"
+Filesystem                Size      Used Available Use% Mounted on
+/dev/sdc                  1.9G      4.0K      1.9G   1% /mnt/scbb-local
+```
+
+### Activeu la funció de còpia de seguretat local a l'script
+
+* Activeu la còpia de seguretat local a l'script init.d afegint el valor de
+variable per a `SCBB_LOCAL`. Desa i surt.
+
+```sh copy
+printf "%s\n" \
+    "SCBB_LOCAL=\"--local /mnt/scbb-local\"" \
+    | $SU tee -a /etc/conf.d/scbb
+```
+
+* Inicieu el servei openrc per activar el canvi
+
+```sh copy
+$SU rc-service scbb restart
+```
+
+* Comproveu l'estat
+
+```sh copy
+$SU rc-service scbb status
+```
+
+## Còpia de seguretat remota
+
+Seguiu aquesta secció si voleu una còpia de seguretat remota. Si ja heu
+configurat una còpia de seguretat local i no voleu una còpia de seguretat
+remota, salteu a la [següent secció](#test).
+
+### Creeu un repositori a GitHub
+
+* Aneu-vos a [GitHub](https://github.com), registreu-vos per obtenir un nou
+compte d'usuari o inicieu la sessió amb un compte existent. Si no voleu que
+GitHub conegui la vostra identitat i adreça IP relacionada amb el vostre node de
+Lightning, es recomana crear un compte nou tot i que tingueu un compte existent,
+i utilitzar [Tor Browser](https://www.torproject.org/download) per a aquest i
+els següents passos.
+
+* Creeu un nou repositori: https://github.com/new
+* Escriviu el següent nom de repositori: `remote-lnd-backup`
+* Seleccioneu "Private" (enlloc de l'opció predeterminada "Public")
+* Feu clic a "Create repository"
+
+### Clonar el repositori al vostre node
+
+* Creeu un parell de claus SSH. Quan se us demani, premeu "Enter" per confirmar
+el directori SSH per defecte i no establiu cap contrasenya.
+
+```sh copy
+$SU apk add openssh torsocks
+```
+
+```sh copy
+$SU -u lnd ssh-keygen -t rsa -b 4096
+```
+
+```sh copy
+Generating public/private rsa key pair.
+[...]
+```
+
+* Mostra la clau pública
+
+```sh copy
+$SU -u lnd cat ~/.lnd/.ssh/id_rsa.pub
+```
+
+```output filename="output"
+ssh-rsa 1234abcd... lnd@nakamoto01
+```
+
+* Torneu a la pàgina web del repositori de GitHub
+* Feu clic a "Settings", després a "Deploy keys", i després a "Add deploy key"
+* Escriviu un títol (p.e., "scbb")
+* Al quadre "Key", copieu/enganxeu la cadena generada anteriorment començant per
+(p.e., `ssh-rsa 1234abcd... lnd@nakamoto01`)
+* Marqueu la casella "Allow write access" per habilitar aquesta clau per enviar
+canvis al repositori
+* Feu clic a "Add key"
+
+* Configureu els valors globals de configuració de Git (el nom i el correu
+electrònic són necessaris però poden ser valors ficticis). A continuació, aneu a
+la carpeta de dades de LND i feu una còpia del vostre nou repositori buit.
+Reemplaceu `doitwithnotepad` pel vostre nom d'usuari de GitHub. Quan se us
+demani "Are you sure you want to continue connecting", escriviu `yes` i premeu
+"Enter".
+
+```sh
+(
+    cd ~/.lnd
+    $SU -u lnd sh -c '
+        git config --global user.name "MicroBolt"
+        git config --global user.email "1@[23456789]"
+        git config --global core.sshCommand "torsocks ssh"
+        git clone git@github.com:doitwithnotepad/remote-lnd-backup.git
+    '
+)
+```
+
+```output filename="output"
+Cloning into 'remote-lnd-backup'...
+warning: You appear to have cloned an empty repository.
+```
+
+### Activeu la funció de còpia de seguretat remota a l'script
+
+* Activeu la còpia de seguretat remota a l'script init.d afegint el valor de
+variable per a `SCBB_REMOTE`. Desa i surt.
+
+```sh copy
+printf "%s\n" \
+    "SCBB_REMOTE=\"--remote /var/lib/lnd/remote-lnd-backup\"" \
+    | $SU tee -a /etc/conf.d/scbb
+```
+
+* Inicieu el servei openrc per activar el canvi
+
+```sh copy
+$SU rc-service scbb restart
+```
+
+* Comproveu l'estat
+
+```sh copy
+$SU rc-service scbb status
+```
+
+## Prova
+
+La còpia de seguretat automatitzada ja està en marxa. Per comprovar si tot
+funciona, ara provoquem que el fitxer per defecte `channel.backup` canviï.
+Després, comprovem si s'emmagatzema una còpia a la ubicació de còpia de
+seguretat prevista.
+
+* Seguiu les entrades del registre del sistema per al servei de còpia de
+seguretat SCB en temps real
+
+```sh copy
+tail -f /var/log/messages | grep scbb
+```
+
+```output filename="output"
+[...]
+Mar 12 13:28:35 nakamoto01 daemon.info scbb[22817]: Watches established.
+```
+
+* Simuleu un canvi al fitxer `channel.backup` amb la comanda `touch` (no us
+preocupeu! simplement actualitza el registre temporal del fitxer però no el seu
+contingut).
+
+```sh copy
+$SU touch /var/lib/lnd/data/chain/bitcoin/mainnet/channel.backup
+```
+
+* Als registres, hauríeu de veure entrades noves semblants a aquestes (segons
+els mètodes de còpia de seguretat que hàgiu habilitat):
+
+```output filename="output"
+[...]
+Mar 12 13:32:12 nakamoto01 daemon.info scbb[23543]: Watches established.
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]: Local backup is enabled
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]: Copying backup file to local storage...
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]: channel-20240312-133233.backup
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]: Completed!
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]: Remote backup is enabled
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]: Copying backup file to remote storage...
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]: channel-20240312-133233.backup
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]: Committing changes
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]: [main 6f1caf7] Static Channel Backup 20240312-133233
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]:  1 file changed, 1 insertion(+)
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]:  create mode 100755 channel-20240312-133233.backup
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]: Pushing changes to remote repository...
+Mar 12 13:32:36 nakamoto01 daemon.err scbb[23543]: To github.com:doitwithnotepad/remote-lnd-backup.git
+Mar 12 13:32:36 nakamoto01 daemon.err scbb[23543]:    c102780..6f1caf7  main -> main
+Mar 12 13:32:36 nakamoto01 daemon.info scbb[23543]: branch 'main' set up to track 'origin/main'.
+Mar 12 13:32:36 nakamoto01 daemon.info scbb[23543]: Completed!
+[...]
+```
+
+* Si heu habilitat la còpia de seguretat local, comproveu el contingut del
+vostre dispositiu d'emmagatzematge local. Ara hauria de contenir un fitxer de
+còpia de seguretat amb la data/hora corresponent a la prova realitzada just
+abans
+
+```sh copy
+ls -lha /mnt/scbb-local
+```
+
+```output filename="output"
+[...]
+-rwxr-xr-x    1 lnd      lnd           45 Mar 12 13:32 channel-20240312-133233.backup
+[...]
+```
+
+* Si heu habilitat la còpia de seguretat remota, comproveu el vostre repositori
+de GitHub. Ara hauria de contenir el darrer fitxer de còpia de seguretat amb una
+marca de temps.
+
+🎉 Ja esta enllestit! Cada vegada que obriu un nou canal o tanqueu un existent,
+l'script de monitoratge guardarà automàticament una còpia amb marca de temps del
+fitxer de còpia de seguretat a la vostra ubicació de còpia de seguretat.

@@ -1,0 +1,587 @@
+import { Callout, Steps } from 'nextra/components'
+import { FAQBox } from '@components'
+
+# Channel backup
+
+We set up a local or remote "Static Channel Backup" for Lightning. A monitoring
+script keeps it up-to-date to enable the recovery of your Lightning funds in
+case of hardware failure.
+
+![GitHub remote backup](/img/lightning/lnd/remote-scb-backup.webp)
+
+## Why are Lightning channel backups important?
+
+The Static Channels Backup (SCB) is a feature of LND that allows for the
+on-chain recovery of lightning channel balances in the case of a bricked node.
+Despite its name, it does not allow the recovery of your LN channels but
+increases the chance that you'll recover all (or most) of your off-chain (local)
+balances.
+
+The SCB contains all the necessary channel information used for the recovery
+process called Data Loss Protection (DLP). It is a safe backup mechanism with no
+risk of provoking penalty transactions that could lead to losing channel
+balances. The SCB contains all necessary peer and channel information, allowing
+LND to send a request to force-close the channel on their end to all your
+previous online peers. Without this method, you would need to contact your peers
+manually or wait for them to force-close on their own eventually.
+
+This SCB-based recovery method has several consequences worth bearing in mind:
+
+* This method relies on the goodwill of the peer: a malicious peer could refuse
+to force-close the channel, and the funds would remain locked up.
+
+* Recovery only works with online peers: LND cannot send a request to
+force-close the channel if a peer is offline. Therefore, the funds in that
+channel will remain locked up until this peer comes back online, or possibly
+forever if that peer doesn't come back.
+
+* The backup needs to be up-to-date: Since LND needs to know about your peers
+and channels, the SCB needs to be updated every time you open a new channel.
+
+You need to set up an automated SCB update mechanism that:
+
+* Creates or updates your SCB file each time you open a channel (or close one,
+although this is less important)
+* Stores the SCB file to a different backup location to ensure that it is
+available in case of a failing SSD.
+
+You can read more about SCBs in [this section of 'Mastering the Lighning
+Network'](https://github.com/lnbook/lnbook/blob/ec806916edd6f4d1b2f9da2fef08684f80acb671/05_node_operations.asciidoc#node-and-channel-backups).
+
+## Choose your preferred backup method
+
+This guide covers two automated backup methods:
+
+* **LOCAL**: store the backup on a USB thumbdrive or microSD card plugged into
+your computer
+* **REMOTE**: send the encrypted backup to a private GitHub repository
+
+|                     | LOCAL         | REMOTE                        |
+| :------------------ | :-----------: | :---------------------------: |
+| Requires hardware   | YES           | NO                            |
+| Requires Github     | NO            | YES                           |
+| Protects against    | Drive failure | Drive failure and node damage |
+| Relies on 3rd party | NO            | YES                           |
+
+We recommend to use both methods, but you can choose either one of them,
+depending on your own requirements and preferences.
+
+## Preparations
+
+We prepare a shell script that automatically updates the LND SCB file on a
+change in your backup location.
+
+### Create script
+
+We create a shell script to monitor `channel.backup` and make a copy to our
+backup locations if it changes.
+
+* Create a new shell script file
+
+```sh copy
+$SU $EDITOR /usr/bin/scbb
+```
+
+* Check the following lines of code and paste them into the text editor. By
+default, both local and remote backup methods are disabled. We will enable one
+or both of them in the next sections, depending on your preferences. Save and
+exit.
+
+```sh copy filename="/usr/bin/scbb"
+#!/bin/sh
+#
+# Simple script to do Static Channel Backup backup
+#
+# The MIT License (MIT)
+#
+# Copyright (c) 2024 doitwithnotepad
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+state()
+{
+    stat -c "%s-%Y" "$file"
+}
+
+usage()
+{
+    cat << EOF
+usage: ${0##*/} [options ...]
+       -r, --remote  <path>  enable and set remote
+                             backup path
+
+       -l, --local   <path>  enable and set local
+                             backup path
+                                    
+       -t, --target  <file>  set file to monitor default is
+                             \$lnddir/data/chain/bitcoin/mainnet/channel.backup
+
+       -d, --debug           enable debug mode
+       -h, --help            show this help
+
+EOF
+}
+
+prepare_env()
+{
+    while [ "$1" ]; do case "$1" in
+        -r | --remote)
+            rbk="${2:?}";  shift 2;;
+        -l | --local)
+            lbk="${2:?}";  shift 2;;
+        -t | --target)
+            file="${2:?}"; shift 2;;
+        -d | --debug)
+            debug=1;       shift 1;;
+        -h | --help)
+            usage; exit 0;;
+        *)
+            printf "invalid option: %s\n\n" "$1"
+            usage; exit 1;;
+    esac; done
+
+    [ -z "$lbk" ] && [ -z "$rbk" ] && {
+        printf "%b \033[1;34m%s\033[m\n\n" \
+            "\033[1;31m!!\033[m" \
+            "must provide local or remote path"
+        usage; exit 1
+    }
+
+    file="${file:=/var/lib/lnd/data/chain/bitcoin/mainnet/channel.backup}"
+
+    old_state="$(state)"
+
+    # false positive
+    # shellcheck disable=2015
+    [ "$debug" = 1 ] && set -ex || :
+}
+
+bk()
+{
+    while [ "${new_state:=$(state)}" = "$old_state" ]; do
+        new_state="$(state)" && sleep 1
+    done
+
+    old_state="$new_state"
+    timestamp="$(date +%Y%m%d-%H%M%S)"
+
+    if [ -n "$lbk" ]; then
+        printf "%s\n" \
+            "Local backup is enabled" \
+            "Copying backup file to local storage..." \
+            "channel-$timestamp.backup"
+        install -D "$file" "$lbk/channel-$timestamp.backup" || continue
+
+        printf "%s\n\n" "Completed!"
+    fi
+    
+    if [ -n "$rbk" ]; then
+        printf "%s\n" \
+            "Remote backup is enabled" \
+            "Copying backup file to remote storage..." \
+            "channel-$timestamp.backup"
+        install -D "$file" "$rbk/channel-$timestamp.backup" || continue
+
+        printf "%s\n" "Committing changes"
+        git -C "$rbk" add "channel-$timestamp.backup" || continue
+        git -C "$rbk" commit -m "Static Channel Backup $timestamp" || continue
+
+        printf "%s\n" "Pushing changes to remote repository..."
+        git -C "$rbk" push --set-upstream origin main || continue
+
+        printf "%s\n\n" "Completed!"
+    fi
+}
+
+# int main()
+{
+    # disable globbing
+    set -f
+
+    prepare_env "$@"
+    printf "%s\n" "Watches established."
+    while :; do bk; done
+}
+```
+
+* Make the script executable
+
+```sh copy
+$SU chmod +x /usr/bin/scbb
+```
+
+### Autostart on boot
+
+We set up the backup script as a openrc service to run in the background and
+start automatically on system startup.
+
+* Create the init.d unit and copy/paste the following configuration. Save and
+exit.
+
+```sh copy
+$SU $EDITOR /etc/init.d/scbb
+```
+
+```sh copy filename="/etc/init.d/scbb"
+#!/sbin/openrc-run
+
+: ${SCBB_BIN:=/usr/bin/scbb}
+: ${SCBB_LOCAL=${SCBB_LOCAL}}
+: ${SCBB_REMOTE=${SCBB_REMOTE}}
+: ${SCBB_OPTS=${SCBB_OPTS}}
+
+name="SCBB"
+description="SCBB Backup daemon"
+
+command="${SCBB_BIN}"
+command_args="${SCBB_LOCAL}
+              ${SCBB_REMOTE}
+              ${SCBB_OPTS}"
+command_user="lnd:lnd"
+command_background="true"
+
+pidfile="/run/${SVCNAME}.pid"
+
+start_stop_daemon_args="--stdout-logger 'logger -t scbb[$$] -p daemon.info'
+                        --stderr-logger 'logger -t scbb[$$] -p daemon.err'"
+
+depend() {
+    use lnd
+    after lnd
+}
+```
+
+* Enable execution permission
+
+```sh copy
+$SU chmod +x /etc/init.d/scbb
+```
+
+## Local backup
+
+Follow this section if you want a local backup. If you only want a remote
+backup, skip to the [next section](#remote-backup).
+
+### Formatting
+
+<Callout>
+The `channel.backup` file is very small in size (< 1 MB) so even the smallest
+USB thumbdrive or microSD card will do the job.
+</Callout>
+
+* Plug the storage device and find it
+
+```sh copy
+$SU fdisk -l
+```
+
+* Set environment variable to the device file
+
+```sh
+mydev=/dev/sdY #Usually /dev/sdb or /dev/sdc
+```
+
+* Partition the disk
+
+```sh copy
+fdisk "$mydev" <<EOF
+o
+n
+p
+1
+
+
+t
+0c
+a
+1
+w
+EOF
+```
+
+* Populate new created partitions
+
+```sh copy
+mdev -s
+```
+
+* Format partition
+
+```sh copy
+mkfs.vfat -F32 -n "SCB backup" "${mydev}1"
+```
+
+### Set up a mounting point for the storage device
+
+* Create the mounting directory and make it immutable
+
+```sh copy
+$SU mkdir /mnt/scbb-local
+$SU chattr +i /mnt/scbb-local
+```
+
+* List active block devices and copy the `UUID` of your backup device into a
+text editor on your local computer (e.g. here `1234-5678`).
+
+```sh copy
+$SU blkid
+```
+
+```output filename="output"
+/dev/loop0: TYPE="squashfs"
+/dev/loop/0: TYPE="squashfs"
+/dev/sda1: UUID="b73b1dc9-6e12-4e68-9d06-1a1892663226" TYPE="xfs"
+/dev/sdb1: UUID="6C12-4B68" TYPE="vfat"
+/dev/sdc1: UUID="1234-5678" TYPE="vfat"
+```
+
+* Get the "lnd" user identifier (UID) and the "lnd" group identifier (GID) from
+the `/etc/passwd` database of all user accounts. Copy these values into a text
+editor on your local computer (e.g. here GID `XXXX` and UID `YYYY`)
+
+```sh copy
+awk -F ':' '$1=="lnd" {print "GID: "$3" / UID: "$4}' /etc/passwd
+```
+
+```output filename="output"
+GID: XXXX / UID: YYYY
+```
+
+* Edit your Filesystem Table configuration file and add the following as a new
+line at the end, replacing `123456`, `XXXX` and `YYYY` with your own `UUID`,
+`GID` and `UID`
+
+```sh
+printf "%s\n" \
+    "UUID=1234-5678 /mnt/scbb-local vfat auto,noexec,nouser,rw,sync,nosuid,nodev,noatime,nodiratime,nofail,umask=022,gid=XXXX,uid=YYYY 0 0" \
+    | $SU tee -a /etc/fstab
+```
+
+<Callout>
+More: [fstab guide](https://wiki.gentoo.org/wiki//etc/fstab)
+</Callout>
+
+* Mount the drive and check the file system is “/mnt/scb-local”
+
+```sh copy
+$SU mount -a
+```
+
+```sh copy
+$SU df -h /mnt/scbb-local
+```
+
+```output filename="output"
+Filesystem                Size      Used Available Use% Mounted on
+/dev/sdc                  1.9G      4.0K      1.9G   1% /mnt/scbb-local
+```
+
+### Enable the local backup function in the script
+
+* Enable the local backup in the init.d script by adding the variable value for
+`SCBB_LOCAL`. Save and exit.
+
+```sh copy
+printf "%s\n" \
+    "SCBB_LOCAL=\"--local /mnt/scbb-local\"" \
+    | $SU tee -a /etc/conf.d/scbb
+```
+
+* Start the openrc service to activate the change
+
+```sh copy
+$SU rc-service scbb restart
+```
+
+* Check status
+
+```sh copy
+$SU rc-service scbb status
+```
+
+## Remote backup
+
+Follow this section if you want a remote backup. If you already set up a local
+backup, and don't want a remote backup, skip to the [next section](#test).
+
+### Create a GitHub repository
+
+* Go to [GitHub](https://github.com), sign up for a new user account, or log in
+with an existing one. If you don't want for GitHub to know your identity and IP
+address in relation to your Lightning node, it is recommended to create new
+account even if you have existing one, and use [Tor
+Browser](https://www.torproject.org/download) for this and following steps.
+
+* Create a new repository: https://github.com/new
+* Type the following repository name: `remote-lnd-backup`
+* Select "Private" (rather than the default "Public")
+* Click on "Create repository"
+
+### Clone the repository to your node
+
+* Create a pair of SSH keys. When prompted, press "Enter" to confirm the default
+SSH directory and not set up a password.
+
+```sh copy
+$SU apk add openssh torsocks
+```
+
+```sh copy
+$SU -u lnd ssh-keygen -t rsa -b 4096
+```
+
+```sh copy
+Generating public/private rsa key pair.
+[...]
+```
+
+* Display the public key
+
+```sh copy
+$SU -u lnd cat ~/.lnd/.ssh/id_rsa.pub
+```
+
+```output filename="output"
+ssh-rsa 1234abcd... lnd@nakamoto01
+```
+
+* Go back to the GitHub repository webpage
+* Click on "Settings", then "Deploy keys", then "Add deploy key"
+* Type a title (e.g., "scbb")
+* In the "Key" box, copy/paste the string generated above starting (e.g.
+`ssh-rsa 1234abcd... lnd@nakamoto01`)
+* Tick the box "Allow write access" to enable this key to push changes to the
+repository
+* Click "Add key"
+
+* Set up global Git configuration values (the name and email are required but
+can be dummy values). Then, move to the LND data folder and clone your newly
+created empty repository. Replace `doitwithnotepad` with your own GitHub
+username. When prompted "Are you sure you want to continue connecting", type
+`yes` and press "Enter".
+
+```sh
+(
+    cd ~/.lnd
+    $SU -u lnd sh -c '
+        git config --global user.name "MicroBolt"
+        git config --global user.email "1@[23456789]"
+        git config --global core.sshCommand "torsocks ssh"
+        git clone git@github.com:doitwithnotepad/remote-lnd-backup.git
+    '
+)
+```
+
+```output filename="output"
+Cloning into 'remote-lnd-backup'...
+warning: You appear to have cloned an empty repository.
+```
+
+### Enable the remote backup function in the script
+
+* Enable the remote backup in the init.d script by adding the variable value for
+`SCBB_REMOTE`. Save and exit.
+
+```sh copy
+printf "%s\n" \
+    "SCBB_REMOTE=\"--remote /var/lib/lnd/remote-lnd-backup\"" \
+    | $SU tee -a /etc/conf.d/scbb
+```
+
+* Start the openrc service to activate the change
+
+```sh copy
+$SU rc-service scbb restart
+```
+
+* Check status
+
+```sh copy
+$SU rc-service scbb status
+```
+
+## Test
+
+The automated backup is now up and running. To test if everything works, we now
+cause the default `channel.backup` file to change. Then we check if a copy gets
+stored at the intended backup location.
+
+* Follow the system log entries for the SCB backup service in real-time
+
+```sh copy
+tail -f /var/log/messages | grep scbb
+```
+
+```output filename="output"
+[...]
+Mar 12 13:28:35 nakamoto01 daemon.info scbb[22817]: Watches established.
+```
+
+* Simulate a `channel.backup` file change with the `touch` command (don't worry!
+it simply updates the timestamp of the file but not its content).
+
+```sh copy
+$SU touch /var/lib/lnd/data/chain/bitcoin/mainnet/channel.backup
+```
+
+* In the logs, you should see new entries similar to these (depending on which
+backup methods you enabled):
+
+```output filename="output"
+[...]
+Mar 12 13:32:12 nakamoto01 daemon.info scbb[23543]: Watches established.
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]: Local backup is enabled
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]: Copying backup file to local storage...
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]: channel-20240312-133233.backup
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]: Completed!
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]: Remote backup is enabled
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]: Copying backup file to remote storage...
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]: channel-20240312-133233.backup
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]: Committing changes
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]: [main 6f1caf7] Static Channel Backup 20240312-133233
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]:  1 file changed, 1 insertion(+)
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]:  create mode 100755 channel-20240312-133233.backup
+Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]: Pushing changes to remote repository...
+Mar 12 13:32:36 nakamoto01 daemon.err scbb[23543]: To github.com:doitwithnotepad/remote-lnd-backup.git
+Mar 12 13:32:36 nakamoto01 daemon.err scbb[23543]:    c102780..6f1caf7  main -> main
+Mar 12 13:32:36 nakamoto01 daemon.info scbb[23543]: branch 'main' set up to track 'origin/main'.
+Mar 12 13:32:36 nakamoto01 daemon.info scbb[23543]: Completed!
+[...]
+```
+
+* If you enabled the local backup, check the content of your local storage
+device. It should now contain a backup file with the date/time corresponding to
+the test made just above
+
+```sh copy
+ls -lha /mnt/scbb-local
+```
+
+```output filename="output"
+[...]
+-rwxr-xr-x    1 lnd      lnd           45 Mar 12 13:32 channel-20240312-133233.backup
+[...]
+```
+
+* If you enabled the remote backup, check your GitHub repository. It should now
+contain the latest timestamped backup file
+
+🎉 You're set! Each time you open a new channel or close an existing one, the
+monitoring script will automatically save a timestamped copy of the backup file
+to your backup location.
