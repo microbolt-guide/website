@@ -4,8 +4,14 @@
     "bitcoin": "Bitcoin",
     "lightning": "Lightning",
     "---": {
-        "type": "separator",
-        "title": ""
+        "title": "",
+        "type": "separator"
     },
-    "faq": "FAQ"
+    "faq": "FAQ",
+    "twitter": {
+        "title": "Twitter ↗",
+        "type": "page",
+        "href": "https://twitter.com/microbolt_guide",
+        "newWindow": true
+    }
 }
