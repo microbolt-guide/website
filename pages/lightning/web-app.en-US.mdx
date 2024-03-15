@@ -1,0 +1,544 @@
+import { Callout, Steps } from 'nextra/components'
+import { FAQBox } from '@components'
+
+# Web app
+
+[ThunderHub](https://thunderhub.io) is an open source LND node manager where you
+can manage and monitor your node on any device or browser. It allows you to take
+control of the lightning network with a simple and intuitive UX and the most
+up-to-date tech stack.
+
+![ThunderHub homepage](/img/lightning/webapp/thunderhub.webp)
+
+## Preparations
+
+<Steps>
+### Install dependencies
+
+* Install Node.js using the apk package manager.
+
+These are make dependencies (safe to remove after installation, if you want)
+
+```sh copy
+$SU apk add npm
+```
+
+These are runtime dependencies
+
+```sh copy
+$SU apk add nodejs-current
+```
+
+### Create the `thunderhub` user/group
+
+```sh copy
+$SU addgroup -S thunderhub
+```
+
+```sh copy
+$SU adduser \
+    -S \
+    -D \
+    -H \
+    -h /dev/null \
+    -s /sbin/nologin \
+    -G thunderhub \
+    -g thunderhub \
+    thunderhub
+```
+
+### Add `thunderhub` user to the `lnd` group
+
+```sh copy
+$SU adduser thunderhub lnd
+```
+
+### Add `satoshi` user to the `thunderhub` group
+
+```sh copy
+$SU adduser satoshi thunderhub
+```
+
+### Firewall & reverse proxy
+
+In the [Security section](/system/security#nginx), we set up Nginx as a reverse
+proxy. Now we can add the ThunderHub configuration.
+
+* Enable NGINX reverse proxy to route external encrypted HTTPS traffic
+internally to the ThunderHub.
+
+```sh copy
+$SU $EDITOR /etc/nginx/streams-available/thunderhub-reverse-proxy.conf
+```
+
+```nginx copy filename="/etc/nginx/streams-available/thunderhub-reverse-proxy.conf"
+upstream thunderhub {
+  server 127.0.0.1:3010;
+}
+server {
+  listen 4002 ssl;
+  proxy_pass thunderhub;
+}
+```
+
+```sh copy
+$SU ln \
+    -s \
+    ../streams-available/thunderhub-reverse-proxy.conf \
+    /etc/nginx/streams-enabled/thunderhub-reverse-proxy.conf
+```
+
+* Test and reload NGINX configuration
+
+```sh copy
+$SU nginx -t
+$SU rc-service nginx restart
+
+```
+
+* Configure the firewall to allow incoming HTTPS requests
+
+```sh copy
+$SU ufw allow 4002/tcp comment 'allow ThunderHub SSL from anywhere'
+```
+</Steps>
+
+## Installation
+
+[ThunderHub](https://thunderhub.io) provides a lightweight and easy to use web
+interface to accomplish a great node management.
+
+<Steps>
+### Download source code
+
+We get the latest release of the ThunderHub source code and install it.
+
+* Download the source code for the latest ThunderHub release. You can check the
+[release page](https://github.com/apotdevin/thunderhub/releases) to see if a
+newer release is available. Other releases might not have been properly tested
+with the rest of the MicroBolt configuration, though.
+
+```sh copy
+cd /tmp
+```
+
+```sh copy
+VERSION=0.13.30
+```
+
+```sh copy
+git clone --branch v$VERSION https://github.com/apotdevin/thunderhub.git && cd thunderhub
+```
+
+### Signature check
+
+* To avoid using bad source code, verify that the release has been properly
+signed by the main developer [Anthony Potdevin](https://github.com/apotdevin).
+
+```sh copy
+wget -qO- https://github.com/apotdevin.gpg | gpg --import
+```
+
+```sh copy
+git verify-commit v$VERSION
+```
+
+### Configure, patch and install
+
+* Patch [gh pr](https://github.com/apotdevin/thunderhub/pull/612)
+
+```sh copy
+sed 's/5.4.3/5.5.0/' package.json > _
+mv -f _ package.json
+```
+
+* Install all dependencies using the Node Package Manager (NPM).
+
+```sh copy
+npm install
+npm audit fix
+```
+
+Installation can take some time. There might be a lot of confusing output, but
+if you see something similar to the following, the installation was successful:
+
+```output filename="output"
+[...]
+changed 2 packages, and audited 1986 packages in 4s
+ 
+253 packages are looking for funding
+  run `npm fund` for details
+ 
+found 0 vulnerabilities
+```
+
+* Improve your privacy by opt-out of Next.js
+[telemetry](https://nextjs.org/telemetry)
+
+```sh copy
+npx next telemetry disable
+```
+
+* Build it
+
+```sh copy
+npm run build
+```
+
+* Reduce the space taken up by ThunderHub
+
+```sh copy
+npm prune --production
+```
+
+* Make it a global permanent installation
+
+```sh copy
+mkdir ./bin
+```
+
+```sh copy
+printf "%s\n" \
+    "#!/usr/bin/env node" \
+    "process.env.npm_package_version = '$VERSION';" \
+    "process.env.NODE_ENV = 'production';" \
+    "require('../dist/main');" \
+    > ./bin/cli.js
+```
+
+```sh copy
+chmod +x ./bin/cli.js
+```
+
+```sh copy
+$SU mkdir /etc/thunderhub
+```
+
+```sh copy
+cp -v ./.env ./.env.local
+```
+
+```sh copy
+$SU mv -f /tmp/thunderhub /var/lib/
+```
+
+```sh copy
+$SU ln -s /var/lib/thunderhub /usr/lib/node_modules/thunderhub
+$SU ln -s ../lib/node_modules/thunderhub/bin/cli.js /usr/bin/thunderhub
+```
+</Steps>
+
+## Configuration
+
+* Edit the configuration file
+
+```sh copy
+$SU $EDITOR /var/lib/thunderhub/.env.local
+```
+
+```.env filename="/var/lib/thunderhub/.env.local"
+[...]
+LOG_LEVEL='debug'
+[...]
+TOR_PROXY_SERVER=socks://127.0.0.1:9050
+[...]
+PORT=3010
+[...]
+ACCOUNT_CONFIG_PATH='/etc/thunderhub/thubConfig.yaml'
+[...]
+```
+
+* Edit the `thubConfig.yaml` file
+
+```sh copy
+$SU $EDITOR /etc/thunderhub/thubConfig.yaml
+```
+
+```yaml copy filename="/etc/thunderhub/thubConfig.yaml"
+masterPassword: 'PASSWORD' # Default password unless defined in account
+accounts:
+  - name: 'MicroBolt'
+    serverUrl: '127.0.0.1:10009'
+    macaroonPath: '/var/lib/lnd/data/chain/bitcoin/mainnet/admin.macaroon'
+    certificatePath: '/var/lib/lnd/tls.cert'
+    password: '[E] ThunderHub password'
+```
+
+<Callout>
+Replace the `[E] ThunderHub password` to yours
+</Callout>
+
+<FAQBox title="Enable auto-healthchecks">
+```yaml copy filename="/etc/thunderhub/thubConfig.yaml" {8}
+masterPassword: 'PASSWORD' # Default password unless defined in account
+accounts:
+  - name: 'MicroBolt'
+    serverUrl: '127.0.0.1:10009'
+    macaroonPath: '/var/lib/lnd/data/chain/bitcoin/mainnet/admin.macaroon'
+    certificatePath: '/var/lib/lnd/tls.cert'
+    password: '[E] ThunderHub password'
+healthCheckPingEnabled: true
+```
+</FAQBox>
+
+<FAQBox title="Auto-backups to Amboss">
+<Callout type="info">
+Keep in mind that if you stop ThunderHub, Amboss will interpret that your node
+is offline because the connection is established between ThunderHub \<-> Amboss
+to send healthchecks pings
+</Callout>
+
+```yaml copy filename="/etc/thunderhub/thubConfig.yaml" {8}
+masterPassword: 'PASSWORD' # Default password unless defined in account
+accounts:
+  - name: 'MicroBolt'
+    serverUrl: '127.0.0.1:10009'
+    macaroonPath: '/var/lib/lnd/data/chain/bitcoin/mainnet/admin.macaroon'
+    certificatePath: '/var/lib/lnd/tls.cert'
+    password: '[E] ThunderHub password'
+backupsEnabled: true
+```
+</FAQBox>
+
+<Callout type="info">
+These last optional features are not available for a testnet node
+</Callout>
+
+<FAQBox title="Remote access over Tor">
+* Add the following lines in the section "location hidden services" in the
+`torrc` file.
+
+```sh copy
+$SU $EDITOR /etc/tor/torrc
+```
+
+```conf copy filename="/etc/tor/torrc"
+# Hidden Service Thunderhub
+HiddenServiceDir /var/lib/tor/thunderhub/
+HiddenServiceVersion 3
+HiddenServicePoWDefensesEnabled 1
+HiddenServicePort 80 127.0.0.1:3010
+```
+
+* Reload Tor configuration and get your connection address.
+
+```sh copy
+$SU rc-service tor reload
+$SU cat /var/lib/tor/thunderhub/hostname
+```
+
+```output filename="output"
+abcdefg..............xyz.onion
+```
+
+* With the [Tor browser](https://www.torproject.org), you can access this onion
+address from any device. Please be aware that this access is not password
+protected and should not be shared widely.
+</FAQBox>
+
+### Autostart on boot
+
+Now we'll make sure our lightning node manager starts as a service on the
+computer so that it's always running.
+
+* Create the ThunderHub init.d unit and copy/paste the following configuration.
+Save and exit.
+
+```sh copy
+$SU $EDITOR /etc/init.d/thunderhub
+```
+
+```sh copy filename="/etc/init.d/thunderhub"
+#!/sbin/openrc-run
+
+: ${THUNDERHUB_CONFIGFILE:=/etc/thunderhub/thubConfig.yaml}
+: ${THUNDERHUB_PIDDIR:=/run/thunderhub}
+: ${THUNDERHUB_PIDFILE:=${THUNDERHUB_PIDDIR}/${SVCNAME}.pid}
+: ${THUNDERHUB_DATADIR:=/var/lib/thunderhub}
+: ${THUNDERHUB_LOGDIR:=/var/log/thunderhub}
+: ${THUNDERHUB_USER:=thunderhub}
+: ${THUNDERHUB_GROUP:=thunderhub}
+: ${THUNDERHUB_BIN:=/usr/bin/thunderhub}
+: ${THUNDERHUB_OPTS=${THUNDERHUB_OPTS}}
+: ${THUNDERHUB_SIGTERM_TIMEOUT:=600}
+: ${THUNDERHUB_ENVFILE:=${THUNDERHUB_DATADIR}/.env.local}
+
+name="ThunderHub"
+description="Monitor and manage your node from any browser and any device"
+
+command="${THUNDERHUB_BIN}"
+command_args="${THUNDERHUB_OPTS}"
+command_user="${THUNDERHUB_USER}:${THUNDERHUB_GROUP}"
+command_background="true"
+
+directory="${THUNDERHUB_DATADIR}"
+required_files="${THUNDERHUB_CONFIGFILE}"
+pidfile="${THUNDERHUB_PIDFILE}"
+retry="${THUNDERHUB_SIGTERM_TIMEOUT}"
+
+start_stop_daemon_args="--stdout ${THUNDERHUB_LOGDIR}/debug.log
+                        --stderr ${THUNDERHUB_LOGDIR}/debug.log"
+
+depend() {
+    need lnd
+    checkdepend TOR_PROXY_SERVER tor
+}
+
+checkdepend() {
+    if grep -qs "^${1}=" "${THUNDERHUB_ENVFILE}"; then
+        need "${2:-$1}"
+    fi
+}
+
+start_pre() {
+    checkpath --file      --mode 0660 --owner "${THUNDERHUB_USER}:${THUNDERHUB_GROUP}" "${THUNDERHUB_CONFIGFILE}"
+    checkpath --directory --mode 0750 --owner "${THUNDERHUB_USER}:${THUNDERHUB_GROUP}" "${THUNDERHUB_DATADIR}"
+    checkpath --directory --mode 0755 --owner "${THUNDERHUB_USER}:${THUNDERHUB_GROUP}" "${THUNDERHUB_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${THUNDERHUB_USER}:${THUNDERHUB_GROUP}" "${THUNDERHUB_PIDDIR}"
+    checkconfig
+}
+
+checkconfig() {
+    if ! grep -qs '^    macaroonPath: ' "${THUNDERHUB_CONFIGFILE}"
+    then
+        eerror ""
+        eerror "ERROR: You must set a macaroonPath path to run ThunderHub"
+        eerror "The setting must appear in ${THUNDERHUB_CONFIGFILE}"
+        eerror ""
+        return 1
+    fi
+}
+```
+
+* Enable execution permission
+
+```sh copy
+$SU chmod +x /etc/init.d/thunderhub
+```
+
+### Enable logrotate
+
+* Enter the complete next configuration. Save and exit
+
+```sh copy
+$SU $EDITOR /etc/logrotate.d/thunderhub
+```
+
+```sh copy filename="/etc/logrotate.d/thunderhub"
+/var/log/thunderhub/*.log {
+    weekly
+    missingok
+    rotate 104
+    compress
+    delaycompress
+    notifempty
+    create 0640 thunderhub thunderhub
+    sharedscripts
+    postrotate
+        killall -HUP `cat /run/thunderhub/thunderhub.pid`
+    endscript
+}
+```
+
+* Test
+
+```sh copy
+$SU logrotate /etc/logrotate.d/thunderhub --debug
+```
+
+## Enable and start BTC RPC Explorer
+
+```sh copy
+$SU rc-update add thunderhub
+$SU rc-service thunderhub start
+```
+
+<Callout emoji="🎉">
+**Congratulations!** You now have Thunderhub up and running
+</Callout>
+
+You can now access ThunderHub from within your local network by browsing to
+https://nakamoto01:4002, https://nakamoto01.local:4002 (or your equivalent ip
+address).
+
+<FAQBox title="Access to your Amboss node account">
+* In the "**Home**" screen - "**Quick Actions**" section, click on the Amboss
+icon "**Login**", wait for the top right corner notification to show you
+"**Logged in**" and click again on the Amboss icon "**Go to**". This will open a
+secondary tab in your browser to access your Amboss account node
+
+<Callout type="warning">
+If you can't do "**Login**", maybe the cause is that you don't have a **public**
+channel opened yet. **You'll need at least one public channel that has been open
+for a few days.** Planning to open a public small-size channel to be connected
+with some Lightning Network peers or directly to the [Amboss
+node](https://amboss.space/es/node/03006fcf3312dae8d068ea297f58e2bd00ec1ffe214b793eda46966b6294a53ce6).
+More info on [Amboss docs](https://amboss.tech/docs)
+</Callout>
+
+* Making sure we are connected to the [Amboss
+account](https://amboss.space/settings?page=account), now back to Thunderhub for
+the next steps
+</FAQBox>
+
+<FAQBox title="Enable auto backups and healthcheck notifications to Amboss account">
+1. Open the “Settings” by pressing the cogwheel in the top right corner of the
+Thunderhub
+1. Switch to “Yes” -> Amboss: “Auto backups” and “Healthcheck Pings”
+1. Test pushing a backup to Amboss by entering in the “Tools” section, to the
+left main menu
+1. Press to “Push” button to test the correct working
+1. Go back to Amboss website and access “Account” in the main menu
+1. Access to “Backup” and ensure that the last date of the backup is the same as
+before done. It is recommended to download the backup file and store it in a
+safe place for future recovers. The backup file will be updated automatically in
+Amboss for every channel opening and closing. You could do this too in the
+“Tools” section in Thunderhub, “Backups” -> “Backup all channels” -> “Download”
+button.
+1. In Amboss, access “Monitoring” to configure “Healthcheck Settings”.
+
+<Callout type="info">
+Feel free to link to Telegram bot notifications, enable different notifications,
+complete your public node profile in Amboss, and other things in the different
+sections of your account.
+</Callout>
+</FAQBox>
+
+<FAQBox title="Recovering channels using the ThunderHub method">
+After possible data corruption of your LND node, ensure that this old node is
+completely off before starting the recovery. Once you have synced the new node,
+on-chain recovered with seeds, full on-chain re-scan complete, and Thunderhub
+installed and running, go to the Thunderhub dashboard.
+
+1. From the left sidebar, click on "**Tools**", and go to the "Backups" section
+-> "**Recover Funds from Channels**" -> push the "**Recover**" button.
+1. Enter the complete string text of your previously downloaded channels backup
+file in the step before and push the “Recover” button. All of the channels that
+you had opened in your old node will be forced closed and they will appear in
+the “Pending” tab in the “Channels” section until closings are confirmed
+
+<Callout type="warning">
+Use this guide as a last resort if you have lost access to your node or are
+unable to start LND due to a fatal error. This guide will close all your
+channels. Your funds will become available on-chain at varying speeds.
+</Callout>
+</FAQBox>
+
+## For the future: ThunderHub update
+
+Follow again [Web app](./web-app) page replacing the environment variable
+`VERSION=x.xx` value for the latest if it has not been already changed in this
+guide.
+
+* Update the ThunderHub configuration if necessary (see [release
+notes](https://github.com/apotdevin/thunderhub/releases))
+
+```sh copy
+$SU $EDITOR /etc/thunderhub/thubConfig.yaml
+```
+
+* Restart the service to apply the changes
+
+```sh copy
+$SU rc-service thunderhub restart
+```

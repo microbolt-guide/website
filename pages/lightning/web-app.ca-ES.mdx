@@ -1,0 +1,554 @@
+import { Callout, Steps } from 'nextra/components'
+import { FAQBox } from '@components'
+
+# Aplicació web
+
+[ThunderHub](https://thunderhub.io) és un gestor de nodes LND de codi obert on
+pots gestionar i supervisar el teu node des de qualsevol dispositiu o navegador.
+Et permet prendre el control de la xarxa Lightning amb una interfície d'usuari
+simple i intuitiva i la tecnologia més puntera.
+
+![Pàgina d'inici de ThunderHub](/img/lightning/webapp/thunderhub.webp)
+
+## Preparatius
+
+<Steps>
+### Instal·leu dependències
+
+* Instal·leu Node.js mitjançant el gestor de paquets apk.
+
+Aquestes són dependències de creació (es pot eliminar després de la
+instal·lació, si voleu)
+
+```sh copy
+$SU apk add npm
+```
+
+Aquestes són dependències en temps d'execució
+
+```sh copy
+$SU apk add nodejs-current
+```
+
+### Creeu l'usuari/grup `thunderhub`
+
+```sh copy
+$SU addgroup -S thunderhub
+```
+
+```sh copy
+$SU adduser \
+    -S \
+    -D \
+    -H \
+    -h /dev/null \
+    -s /sbin/nologin \
+    -G thunderhub \
+    -g thunderhub \
+    thunderhub
+```
+
+### Afegeix l'usuari `thunderhub` al grup `lnd`
+
+```sh copy
+$SU adduser thunderhub lnd
+```
+
+### Afegiu també l'usuari `satoshi` al grup `thunderhub`
+
+```sh copy
+$SU adduser satoshi thunderhub
+```
+
+### Tallafoc i servidor intermediari invers
+
+A la secció de [Seguretat](/system/security#nginx), hem configurat NGINX com a
+servidor intermediari invers. Ara podem afegir la configuració de ThunderHub.
+
+* Habilita el servidor intermediari invers de NGINX per encaminar el trànsit
+HTTPS extern xifrat internament cap a ThunderHub
+
+```sh copy
+$SU $EDITOR /etc/nginx/streams-available/thunderhub-reverse-proxy.conf
+```
+
+```nginx copy filename="/etc/nginx/streams-available/thunderhub-reverse-proxy.conf"
+upstream thunderhub {
+  server 127.0.0.1:3010;
+}
+server {
+  listen 4002 ssl;
+  proxy_pass thunderhub;
+}
+```
+
+```sh copy
+$SU ln \
+    -s \
+    ../streams-available/thunderhub-reverse-proxy.conf \
+    /etc/nginx/streams-enabled/thunderhub-reverse-proxy.conf
+```
+
+* Prova i torna a carregar la configuració de NGINX
+
+```sh copy
+$SU nginx -t
+$SU rc-service nginx restart
+
+```
+
+* Configura el tallafoc per permetre les sol·licituds HTTPS entrants
+
+```sh copy
+$SU ufw allow 4002/tcp comment 'allow ThunderHub SSL from anywhere'
+```
+</Steps>
+
+## Instal·lació
+
+[ThunderHub](https://thunderhub.io) ofereix una interfície web lleugera i fàcil
+d'utilitzar per aconseguir una gran gestió del node.
+
+<Steps>
+### Descarrega el codi font
+
+Obtenim la darrera versió del codi font de ThunderHub i la instal·lem.
+
+* Descarrega el codi font de l'última versió de ThunderHub. Pots comprovar la
+[pàgina de versions](https://github.com/apotdevin/thunderhub/releases) per veure
+si hi ha una versió més nova disponible. Tanmateix, altres versions podrien no
+haver estat provades adequadament amb la resta de la configuració de MicroBolt.
+
+```sh copy
+cd /tmp
+```
+
+```sh copy
+VERSION=0.13.30
+```
+
+```sh copy
+git clone --branch v$VERSION https://github.com/apotdevin/thunderhub.git && cd thunderhub
+```
+
+### Verificació de signatura
+
+* Per evitar l'ús de codi font incorrecte, comproveu que el desenvolupador
+principal [Anthony Potdevin](https://github.com/apotdevin) hagi signat correctament la
+versió.
+
+```sh copy
+wget -qO- https://github.com/apotdevin.gpg | gpg --import
+```
+
+```sh copy
+git verify-commit v$VERSION
+```
+
+### Configura, corregiu i instal·la
+
+* Pegat [gh pr](https://github.com/apotdevin/thunderhub/pull/612)
+
+```sh copy
+sed 's/5.4.3/5.5.0/' package.json > _
+mv -f _ package.json
+```
+
+* Instal·leu totes les dependències mitjançant el Node Package Manager (NPM).
+
+```sh copy
+npm install
+npm audit fix
+```
+
+La instal·lació pot trigar un temps. Pot ser que hi hagi moltes sortides
+confuses, però si veieu alguna cosa semblant a la següent, la instal·lació ha
+estat correcta:
+
+```output filename="output"
+[...]
+changed 2 packages, and audited 1986 packages in 4s
+ 
+253 packages are looking for funding
+  run `npm fund` for details
+ 
+found 0 vulnerabilities
+```
+
+* Millora la teva privadesa optant per sortir del
+[telemetria](https://nextjs.org/telemetry) de Next.js
+
+```sh copy
+npx next telemetry disable
+```
+
+* Compila-ho
+
+```sh copy
+npm run build
+```
+
+* Redueix l'espai ocupat per ThunderHub
+
+```sh copy
+npm prune --production
+```
+
+* Feu-ne una instal·lació permanent global
+
+```sh copy
+mkdir ./bin
+```
+
+```sh copy
+printf "%s\n" \
+    "#!/usr/bin/env node" \
+    "process.env.npm_package_version = '$VERSION';" \
+    "process.env.NODE_ENV = 'production';" \
+    "require('../dist/main');" \
+    > ./bin/cli.js
+```
+
+```sh copy
+chmod +x ./bin/cli.js
+```
+
+```sh copy
+$SU mkdir /etc/thunderhub
+```
+
+```sh copy
+cp -v ./.env ./.env.local
+```
+
+```sh copy
+$SU mv -f /tmp/thunderhub /var/lib/
+```
+
+```sh copy
+$SU ln -s /var/lib/thunderhub /usr/lib/node_modules/thunderhub
+$SU ln -s ../lib/node_modules/thunderhub/bin/cli.js /usr/bin/thunderhub
+```
+</Steps>
+
+## Configuració
+
+* Edita el fitxer de configuració
+
+```sh copy
+$SU $EDITOR /var/lib/thunderhub/.env.local
+```
+
+```.env filename="/var/lib/thunderhub/.env.local"
+[...]
+LOG_LEVEL='debug'
+[...]
+TOR_PROXY_SERVER=socks://127.0.0.1:9050
+[...]
+PORT=3010
+[...]
+ACCOUNT_CONFIG_PATH='/etc/thunderhub/thubConfig.yaml'
+[...]
+```
+
+* Edita el fitxer `thubConfig.yaml`
+
+```sh copy
+$SU $EDITOR /etc/thunderhub/thubConfig.yaml
+```
+
+```yaml copy filename="/etc/thunderhub/thubConfig.yaml"
+masterPassword: 'PASSWORD' # Default password unless defined in account
+accounts:
+  - name: 'MicroBolt'
+    serverUrl: '127.0.0.1:10009'
+    macaroonPath: '/var/lib/lnd/data/chain/bitcoin/mainnet/admin.macaroon'
+    certificatePath: '/var/lib/lnd/tls.cert'
+    password: '[E] ThunderHub password'
+```
+
+<Callout>
+Substitueix `[E] ThunderHub password` per la teva
+</Callout>
+
+<FAQBox title="Enable auto-healthchecks">
+```yaml copy filename="/etc/thunderhub/thubConfig.yaml" {8}
+masterPassword: 'PASSWORD' # Default password unless defined in account
+accounts:
+  - name: 'MicroBolt'
+    serverUrl: '127.0.0.1:10009'
+    macaroonPath: '/var/lib/lnd/data/chain/bitcoin/mainnet/admin.macaroon'
+    certificatePath: '/var/lib/lnd/tls.cert'
+    password: '[E] ThunderHub password'
+healthCheckPingEnabled: true
+```
+</FAQBox>
+
+<FAQBox title="Auto-backups to Amboss">
+<Callout type="info">
+Tingues en compte que si atures ThunderHub, Amboss interpretarà que el teu node
+està fora de línia, ja que la connexió s'estableix entre ThunderHub \<-> Amboss
+per enviar pings de comprovació d'estat
+</Callout>
+
+```yaml copy filename="/etc/thunderhub/thubConfig.yaml" {8}
+masterPassword: 'PASSWORD' # Default password unless defined in account
+accounts:
+  - name: 'MicroBolt'
+    serverUrl: '127.0.0.1:10009'
+    macaroonPath: '/var/lib/lnd/data/chain/bitcoin/mainnet/admin.macaroon'
+    certificatePath: '/var/lib/lnd/tls.cert'
+    password: '[E] ThunderHub password'
+backupsEnabled: true
+```
+</FAQBox>
+
+<Callout type="info">
+Aquestes últimes característiques opcionals no estan disponibles per a un node
+de testnet
+</Callout>
+
+<FAQBox title="Remote access over Tor">
+* Afegiu les tres línies següents a la secció "location-hidden services" al
+fitxer `torrc`.
+
+```sh copy
+$SU $EDITOR /etc/tor/torrc
+```
+
+```conf copy filename="/etc/tor/torrc"
+# Hidden Service Thunderhub
+HiddenServiceDir /var/lib/tor/thunderhub/
+HiddenServiceVersion 3
+HiddenServicePoWDefensesEnabled 1
+HiddenServicePort 80 127.0.0.1:3010
+```
+
+* Torneu a carregar la configuració de Tor i obteniu la vostra adreça de
+connexió.
+
+```sh copy
+$SU rc-service tor reload
+$SU cat /var/lib/tor/thunderhub/hostname
+```
+
+```output filename="output"
+abcdefg..............xyz.onion
+```
+
+* Amb el [navegador Tor](https://www.torproject.org), pots accedir a aquesta
+adreça onion des de qualsevol dispositiu. Tingues en compte que aquest accés no
+està protegit per contrasenya i no s'hauria de compartir amplament.
+</FAQBox>
+
+### Inici automàtic a l'arrencada
+
+Ara ens assegurarem que el nostre gestor de nodes Lightning s'iniciï com a
+servei a l'ordinador perquè estigui sempre en execució.
+
+* Creeu la unitat init.d de ThunderHub i copieu/enganxeu la configuració
+següent. Guardar i sortir.
+
+```sh copy
+$SU $EDITOR /etc/init.d/thunderhub
+```
+
+```sh copy filename="/etc/init.d/thunderhub"
+#!/sbin/openrc-run
+
+: ${THUNDERHUB_CONFIGFILE:=/etc/thunderhub/thubConfig.yaml}
+: ${THUNDERHUB_PIDDIR:=/run/thunderhub}
+: ${THUNDERHUB_PIDFILE:=${THUNDERHUB_PIDDIR}/${SVCNAME}.pid}
+: ${THUNDERHUB_DATADIR:=/var/lib/thunderhub}
+: ${THUNDERHUB_LOGDIR:=/var/log/thunderhub}
+: ${THUNDERHUB_USER:=thunderhub}
+: ${THUNDERHUB_GROUP:=thunderhub}
+: ${THUNDERHUB_BIN:=/usr/bin/thunderhub}
+: ${THUNDERHUB_OPTS=${THUNDERHUB_OPTS}}
+: ${THUNDERHUB_SIGTERM_TIMEOUT:=600}
+: ${THUNDERHUB_ENVFILE:=${THUNDERHUB_DATADIR}/.env.local}
+
+name="ThunderHub"
+description="Monitor and manage your node from any browser and any device"
+
+command="${THUNDERHUB_BIN}"
+command_args="${THUNDERHUB_OPTS}"
+command_user="${THUNDERHUB_USER}:${THUNDERHUB_GROUP}"
+command_background="true"
+
+directory="${THUNDERHUB_DATADIR}"
+required_files="${THUNDERHUB_CONFIGFILE}"
+pidfile="${THUNDERHUB_PIDFILE}"
+retry="${THUNDERHUB_SIGTERM_TIMEOUT}"
+
+start_stop_daemon_args="--stdout ${THUNDERHUB_LOGDIR}/debug.log
+                        --stderr ${THUNDERHUB_LOGDIR}/debug.log"
+
+depend() {
+    need lnd
+    checkdepend TOR_PROXY_SERVER tor
+}
+
+checkdepend() {
+    if grep -qs "^${1}=" "${THUNDERHUB_ENVFILE}"; then
+        need "${2:-$1}"
+    fi
+}
+
+start_pre() {
+    checkpath --file      --mode 0660 --owner "${THUNDERHUB_USER}:${THUNDERHUB_GROUP}" "${THUNDERHUB_CONFIGFILE}"
+    checkpath --directory --mode 0750 --owner "${THUNDERHUB_USER}:${THUNDERHUB_GROUP}" "${THUNDERHUB_DATADIR}"
+    checkpath --directory --mode 0755 --owner "${THUNDERHUB_USER}:${THUNDERHUB_GROUP}" "${THUNDERHUB_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${THUNDERHUB_USER}:${THUNDERHUB_GROUP}" "${THUNDERHUB_PIDDIR}"
+    checkconfig
+}
+
+checkconfig() {
+    if ! grep -qs '^    macaroonPath: ' "${THUNDERHUB_CONFIGFILE}"
+    then
+        eerror ""
+        eerror "ERROR: You must set a macaroonPath path to run ThunderHub"
+        eerror "The setting must appear in ${THUNDERHUB_CONFIGFILE}"
+        eerror ""
+        return 1
+    fi
+}
+```
+
+* Habilita el permís d'execució
+
+```sh copy
+$SU chmod +x /etc/init.d/thunderhub
+```
+
+### Habilita logrotate
+
+* Introduïu la configuració següent completa. Guardar i sortir
+
+```sh copy
+$SU $EDITOR /etc/logrotate.d/thunderhub
+```
+
+```sh copy filename="/etc/logrotate.d/thunderhub"
+/var/log/thunderhub/*.log {
+    weekly
+    missingok
+    rotate 104
+    compress
+    delaycompress
+    notifempty
+    create 0640 thunderhub thunderhub
+    sharedscripts
+    postrotate
+        killall -HUP `cat /run/thunderhub/thunderhub.pid`
+    endscript
+}
+```
+
+* Prova
+
+```sh copy
+$SU logrotate /etc/logrotate.d/thunderhub --debug
+```
+
+## Activa i inicia ThunderHub
+
+```sh copy
+$SU rc-update add thunderhub
+$SU rc-service thunderhub start
+```
+
+<Callout emoji="🎉">
+**Felicitats!** Ara tens el Thunderhub funcionant.
+</Callout>
+
+Ara pots accedir a ThunderHub des de la teva xarxa local navegant a
+https://nakamoto01:4002, https://nakamoto01.local:4002 (o la teva adreça IP
+equivalent).
+
+<FAQBox title="Accés al teu compte de node Amboss">
+* A la pantalla "**Home**" - secció "**Quick Actions**", feu clic a l'icona
+d'Amboss "**Login**", espereu que la notificació a la part superior dreta us
+mostri "**Logged in**" i feu clic de nou a l'icona d'Amboss "**Go to**". Això
+obrirà una pestanya secundària al vostre navegador per accedir al vostre compte
+de node Amboss
+
+<Callout type="warning">
+Si no podeu fer "**Login**", potser la causa és que encara no teniu un canal
+**públic** obert. **Necessitareu com a mínim un canal públic obert durant uns
+dies.** Planifiqueu obrir un canal de petita mida per estar connectat amb alguns
+iguals de la Xarxa Lightning o directament al [node
+d'Amboss](https://amboss.space/es/node/03006fcf3312dae8d068ea297f58e2bd00ec1ffe214b793eda46966b6294a53ce6).
+Més informació a la [documentació d'Amboss](https://amboss.tech/docs)
+</Callout>
+
+* Assegureu-vos que esteu connectats al [compte
+d'Amboss](https://amboss.space/settings?page=account), ara tornem a Thunderhub
+per als següents passos
+</FAQBox>
+
+<FAQBox title="Activar còpies de seguretat automàtiques i notificacions de comprovació d'estat al compte d'Amboss">
+1. Obriu “Settings” prement la roda dentada a la cantonada superior dreta del
+Thunderhub
+1. Canvieu a "Yes" -> Amboss: “Auto backups” i “Healthcheck Pings”
+1. Proveu d'enviar una còpia de seguretat a Amboss introduint-vos a la secció
+"Tools", al menú principal de l'esquerra
+1. Premeu el botó "Push" per provar el funcionament correcte
+1. Torneu al lloc web d'Amboss i accediu a "Account" al menú principal
+1. Accediu a “Backup” i assegureu-vos que la data de la darrera còpia de
+seguretat sigui la mateixa que la feta anteriorment. Es recomana descarregar el
+fitxer de còpia de seguretat i emmagatzemar-lo en un lloc segur per a futures
+recuperacions. El fitxer de còpia de seguretat s'actualitzarà automàticament a
+Amboss per a cada obertura i tancament de canal. També podeu fer-ho a la secció
+"Tools" del Thunderhub, “Backups” -> “Backup all channels” -> botó “Download”
+1. A Amboss, accediu a “Monitoring” per configurar “Healthcheck Settings”
+
+<Callout type="info">
+No dubteu a enllaçar a les notificacions bot de Telegram, activar les diferents
+notificacions, completar el vostre perfil de node públic a Amboss i altres coses
+a les diferents seccions del vostre compte.
+</Callout>
+</FAQBox>
+
+<FAQBox title="Recuperar canals utilitzant el mètode de ThunderHub">
+Després d'una possible corrupció de dades del teu node LND, assegura't que
+aquest node antic estigui completament apagat abans de començar la recuperació.
+Una vegada hàgiu sincronitzat el nou node, recuperat a la cadena amb les
+llavors, completat la reexploració completa de la cadena, i instal·lat i engegat
+el Thunderhub, aneu al tauler de control de Thunderhub.
+
+1. Des de la barra lateral esquerra, feu clic a "**Tools**", i aneu a la secció
+"Backups" -> "**Recover Funds from Channels**" -> feu clic al botó
+"**Recover**".
+1. Introduïu el text complet del fitxer de còpia de seguretat dels vostres
+canals descarregat anteriorment en el pas anterior i feu clic al botó “Recover”.
+Tots els canals que hàgiu obert al vostre node antic es tancaran forçosament i
+apareixeran a la pestanya “Pending” a la secció “Channels” fins que es confirmi
+el tancament
+
+<Callout type="warning">
+Utilitzeu aquesta guia com a últim recurs si heu perdut l'accés al vostre node o
+no podeu iniciar LND a causa d'un error fatal. Aquesta guia tancarà tots els
+vostres canals. Els vostres fons estaran disponibles a la cadena a diferents
+velocitats.
+</Callout>
+</FAQBox>
+
+## Per al futur: actualització de ThunderHub
+
+Torneu a seguir la pàgina [Aplicació web](./web-app) substituint el valor de la
+variable d'entorn `VERSION=x.xx` per l'últim si encara no s'ha modificat en
+aquesta guia.
+
+* Actualitzeu la configuració de ThunderHub si cal (vegeu les notes de la
+versió)
+
+```sh copy
+$SU $EDITOR /etc/thunderhub/thubConfig.yaml
+```
+
+* Reinicieu el servei per aplicar els canvis
+
+```sh copy
+$SU rc-service thunderhub restart
+```
