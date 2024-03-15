@@ -378,12 +378,12 @@ command_args="${BTCRPCEXPL_OPTS}"
 command_user="${BTCRPCEXPL_USER}:${BTCRPCEXPL_GROUP}"
 command_background="true"
 
+directory="${BTCRPCEXPL_DATADIR}"
 required_files="${BTCRPCEXPL_CONFIGFILE}"
 pidfile="${BTCRPCEXPL_PIDFILE}"
 retry="${BTCRPCEXPL_SIGTERM_TIMEOUT}"
 
-start_stop_daemon_args="--chdir  ${BTCRPCEXPL_DATADIR}
-                        --stdout ${BTCRPCEXPL_LOGDIR}/debug.log
+start_stop_daemon_args="--stdout ${BTCRPCEXPL_LOGDIR}/debug.log
                         --stderr ${BTCRPCEXPL_LOGDIR}/debug.log"
 
 depend() {
