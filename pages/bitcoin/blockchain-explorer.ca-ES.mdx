@@ -96,13 +96,11 @@ $SU adduser satoshi btc-rpc-explorer
 
 ### Tallafoc i servidor intermediari invers
 
-A la secció [Seguretat](/system/security#nginx), ja hem configurat NGINX com a
-servidor intermediari invers. Ara podem afegir la configuració del BTC RPC
-Explorer.
+A la secció de [Seguretat](/system/security#nginx), hem configurat NGINX com a
+servidor intermediari invers. Ara podem afegir la configuració de ThunderHub.
 
-* Habiliteu el servidor intermediari invers NGINX per afegir xifratge SSL/TLS a
-la comunicació del BTC RPC Explorer. Creeu el fitxer de configuració i enganxeu
-el contingut següent
+* Habilita el servidor intermediari invers de NGINX per encaminar el trànsit
+HTTPS extern xifrat internament cap a ThunderHub.
 
 ```sh copy
 $SU $EDITOR /etc/nginx/streams-available/btc-rpc-explorer-reverse-proxy.conf
