@@ -1,6 +1,16 @@
 {
-    "bitcoin-client": "Client Bitcoin",
-    "electrum-server": "Servidor Electrum",
+    "bitcoin-client": {
+        "title": "Client Bitcoin",
+        "theme": {
+            "pagination": false
+        }
+    },
+    "electrum-server": {
+        "title": "Servidor Electrum",
+        "theme": {
+            "pagination": false
+        }
+    },
     "desktop-signing-app": "Aplicació de signatura d'escriptori",
     "blockchain-explorer": "Explorador de cadena de blocs"
 }
