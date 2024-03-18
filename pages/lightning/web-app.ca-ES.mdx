@@ -271,7 +271,7 @@ accounts:
 Substitueix `[E] ThunderHub password` per la teva
 </Callout>
 
-<FAQBox title="Enable auto-healthchecks">
+<FAQBox title="Habilita les comprovacions de salut automàtiques">
 ```yaml copy filename="/etc/thunderhub/thubConfig.yaml" {8}
 masterPassword: 'PASSWORD' # Default password unless defined in account
 accounts:
@@ -284,7 +284,7 @@ healthCheckPingEnabled: true
 ```
 </FAQBox>
 
-<FAQBox title="Auto-backups to Amboss">
+<FAQBox title="Còpies de seguretat automàtiques a Amboss">
 <Callout type="info">
 Tingues en compte que si atures ThunderHub, Amboss interpretarà que el teu node
 està fora de línia, ja que la connexió s'estableix entre ThunderHub \<-> Amboss
@@ -308,9 +308,9 @@ Aquestes últimes característiques opcionals no estan disponibles per a un node
 de testnet
 </Callout>
 
-<FAQBox title="Remote access over Tor">
-* Afegiu les tres línies següents a la secció "location-hidden services" al
-fitxer `torrc`.
+<FAQBox title="Accés remot per Tor">
+* Afegiu les línies següents a la secció de "location-hidden services" al fitxer
+`torrc`.
 
 ```sh copy
 $SU $EDITOR /etc/tor/torrc
