@@ -3,11 +3,15 @@
     "system": "System",
     "bitcoin": "Bitcoin",
     "lightning": "Lightning",
-    "---": {
-        "title": "",
-        "type": "separator"
+    "guide": {
+        "title": "Guide",
+        "type": "page",
+        "href": "/"
     },
-    "faq": "FAQ",
+    "faq": {
+        "title": "FAQ",
+        "type": "page"
+    },
     "twitter": {
         "title": "Twitter ↗",
         "type": "page",
