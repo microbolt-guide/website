@@ -12,5 +12,6 @@
         }
     },
     "desktop-signing-app": "Aplicació de signatura d'escriptori",
-    "blockchain-explorer": "Explorador de cadena de blocs"
+    "blockchain-explorer": "Explorador de cadena de blocs",
+    "mining-pool": "Pool de Minera"
 }
