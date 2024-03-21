@@ -1,16 +1,6 @@
 {
-    "bitcoin-client": {
-        "title": "Bitcoin client",
-        "theme": {
-            "pagination": false
-        }
-    },
-    "electrum-server": {
-        "title": "Electrum server",
-        "theme": {
-            "pagination": false
-        }
-    },
+    "bitcoin-client": "Bitcoin client",
+    "electrum-server": "Electrum server",
     "desktop-signing-app": "Desktop signing app",
     "blockchain-explorer": "Blockchain explorer",
     "mining-pool": "Mining Pool"
