@@ -68,8 +68,6 @@ export default {
       </>
     )
   },
-  primaryHue: 33,
-  primarySaturation: 94,
   logo: (
     <>
       <svg
