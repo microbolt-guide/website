@@ -73,7 +73,7 @@ printf "%s\n" \
 ## Instal·lació
 
 <Callout type="info">
-A Bitcoin Knots 25.1 tots els filtres d'"spam" estan actualitzats
+A Bitcoin Knots >25.1 tots els filtres d'"spam" estan actualitzats
 </Callout>
 
 ![](/img/bitcoin/bitcoin-client/urinals.gif)
@@ -428,21 +428,19 @@ $SU $EDITOR /etc/init.d/bitcoind
 #!/sbin/openrc-run
 
 : ${BITCOIND_CONFIGFILE:=/etc/bitcoin/bitcoin.conf}
-: ${BITCOIND_PIDDIR:=/run/bitcoind}
-: ${BITCOIND_PIDFILE:=${BITCOIND_PIDDIR}/${SVCNAME}.pid}
 : ${BITCOIND_DATADIR:=/var/lib/bitcoind}
 : ${BITCOIND_LOGDIR:=/var/log/bitcoind}
-: ${BITCOIND_USER:=${BITCOIN_USER:-bitcoin}}
+: ${BITCOIND_USER:=bitcoin}
 : ${BITCOIND_GROUP:=bitcoin}
 : ${BITCOIND_BIN:=/usr/bin/bitcoind}
 : ${BITCOIND_OPTS=${BITCOIN_OPTS}}
 : ${BITCOIND_SIGTERM_TIMEOUT:=600}
 
-name="Bitcoin Core daemon"
+name="Bitcoin Knots daemon"
 description="Bitcoin cryptocurrency P2P network daemon"
 
 command="${BITCOIND_BIN}"
-command_args="-pid=${BITCOIND_PIDFILE}
+command_args="-pid=${pidfile}
               -conf=${BITCOIND_CONFIGFILE}
               -datadir=${BITCOIND_DATADIR}
               -debuglogfile=${BITCOIND_LOGDIR}/debug.log
@@ -451,7 +449,7 @@ command_args_background="-daemonwait"
 command_user="${BITCOIND_USER}:${BITCOIND_GROUP}"
 
 required_files="${BITCOIND_CONFIGFILE}"
-pidfile="${BITCOIND_PIDFILE}"
+pidfile="/run/${SVCNAME}.pid"
 retry="${BITCOIND_SIGTERM_TIMEOUT}"
 
 depend() {
@@ -462,11 +460,16 @@ depend() {
     after logger firewall
 }
 
+checkdepend() {
+    if grep -qs "^${1}=" "${BITCOIND_CONFIGFILE}"; then
+        need "${2:-$1}"
+    fi
+}
+
 start_pre() {
-    checkpath --file      --mode 0660 --owner "${BITCOIND_USER}:${BITCOIND_GROUP}" "${BITCOIND_CONFIGFILE}"
-    checkpath --directory --mode 0750 --owner "${BITCOIND_USER}:${BITCOIND_GROUP}" "${BITCOIND_DATADIR}"
-    checkpath --directory --mode 0755 --owner "${BITCOIND_USER}:${BITCOIND_GROUP}" "${BITCOIND_LOGDIR}"
-    checkpath --directory --mode 0755 --owner "${BITCOIND_USER}:${BITCOIND_GROUP}" "${BITCOIND_PIDDIR}"
+    checkpath --file      --mode 0660 --owner "${command_user}" "${BITCOIND_CONFIGFILE}"
+    checkpath --directory --mode 0750 --owner "${command_user}" "${BITCOIND_DATADIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${BITCOIND_LOGDIR}"
     checkconfig
 }
 
@@ -491,12 +494,6 @@ checkconfig() {
             "admin@foo.com"
         eerror ""
         return 1
-    fi
-}
-
-checkdepend() {
-    if grep -qs "^${1}=" "${BITCOIND_CONFIGFILE}"; then
-        need "${2:-$1}"
     fi
 }
 ```
@@ -543,7 +540,7 @@ $SU $EDITOR /etc/logrotate.d/bitcoind
     create 0640 bitcoin bitcoin
     sharedscripts
     postrotate
-        killall -HUP `cat /run/bitcoind/bitcoind.pid`
+        killall -HUP `cat /run/bitcoind.pid`
     endscript
 }
 ```

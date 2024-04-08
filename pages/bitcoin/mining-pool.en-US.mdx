@@ -387,7 +387,6 @@ $SU $EDITOR /etc/init.d/public-pool
 : ${PUBLICPOOL_BIN:=/usr/bin/public-pool}
 : ${PUBLICPOOL_OPTS=${PUBLICPOOL_OPTS}}
 : ${PUBLICPOOL_SIGTERM_TIMEOUT:=600}
-PUBLICPOOL_PIDFILE="/run/${SVCNAME}.pid"
 
 name="Public Pool"
 description="Fully Open Source Solo Bitcoin Mining Pool"
@@ -399,7 +398,7 @@ command_background="true"
 
 directory="${PUBLICPOOL_DATADIR}"
 required_files="${PUBLICPOOL_CONFIGFILE}"
-pidfile="${PUBLICPOOL_PIDFILE}"
+pidfile="/run/${SVCNAME}.pid"
 
 start_stop_daemon_args="--stdout ${PUBLICPOOL_LOGDIR}/debug.log
                         --stderr ${PUBLICPOOL_LOGDIR}/debug.log"
@@ -409,15 +408,15 @@ depend() {
 }
 
 start_pre() {
-    checkpath --file      --mode 0660 --owner "${PUBLICPOOL_USER}:${PUBLICPOOL_GROUP}" "${PUBLICPOOL_CONFIGFILE}"
-    checkpath --directory --mode 0750 --owner "${PUBLICPOOL_USER}:${PUBLICPOOL_GROUP}" "${PUBLICPOOL_DATADIR}"
-    checkpath --directory --mode 0755 --owner "${PUBLICPOOL_USER}:${PUBLICPOOL_GROUP}" "${PUBLICPOOL_LOGDIR}"
-    checkpath --directory --mode 0755 --owner "${PUBLICPOOL_USER}:${PUBLICPOOL_GROUP}" "${PUBLICPOOL_WEBUI}"
+    checkpath --file      --mode 0660 --owner "${command_user}" "${PUBLICPOOL_CONFIGFILE}"
+    checkpath --directory --mode 0750 --owner "${command_user}" "${PUBLICPOOL_DATADIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${PUBLICPOOL_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${PUBLICPOOL_WEBUI}"
     checkconfig
 }
 
 start_post() {
-    chown -R "${PUBLICPOOL_USER}:${PUBLICPOOL_GROUP}" "${PUBLICPOOL_WEBUI}"
+    chown -R "${command_user}" "${PUBLICPOOL_WEBUI}"
 }
 
 checkconfig() {
@@ -435,10 +434,10 @@ checkconfig() {
 
 stop() {
     ebegin "Stopping ${SVCNAME}"
-    pkill -TERM -P "$(pgrep -P $(cat ${PUBLICPOOL_PIDFILE}))"
+    pkill -TERM -P "$(pgrep -P $(cat ${pidfile}))"
     start-stop-daemon \
         --stop \
-        --pidfile="${PUBLICPOOL_PIDFILE}" \
+        --pidfile="${pidfile}" \
         --retry="${PUBLICPOOL_SIGTERM_TIMEOUT}" \
         --exec="${PUBLICPOOL_BIN}"
     eend $?

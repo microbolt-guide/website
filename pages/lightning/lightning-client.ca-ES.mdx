@@ -332,11 +332,17 @@ depend() {
     checkdepend tor.active tor
 }
 
+checkdepend() {
+    if grep -qs "^${1}=" "${LND_CONFIGFILE}"; then
+        need "${2:-$1}"
+    fi
+}
+
 start_pre() {
-    checkpath --file      --mode 0660 --owner "${LND_USER}:${LND_GROUP}" "${LND_CONFIGFILE}"
-    checkpath --file      --mode 0600 --owner "${LND_USER}:${LND_GROUP}" "${LND_PASSWDFILE}"
-    checkpath --directory --mode 0750 --owner "${LND_USER}:${LND_GROUP}" "${LND_DATADIR}"
-    checkpath --directory --mode 0755 --owner "${LND_USER}:${LND_GROUP}" "${LND_LOGDIR}"
+    checkpath --file      --mode 0660 --owner "${command_user}" "${LND_CONFIGFILE}"
+    checkpath --file      --mode 0600 --owner "${command_user}" "${LND_PASSWDFILE}"
+    checkpath --directory --mode 0750 --owner "${command_user}" "${LND_DATADIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${LND_LOGDIR}"
 
     [ -e "${LND_DATADIR}/logs" ] || ln -s "${LND_LOGDIR}" "${LND_DATADIR}/logs"
 
@@ -355,12 +361,6 @@ checkconfig() {
         eerror "The setting must appear in ${LND_CONFIGFILE}"
         eerror ""
         return 1
-    fi
-}
-
-checkdepend() {
-    if grep -qs "^${1}=" "${LND_CONFIGFILE}"; then
-        need "${2:-$1}"
     fi
 }
 ```
