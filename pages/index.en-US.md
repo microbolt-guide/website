@@ -80,7 +80,7 @@ management
 
 ## Community
 
-This is NOT a community project. `[doitwithnotepad]()` retain the final say in
+This is NOT a community project. `doitwithnotepad` retain the final say in
 disputes or arguments within the community.
 
 Find help and other MicroBolt users on the following platforms:
