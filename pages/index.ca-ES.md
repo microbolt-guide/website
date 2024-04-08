@@ -9,15 +9,14 @@ No cal confiar en ningú més.
 
 ## Què és el MicroBolt?
 
-MicroBolt és una bifurcació de [RaspiBolt](https://raspibolt.org) i 
+MicroBolt és més que una bifurcació de [RaspiBolt](https://raspibolt.org) i 
 [MiniBolt](https://minibolt.info), feta per a tota mena d'ordinadors, no només
 Raspberry Pi's.
 
 Amb aquesta guia, pots configurar un node de Bitcoin i Lightning des de zero,
-fent-ho tot tu mateix.
-Aprendràs sobre Linux, Bitcoin i Lightning.
-Com a resultat, tindreu el vostre propi node MicroBolt, construït per tu i per
-ningú més.
+fent-ho tot tu mateix. Aprendràs sobre Linux, Bitcoin i Lightning. Com a
+resultat, tindreu el vostre propi node MicroBolt, construït per tu i per ningú
+més.
 
 Hi ha moltes raons per les quals hauries d'executar el teu propi node de
 Bitcoin.
@@ -38,9 +37,8 @@ Hem esmentat que també és divertit?
 ## Visió general de MicroBolt
 
 Aquesta guia explica com configurar el vostre propi node Bitcoin en un
-ordinador.
-Però funciona a la majoria de plataformes de maquinari perquè només utilitza
-ordres estàndard de Alpine Linux.
+ordinador. Però funciona a la majoria de plataformes de maquinari perquè només
+utilitza ordres estàndard de Alpine Linux.
 
 ### Característiques
 
@@ -66,12 +64,11 @@ a través de la xarxa Tor
 
 ### Públic objectiu
 
-Ens esforcem per donar instruccions infal·libles.
-Però l'objectiu també és fer-ho tot nosaltres mateixos.
-No es permeten les dreceres que impliquin confiar en una altra persona.
-Això fa que aquesta guia sigui força tècnica, però intentem que sigui el més
-senzill possible.
-Aconseguiràs una comprensió bàsica del com i el perquè.
+Ens esforcem per donar instruccions infal·libles. Però l'objectiu també és
+fer-ho tot nosaltres mateixos. No es permeten les dreceres que impliquin confiar
+en una altra persona. Això fa que aquesta guia sigui força tècnica, però
+intentem que sigui el més senzill possible. Aconseguiràs una comprensió bàsica
+del com i el perquè.
 
 Si voleu aprendre sobre Linux, Bitcoin i Lightning, aquesta guia és per tu.
 

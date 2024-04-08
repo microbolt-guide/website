@@ -9,15 +9,13 @@ No need to trust anyone else.
 
 ## What is the MicroBolt?
 
-MicroBolt is a fork of [RaspiBolt](https://raspibolt.org) and
+MicroBolt is more than a fork of [RaspiBolt](https://raspibolt.org) and
 [MiniBolt](https://minibolt.info), made for all kind of computers, not only
 Raspberry Pi's.
 
 With this guide, you can set up a Bitcoin and Lightning node from scratch, doing
-everything yourself.
-You will learn about Linux, Bitcoin, and Lightning.
-As a result, you'll have your very own MicroBolt node, built by you and no one
-else.
+everything yourself. You will learn about Linux, Bitcoin, and Lightning. As a
+result, you'll have your very own MicroBolt node, built by you and no one else.
 
 There are many reasons why you should run your own Bitcoin node.
 
@@ -35,9 +33,9 @@ Did we mention that it's fun, as well?
 
 ## MicroBolt overview
 
-This guide explains how to set up your own Bitcoin node on a Computer.
-But it works on most hardware platforms because it only uses standard Alpine
-Linux commands.
+This guide explains how to set up your own Bitcoin node on a Computer. But it
+works on most hardware platforms because it only uses standard Alpine Linux
+commands.
 
 ### Features
 
@@ -62,12 +60,10 @@ network
 
 ### Target audience
 
-We strive to give foolproof instructions.
-But the goal is also to do everything ourselves.
-Shortcuts that involve trusting someone else are not allowed.
-This makes this guide quite technical, but we try to make it as straightforward
-as possible.
-You'll gain a basic understanding of the how and why.
+We strive to give foolproof instructions. But the goal is also to do everything
+ourselves. Shortcuts that involve trusting someone else are not allowed. This
+makes this guide quite technical, but we try to make it as straightforward as
+possible. You'll gain a basic understanding of the how and why.
 
 If you like to learn about Linux, Bitcoin, and Lightning, then this guide is for
 you.
@@ -84,7 +80,7 @@ management
 
 ## Community
 
-This is NOT a community project. `doitwithnotepad` retain the final say in
+This is NOT a community project. `[doitwithnotepad]()` retain the final say in
 disputes or arguments within the community.
 
 Find help and other MicroBolt users on the following platforms:
