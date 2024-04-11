@@ -180,7 +180,7 @@ cd /tmp
 ```
 
 ```sh copy
-VERSION=1.9.8
+VERSION=1.10.0
 ```
 
 ```sh copy
@@ -260,7 +260,9 @@ Recordeu que heu d'acomodar el paràmetre `fast-sync` segons el vostre maquinari
 $SU $EDITOR /etc/fulcrum/fulcrum.conf
 ```
 
-```conf filename="/etc/fulcrum/fulcrum.conf" {2,4,6,8,10,12,14}
+```conf filename="/etc/fulcrum/fulcrum.conf" {2,4,6,8,10,12,14,16}
+[...]
+#datadir = /path/to/a/dir
 [...]
 #rpcuser = Bob_The_Banker
 [...]
