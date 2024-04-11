@@ -312,16 +312,16 @@ $SU $EDITOR /etc/init.d/lnd
 name="LND"
 description="Lightning Network Daemon"
 
+required_files="${LND_CONFIGFILE}"
+pidfile="/run/${SVCNAME}.pid"
+retry="${LND_SIGTERM_TIMEOUT}"
+
 command="${LND_BIN}"
 command_args="--lnddir=${LND_DATADIR}
               --configfile=${LND_CONFIGFILE}
               ${LND_OPTS}"
 command_user="${LND_USER}:${LND_GROUP}"
 command_background="true"
-
-required_files="${LND_CONFIGFILE}"
-pidfile="/run/${SVCNAME}.pid"
-retry="${LND_SIGTERM_TIMEOUT}"
 
 depend() {
     need bitcoind

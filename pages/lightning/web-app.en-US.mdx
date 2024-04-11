@@ -361,18 +361,20 @@ $SU $EDITOR /etc/init.d/thunderhub
 : ${THUNDERHUB_SIGTERM_TIMEOUT:=600}
 : ${THUNDERHUB_ENVFILE:=${THUNDERHUB_DATADIR}/.env.local}
 
+THUNDERHUB_PIDDIR="/run/thunderhub"
+
 name="ThunderHub"
 description="Monitor and manage your node from any browser and any device"
+
+directory="${THUNDERHUB_DATADIR}"
+required_files="${THUNDERHUB_CONFIGFILE}"
+pidfile="${THUNDERHUB_PIDDIR}/${SVCNAME}.pid"
+retry="${THUNDERHUB_SIGTERM_TIMEOUT}"
 
 command="${THUNDERHUB_BIN}"
 command_args="${THUNDERHUB_OPTS}"
 command_user="${THUNDERHUB_USER}:${THUNDERHUB_GROUP}"
 command_background="true"
-
-directory="${THUNDERHUB_DATADIR}"
-required_files="${THUNDERHUB_CONFIGFILE}"
-pidfile="/run/${SVCNAME}.pid"
-retry="${THUNDERHUB_SIGTERM_TIMEOUT}"
 
 start_stop_daemon_args="--stdout ${THUNDERHUB_LOGDIR}/debug.log
                         --stderr ${THUNDERHUB_LOGDIR}/debug.log"
@@ -392,6 +394,7 @@ start_pre() {
     checkpath --file      --mode 0660 --owner "${command_user}" "${THUNDERHUB_CONFIGFILE}"
     checkpath --directory --mode 0750 --owner "${command_user}" "${THUNDERHUB_DATADIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${THUNDERHUB_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${THUNDERHUB_PIDDIR}"
     checkconfig
 }
 
@@ -432,7 +435,7 @@ $SU $EDITOR /etc/logrotate.d/thunderhub
     create 0640 thunderhub thunderhub
     sharedscripts
     postrotate
-        killall -HUP `cat /run/thunderhub.pid`
+        killall -HUP `cat /run/thunderhub/thunderhub.pid`
     endscript
 }
 ```

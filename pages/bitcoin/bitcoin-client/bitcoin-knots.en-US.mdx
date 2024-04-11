@@ -433,6 +433,10 @@ $SU $EDITOR /etc/init.d/bitcoind
 name="Bitcoin Knots daemon"
 description="Bitcoin cryptocurrency P2P network daemon"
 
+required_files="${BITCOIND_CONFIGFILE}"
+pidfile="/run/${SVCNAME}.pid"
+retry="${BITCOIND_SIGTERM_TIMEOUT}"
+
 command="${BITCOIND_BIN}"
 command_args="-pid=${pidfile}
               -conf=${BITCOIND_CONFIGFILE}
@@ -441,10 +445,6 @@ command_args="-pid=${pidfile}
               ${BITCOIND_OPTS}"
 command_args_background="-daemonwait"
 command_user="${BITCOIND_USER}:${BITCOIND_GROUP}"
-
-required_files="${BITCOIND_CONFIGFILE}"
-pidfile="/run/${SVCNAME}.pid"
-retry="${BITCOIND_SIGTERM_TIMEOUT}"
 
 depend() {
     use net

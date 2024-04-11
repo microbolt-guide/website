@@ -488,8 +488,14 @@ $SU $EDITOR /etc/init.d/bitcoind
 : ${BITCOIND_OPTS=${BITCOIN_OPTS}}
 : ${BITCOIND_SIGTERM_TIMEOUT:=600}
 
+BITCOIND_PIDDIR="/run/bitcoind"
+
 name="Bitcoin Core daemon"
 description="Bitcoin cryptocurrency P2P network daemon"
+
+required_files="${BITCOIND_CONFIGFILE}"
+pidfile="${BITCOIND_PIDDIR}/${SVCNAME}.pid"
+retry="${BITCOIND_SIGTERM_TIMEOUT}"
 
 command="${BITCOIND_BIN}"
 command_args="-pid=${pidfile}
@@ -499,10 +505,6 @@ command_args="-pid=${pidfile}
               ${BITCOIND_OPTS}"
 command_args_background="-daemonwait"
 command_user="${BITCOIND_USER}:${BITCOIND_GROUP}"
-
-required_files="${BITCOIND_CONFIGFILE}"
-pidfile="/run/${SVCNAME}.pid"
-retry="${BITCOIND_SIGTERM_TIMEOUT}"
 
 depend() {
     use net
@@ -522,6 +524,7 @@ start_pre() {
     checkpath --file      --mode 0660 --owner "${command_user}" "${BITCOIND_CONFIGFILE}"
     checkpath --directory --mode 0750 --owner "${command_user}" "${BITCOIND_DATADIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${BITCOIND_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${BITCOIND_PIDDIR}"
     checkconfig
 }
 
@@ -592,7 +595,7 @@ $SU $EDITOR /etc/logrotate.d/bitcoind
     create 0640 bitcoin bitcoin
     sharedscripts
     postrotate
-        killall -HUP `cat /run/bitcoind.pid`
+        killall -HUP `cat /run/bitcoind/bitcoind.pid`
     endscript
 }
 ```

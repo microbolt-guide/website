@@ -388,6 +388,12 @@ $SU $EDITOR /etc/init.d/public-pool
 : ${PUBLICPOOL_OPTS=${PUBLICPOOL_OPTS}}
 : ${PUBLICPOOL_SIGTERM_TIMEOUT:=600}
 
+PUBLICPOOL_PIDDIR="/run/public-pool"
+
+directory="${PUBLICPOOL_DATADIR}"
+required_files="${PUBLICPOOL_CONFIGFILE}"
+pidfile="${PUBLICPOOL_PIDDIR}/${SVCNAME}.pid"
+
 name="Public Pool"
 description="Fully Open Source Solo Bitcoin Mining Pool"
 
@@ -395,10 +401,6 @@ command="${PUBLICPOOL_BIN}"
 command_args="${PUBLICPOOL_OPTS}"
 command_user="${PUBLICPOOL_USER}:${PUBLICPOOL_GROUP}"
 command_background="true"
-
-directory="${PUBLICPOOL_DATADIR}"
-required_files="${PUBLICPOOL_CONFIGFILE}"
-pidfile="/run/${SVCNAME}.pid"
 
 start_stop_daemon_args="--stdout ${PUBLICPOOL_LOGDIR}/debug.log
                         --stderr ${PUBLICPOOL_LOGDIR}/debug.log"
@@ -411,11 +413,13 @@ start_pre() {
     checkpath --file      --mode 0660 --owner "${command_user}" "${PUBLICPOOL_CONFIGFILE}"
     checkpath --directory --mode 0750 --owner "${command_user}" "${PUBLICPOOL_DATADIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${PUBLICPOOL_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${PUBLICPOOL_PIDDIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${PUBLICPOOL_WEBUI}"
     checkconfig
 }
 
 start_post() {
+    checkpath --file --owner "${command_user}" "${pidfile}"
     chown -R "${command_user}" "${PUBLICPOOL_WEBUI}"
 }
 
@@ -469,7 +473,7 @@ $SU $EDITOR /etc/logrotate.d/public-pool
     create 0640 public-pool public-pool
     sharedscripts
     postrotate
-        killall -HUP `cat /run/public-pool.pid`
+        killall -HUP `cat /run/public-pool/public-pool.pid`
     endscript
 }
 ```
