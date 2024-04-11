@@ -94,7 +94,7 @@ cd /tmp
 * Set a temporary version environment variable to the installation
 
 ```sh copy
-VERSION=25.1.knots20231115
+VERSION=26.1.knots20240325
 ```
 
 * Get the latest source code and signatures
@@ -185,11 +185,11 @@ $SU apk add libevent libsodium libstdc++ libzmq
 
 ### Apply patches
 
-* [int64_t](https://github.com/bitcoinknots/bitcoin/pull/55)
+* [Include cstdint in mempool_args.h](https://github.com/bitcoinknots/bitcoin/pull/76)
 
 ```sh copy
-sed '/#include <vector>/a #include <stdint.h>' src/clientversion.h > _
-mv -f _ src/clientversion.h
+sed '/#include <string>/a #include <cstdint>' src/node/mempool_args.h > _
+mv -f _ src/node/mempool_args.h
 ```
 
 * [fix locales](https://gitlab.alpinelinux.org/alpine/aports/-/issues/11620)
