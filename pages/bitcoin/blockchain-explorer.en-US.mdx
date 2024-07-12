@@ -389,11 +389,11 @@ start_stop_daemon_args="--stdout ${BTCRPCEXPL_LOGDIR}/debug.log
 depend() {
     need bitcoind
 
-    if service_started "fulcrum"; then
-        need fulcrum
-    else
-        need electrs
-    fi
+    use fulcrum
+    use electrs
+
+    after fulcrum
+    after electrs
 }
 
 start_pre() {
