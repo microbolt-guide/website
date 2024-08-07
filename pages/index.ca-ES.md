@@ -1,4 +1,4 @@
-# MicroBolt
+# Microbolt
 
 ![](/img/microbolt-banner.webp)
 
@@ -7,15 +7,15 @@ convertirà en un parell sobirà a la xarxa de Bitcoin i Lightning.
 
 No cal confiar en ningú més.
 
-## Què és el MicroBolt?
+## Què és el Microbolt?
 
-MicroBolt és més que una bifurcació de [RaspiBolt](https://raspibolt.org) i 
+Microbolt és més que una bifurcació de [RaspiBolt](https://raspibolt.org) i 
 [MiniBolt](https://minibolt.info), feta per a tota mena d'ordinadors, no només
 Raspberry Pi's.
 
 Amb aquesta guia, pots configurar un node de Bitcoin i Lightning des de zero,
 fent-ho tot tu mateix. Aprendràs sobre Linux, Bitcoin i Lightning. Com a
-resultat, tindreu el vostre propi node MicroBolt, construït per tu i per ningú
+resultat, tindreu el vostre propi node Microbolt, construït per tu i per ningú
 més.
 
 Hi ha moltes raons per les quals hauries d'executar el teu propi node de
@@ -34,7 +34,7 @@ descentralitzada.
 
 Hem esmentat que també és divertit?
 
-## Visió general de MicroBolt
+## Visió general de Microbolt
 
 Aquesta guia explica com configurar el vostre propi node Bitcoin en un
 ordinador. Però funciona a la majoria de plataformes de maquinari perquè només
@@ -88,7 +88,7 @@ gestió de nodes web
 Aquest NO és un projecte comunitari. `doitwithnotepad` te l'última paraula en
 disputes o discussions dins de la comunitat.
 
-Trobeu ajuda i altres usuaris de MicroBolt a les plataformes següents:
+Trobeu ajuda i altres usuaris de Microbolt a les plataformes següents:
 
 * [Problemes de Github](https://github.com/microbolt-guide/microbolt/issues)
 * Grup de Telegram: [t.me/microbolt_official](https://t.me/microbolt_official)

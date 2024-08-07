@@ -117,7 +117,7 @@ Obtenim la darrera versió del codi font de ThunderHub i la instal·lem.
 * Descarrega el codi font de l'última versió de ThunderHub. Pots comprovar la
 [pàgina de versions](https://github.com/apotdevin/thunderhub/releases) per veure
 si hi ha una versió més nova disponible. Tanmateix, altres versions podrien no
-haver estat provades adequadament amb la resta de la configuració de MicroBolt.
+haver estat provades adequadament amb la resta de la configuració de Microbolt.
 
 ```sh copy
 cd /tmp
@@ -260,7 +260,7 @@ $SU $EDITOR /etc/thunderhub/thubConfig.yaml
 ```yaml copy filename="/etc/thunderhub/thubConfig.yaml"
 masterPassword: 'PASSWORD' # Default password unless defined in account
 accounts:
-  - name: 'MicroBolt'
+  - name: 'Microbolt'
     serverUrl: '127.0.0.1:10009'
     macaroonPath: '/var/lib/lnd/data/chain/bitcoin/mainnet/admin.macaroon'
     certificatePath: '/var/lib/lnd/tls.cert'
@@ -275,7 +275,7 @@ Substitueix `[E] ThunderHub password` per la teva
 ```yaml copy filename="/etc/thunderhub/thubConfig.yaml" {8}
 masterPassword: 'PASSWORD' # Default password unless defined in account
 accounts:
-  - name: 'MicroBolt'
+  - name: 'Microbolt'
     serverUrl: '127.0.0.1:10009'
     macaroonPath: '/var/lib/lnd/data/chain/bitcoin/mainnet/admin.macaroon'
     certificatePath: '/var/lib/lnd/tls.cert'
@@ -294,7 +294,7 @@ per enviar pings de comprovació d'estat
 ```yaml copy filename="/etc/thunderhub/thubConfig.yaml" {8}
 masterPassword: 'PASSWORD' # Default password unless defined in account
 accounts:
-  - name: 'MicroBolt'
+  - name: 'Microbolt'
     serverUrl: '127.0.0.1:10009'
     macaroonPath: '/var/lib/lnd/data/chain/bitcoin/mainnet/admin.macaroon'
     certificatePath: '/var/lib/lnd/tls.cert'

@@ -1,4 +1,4 @@
-# MicroBolt
+# Microbolt
 
 ![](/img/microbolt-banner.webp)
 
@@ -7,15 +7,15 @@ sovereign peer in the Bitcoin and Lightning network.
 
 No need to trust anyone else.
 
-## What is the MicroBolt?
+## What is the Microbolt?
 
-MicroBolt is more than a fork of [RaspiBolt](https://raspibolt.org) and
+Microbolt is more than a fork of [RaspiBolt](https://raspibolt.org) and
 [MiniBolt](https://minibolt.info), made for all kind of computers, not only
 Raspberry Pi's.
 
 With this guide, you can set up a Bitcoin and Lightning node from scratch, doing
 everything yourself. You will learn about Linux, Bitcoin, and Lightning. As a
-result, you'll have your very own MicroBolt node, built by you and no one else.
+result, you'll have your very own Microbolt node, built by you and no one else.
 
 There are many reasons why you should run your own Bitcoin node.
 
@@ -31,7 +31,7 @@ payments and help building a robust, decentralized Bitcoin Lightning network.
 
 Did we mention that it's fun, as well?
 
-## MicroBolt overview
+## Microbolt overview
 
 This guide explains how to set up your own Bitcoin node on a Computer. But it
 works on most hardware platforms because it only uses standard Alpine Linux
@@ -83,7 +83,7 @@ management
 This is NOT a community project. `doitwithnotepad` retain the final say in
 disputes or arguments within the community.
 
-Find help and other MicroBolt users on the following platforms:
+Find help and other Microbolt users on the following platforms:
 
 * [Github Issues](https://github.com/microbolt-guide/microbolt/issues)
 * Telegram group: [t.me/microbolt_official](https://t.me/microbolt_official)

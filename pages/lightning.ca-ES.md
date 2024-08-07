@@ -3,7 +3,7 @@
 Ara ja esteu preparat per a Bitcoin. Però Bitcoin no està dissenyat
 principalment per a pagaments ràpids i barats. La cadena de blocs que registra
 totes les transaccions no pot créixer sense límits si volem mantenir tot el
-sistema descentralitzat i els nodes com MicroBolt factibles.
+sistema descentralitzat i els nodes com Microbolt factibles.
 
 A sobre de la capa base de Bitcoin, Lightning Network permet pagaments
 quotidians instantanis i econòmics. Comprar un cafè no necessàriament ha de ser
@@ -16,7 +16,7 @@ de la revista Bitcoin per obtenir més informació sobre com funciona.
 
 ---
 
-Per habilitar la xarxa Lightning al vostre MicroBolt, instal·lem un client
+Per habilitar la xarxa Lightning al vostre Microbolt, instal·lem un client
 Lightning. A continuació, configurem una còpia de seguretat automàtica del canal
 estàtic per protegir-nos en cas de fallada de les unitats SSD. A continuació,
 afegirem una eina de gestió de nodes basada en la web. I finalment, instal·larem

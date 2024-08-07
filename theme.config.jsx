@@ -24,10 +24,10 @@ export default {
   useNextSeoProps() {
     const { asPath, locale } = useRouter()
     if (locale === 'ca-ES') return {
-      titleTemplate: asPath !== '/' ? '%s – MicroBolt' : 'Inici – MicroBolt'
+      titleTemplate: asPath !== '/' ? '%s – Microbolt' : 'Inici – Microbolt'
     }
     if (locale === 'en-US') return {
-      titleTemplate: asPath !== '/' ? '%s – MicroBolt' : 'Home – MicroBolt'
+      titleTemplate: asPath !== '/' ? '%s – Microbolt' : 'Home – Microbolt'
     }
   },
   head: function useHead() {
@@ -44,14 +44,14 @@ export default {
           name="og:title"
           content={
             title
-              ? title === 'MicroBolt'
+              ? title === 'Microbolt'
                 ? locale === 'ca-ES'
-                  ? 'Inici – MicroBolt'
+                  ? 'Inici – Microbolt'
                   : locale === 'en-US'
-                    ? 'Home – MicroBolt'
+                    ? 'Home – Microbolt'
                     : ''
-                : title + ' – MicroBolt'
-              : 'MicroBolt'
+                : title + ' – Microbolt'
+              : 'Microbolt'
           }
         />
         <meta name="og:image" content={socialCard} />
@@ -61,20 +61,20 @@ export default {
         <meta name="og:image:width" content="1200" />
         <meta name="og:image:height" content="630" />
         <meta name="og:type" content="website" />
-        <meta name="apple-mobile-web-app-title" content="MicroBolt" />
+        <meta name="apple-mobile-web-app-title" content="Microbolt" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta
           name="twitter:title"
           content={
             title
-              ? title === 'MicroBolt'
+              ? title === 'Microbolt'
                 ? locale === 'ca-ES'
-                  ? 'Inici – MicroBolt'
+                  ? 'Inici – Microbolt'
                   : locale === 'en-US'
-                    ? 'Home – MicroBolt'
+                    ? 'Home – Microbolt'
                     : ''
-                : title + ' – MicroBolt'
-              : 'MicroBolt'
+                : title + ' – Microbolt'
+              : 'Microbolt'
           }
         />
         <meta name="twitter:description" content={description} />
@@ -121,7 +121,7 @@ export default {
         />
       </svg>
       <span style={{ marginLeft: '.4em', fontWeight: 800 }}>
-        MicroBolt
+        Microbolt
       </span>
     </>
   ),

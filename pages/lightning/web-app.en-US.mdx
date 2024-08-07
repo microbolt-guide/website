@@ -116,7 +116,7 @@ We get the latest release of the ThunderHub source code and install it.
 * Download the source code for the latest ThunderHub release. You can check the
 [release page](https://github.com/apotdevin/thunderhub/releases) to see if a
 newer release is available. Other releases might not have been properly tested
-with the rest of the MicroBolt configuration, though.
+with the rest of the Microbolt configuration, though.
 
 ```sh copy
 cd /tmp
@@ -257,7 +257,7 @@ $SU $EDITOR /etc/thunderhub/thubConfig.yaml
 ```yaml copy filename="/etc/thunderhub/thubConfig.yaml"
 masterPassword: 'PASSWORD' # Default password unless defined in account
 accounts:
-  - name: 'MicroBolt'
+  - name: 'Microbolt'
     serverUrl: '127.0.0.1:10009'
     macaroonPath: '/var/lib/lnd/data/chain/bitcoin/mainnet/admin.macaroon'
     certificatePath: '/var/lib/lnd/tls.cert'
@@ -272,7 +272,7 @@ Replace the `[E] ThunderHub password` to yours
 ```yaml copy filename="/etc/thunderhub/thubConfig.yaml" {8}
 masterPassword: 'PASSWORD' # Default password unless defined in account
 accounts:
-  - name: 'MicroBolt'
+  - name: 'Microbolt'
     serverUrl: '127.0.0.1:10009'
     macaroonPath: '/var/lib/lnd/data/chain/bitcoin/mainnet/admin.macaroon'
     certificatePath: '/var/lib/lnd/tls.cert'
@@ -291,7 +291,7 @@ to send healthchecks pings
 ```yaml copy filename="/etc/thunderhub/thubConfig.yaml" {8}
 masterPassword: 'PASSWORD' # Default password unless defined in account
 accounts:
-  - name: 'MicroBolt'
+  - name: 'Microbolt'
     serverUrl: '127.0.0.1:10009'
     macaroonPath: '/var/lib/lnd/data/chain/bitcoin/mainnet/admin.macaroon'
     certificatePath: '/var/lib/lnd/tls.cert'
