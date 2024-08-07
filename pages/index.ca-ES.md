@@ -91,7 +91,7 @@ disputes o discussions dins de la comunitat.
 Trobeu ajuda i altres usuaris de MicroBolt a les plataformes següents:
 
 * [Problemes de Github](https://github.com/microbolt-guide/microbolt/issues)
-* Grup de Telegram: [t.me/microbolt_guide](https://t.me/microbolt_guide)
+* Grup de Telegram: [t.me/microbolt_official](https://t.me/microbolt_official)
 
 I no dubteu a unir-vos a altres col·laboradors si veieu alguna cosa que es pot
 millorar!

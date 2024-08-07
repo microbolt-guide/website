@@ -1,6 +1,24 @@
 import { useRouter } from 'next/router'
 import { useConfig } from 'nextra-theme-docs'
 
+const BannerText = () => {
+  const { locale } = useRouter();
+  if (locale === 'ca-ES') {
+    return (
+      <a href="https://t.me/microbolt_official" target="_blank">
+        🎉 Claus PGP recuperades. Nou grup de Telegram. Descobreix-ho →
+      </a>
+    );
+  }
+  if (locale === 'en-US') {
+    return (
+      <a href="https://t.me/microbolt_official" target="_blank">
+        🎉 Recovered pgp keys. New Telegram group. Find out →
+      </a>
+    );
+  }
+};
+
 export default {
   docsRepositoryBase: "https://github.com/microbolt-guide/microbolt/blob/main",
   useNextSeoProps() {
@@ -111,7 +129,7 @@ export default {
     link: 'https://github.com/microbolt-guide/microbolt'
   },
   chat: {
-    link: 'https://t.me/microbolt_guide',
+    link: 'https://t.me/microbolt_official',
     icon: (
       <svg width="24" height="24" viewBox="0 0 496 512">
         <path
@@ -127,6 +145,11 @@ export default {
       if (locale === 'ca-ES') return 'Cerca a la documentació…'
       if (locale === 'en-US') return 'Search documentation…'
     }
+  },
+  banner: {
+    dismissible: true,
+    key: 'new-tg-user',
+    text: <BannerText />
   },
   sidebar: {
     defaultMenuCollapseLevel: 1,

@@ -86,7 +86,7 @@ disputes or arguments within the community.
 Find help and other MicroBolt users on the following platforms:
 
 * [Github Issues](https://github.com/microbolt-guide/microbolt/issues)
-* Telegram group: [t.me/microbolt_guide](https://t.me/microbolt_guide)
+* Telegram group: [t.me/microbolt_official](https://t.me/microbolt_official)
 
 And feel free to join the many other contributors if you see something that can
 be improved!
