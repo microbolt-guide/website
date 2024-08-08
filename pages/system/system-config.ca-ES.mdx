@@ -102,20 +102,6 @@ ssh satoshi@nakamoto01
 
 ## Actualització del sistema
 
-* Habilita el repositori **comunitat**
-
-```sh copy
-$SU $EDITOR /etc/apk/repositories
-```
-
-* Descomenteu la següent línia
-
-```conf filename="/etc/apk/repositories" {3}
-#/media/usb/apks
-http://dl-cdn.alpinelinux.org/alpine/v3.19/main
-http://dl-cdn.alpinelinux.org/alpine/v3.19/community
-```
-
 <Callout type="info">
 Feu-ho regularment cada poques setmanes/mesos per obtenir actualitzacions
 relacionades amb la seguretat.

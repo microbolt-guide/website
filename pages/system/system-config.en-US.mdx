@@ -99,20 +99,6 @@ ssh satoshi@nakamoto01
 
 ## System update
 
-* Enable **community** repository
-
-```sh copy
-$SU $EDITOR /etc/apk/repositories
-```
-
-* Uncomment the following line
-
-```conf filename="/etc/apk/repositories" {3}
-#/media/usb/apks
-http://dl-cdn.alpinelinux.org/alpine/v3.19/main
-http://dl-cdn.alpinelinux.org/alpine/v3.19/community
-```
-
 <Callout type="info">
 Do this regularly every few weeks/months for security-related updates.
 </Callout>
