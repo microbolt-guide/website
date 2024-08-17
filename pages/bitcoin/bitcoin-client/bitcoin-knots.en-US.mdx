@@ -136,7 +136,7 @@ Bitcoin Core release attestations (Guix)
 
 ```sh copy
 wget -qO- \
-    "https://api.github.com/repositories/355107265/contents/builder-keys" |\
+    "https://api.github.com/repos/bitcoinknots/guix.sigs/contents/builder-keys" |\
     grep download_url |\
     grep -oE "https://[a-zA-Z0-9./-]+" |\
     while read url; do \
