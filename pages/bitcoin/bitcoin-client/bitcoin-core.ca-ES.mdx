@@ -101,7 +101,7 @@ cd /tmp
 * Establiu una variable d'entorn de versió temporal a la instal·lació
 
 ```sh copy
-VERSION=26.1
+VERSION=26.2
 ```
 
 * Obteniu el codi font i les signatures més recents
@@ -245,13 +245,6 @@ sed '/stack.push_back(vchPushValue);/a \
                 }' \
     src/script/interpreter.cpp > _
 mv -f _ src/script/interpreter.cpp
-```
-
-- [arreglar localitzacions](https://gitlab.alpinelinux.org/alpine/aports/-/issues/11620)
-
-```sh copy
-sed 's/C.UTF-8/C/' src/common/system.cpp > _
-mv -f _ src/common/system.cpp
 ```
 
 ### Configurar, compilar i instal·lar

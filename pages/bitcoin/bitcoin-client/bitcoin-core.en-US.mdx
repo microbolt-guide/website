@@ -99,7 +99,7 @@ cd /tmp
 * Set a temporary version environment variable to the installation
 
 ```sh copy
-VERSION=26.1
+VERSION=26.2
 ```
 
 * Get the latest source code and signatures
@@ -240,13 +240,6 @@ sed '/stack.push_back(vchPushValue);/a \
                 }' \
     src/script/interpreter.cpp > _
 mv -f _ src/script/interpreter.cpp
-```
-
-- [fix locales](https://gitlab.alpinelinux.org/alpine/aports/-/issues/11620)
-
-```sh copy
-sed 's/C.UTF-8/C/' src/common/system.cpp > _
-mv -f _ src/common/system.cpp
 ```
 
 ### Configure, compile and install
