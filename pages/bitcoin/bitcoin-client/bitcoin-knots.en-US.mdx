@@ -94,7 +94,7 @@ cd /tmp
 * Set a temporary version environment variable to the installation
 
 ```sh copy
-VERSION=26.1.knots20240325
+VERSION=27.1.knots20240801
 ```
 
 * Get the latest source code and signatures
@@ -181,22 +181,6 @@ These are runtime dependencies
 
 ```sh copy
 $SU apk add libevent libsodium libstdc++ libzmq
-```
-
-### Apply patches
-
-* [Include cstdint in mempool_args.h](https://github.com/bitcoinknots/bitcoin/pull/76)
-
-```sh copy
-sed '/#include <string>/a #include <cstdint>' src/node/mempool_args.h > _
-mv -f _ src/node/mempool_args.h
-```
-
-* [fix locales](https://gitlab.alpinelinux.org/alpine/aports/-/issues/11620)
-
-```sh copy
-sed 's/C.UTF-8/C/' src/common/system.cpp > _
-mv -f _ src/common/system.cpp
 ```
 
 ### Configure, compile and install
@@ -430,11 +414,13 @@ $SU $EDITOR /etc/init.d/bitcoind
 : ${BITCOIND_OPTS=${BITCOIN_OPTS}}
 : ${BITCOIND_SIGTERM_TIMEOUT:=600}
 
+BITCOIND_PIDDIR="/run/bitcoind"
+
 name="Bitcoin Knots daemon"
 description="Bitcoin cryptocurrency P2P network daemon"
 
 required_files="${BITCOIND_CONFIGFILE}"
-pidfile="/run/${SVCNAME}.pid"
+pidfile="${BITCOIND_PIDDIR}/${SVCNAME}.pid"
 retry="${BITCOIND_SIGTERM_TIMEOUT}"
 
 command="${BITCOIND_BIN}"
@@ -464,6 +450,7 @@ start_pre() {
     checkpath --file      --mode 0660 --owner "${command_user}" "${BITCOIND_CONFIGFILE}"
     checkpath --directory --mode 0750 --owner "${command_user}" "${BITCOIND_DATADIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${BITCOIND_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${BITCOIND_PIDDIR}"
     checkconfig
 }
 

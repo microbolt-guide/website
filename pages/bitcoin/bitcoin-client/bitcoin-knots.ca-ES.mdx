@@ -96,7 +96,7 @@ cd /tmp
 * Establiu una variable d'entorn de versió temporal a la instal·lació
 
 ```sh copy
-VERSION=26.1.knots20240325
+VERSION=27.1.knots20240801
 ```
 
 * Obteniu el codi font i les signatures més recents
@@ -186,22 +186,6 @@ Aquestes són dependències en temps d'execució
 
 ```sh copy
 $SU apk add libevent libsodium libstdc++ libzmq
-```
-
-### Aplicar pegats
-
-* [Include cstdint in mempool_args.h](https://github.com/bitcoinknots/bitcoin/pull/76)
-
-```sh copy
-sed '/#include <string>/a #include <cstdint>' src/node/mempool_args.h > _
-mv -f _ src/node/mempool_args.h
-```
-
-* [arreglar localitzacions](https://gitlab.alpinelinux.org/alpine/aports/-/issues/11620)
-
-```sh copy
-sed 's/C.UTF-8/C/' src/common/system.cpp > _
-mv -f _ src/common/system.cpp
 ```
 
 ### Configurar, compilar i instal·lar
