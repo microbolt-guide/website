@@ -180,7 +180,7 @@ cd /tmp
 ```
 
 ```sh copy
-VERSION=1.10.0
+VERSION=1.11.0
 ```
 
 ```sh copy
@@ -252,15 +252,11 @@ $SU strip -v /usr/bin/Fulcrum
 
 * Modifiqueu el fitxer de configuració amb el contingut següent
 
-<Callout type = "info">
-Recordeu que heu d'acomodar el paràmetre `fast-sync` segons el vostre maquinari
-</Callout>
-
 ```sh copy
 $SU $EDITOR /etc/fulcrum/fulcrum.conf
 ```
 
-```conf filename="/etc/fulcrum/fulcrum.conf" {2,4,6,8,10,12,14,16}
+```conf filename="/etc/fulcrum/fulcrum.conf" {2,4,6,8,10,12,14}
 [...]
 #datadir = /path/to/a/dir
 [...]
@@ -275,8 +271,6 @@ tcp = 0.0.0.0:50001
 banner = /etc/fulcrum/banner.txt
 [...]
 peering = false
-[...]
-fast-sync = 24576
 [...]
 ```
 
