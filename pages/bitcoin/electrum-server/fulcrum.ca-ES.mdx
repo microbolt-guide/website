@@ -20,63 +20,13 @@ Aquestes són dependències de creació (es pot eliminar després de la
 instal·lació, si voleu)
 
 ```sh copy
-$SU apk add autoconf clang git lz4-dev make pkgconf qt6-qtbase-dev rocksdb-dev zeromq-dev
+$SU apk add autoconf g++ git jemalloc-dev lz4-dev make pkgconf qt6-qtbase-dev rocksdb-dev zeromq-dev
 ```
 
 Aquestes són dependències en temps d'execució
 
 ```sh copy
 $SU apk add libzmq qt6-qtbase rocksdb
-```
-
-Compileu i instal·leu `jemalloc` des del codi font
-
-<Callout type="info">
-El paquet apk d'Alpine no té el pedaç necessari per treballar amb musl lib C i
-les eines de LLVM, 
-[alpine merge request](https://gitlab.alpinelinux.org/alpine/aports/-/merge_requests/61321),
-[upstream pull request](https://github.com/jemalloc/jemalloc/pull/2338)
-</Callout>
-
-```sh copy
-cd /tmp
-VERSION=5.3.0
-wget https://github.com/jemalloc/jemalloc/releases/download/$VERSION/jemalloc-$VERSION.tar.bz2
-tar xjf jemalloc-$VERSION.tar.bz2 && cd jemalloc-$VERSION
-printf "$VERSION\n" > VERSION
-
-sed 's/  \*-\*-linux\*)/  \*-\*-linux-musl\*)\
-\tdnl syscall(2) and secure_getenv(3) are exposed by _GNU_SOURCE.\
-\tJE_APPEND_VS(CPPFLAGS, -D_GNU_SOURCE)\
-\tabi="elf"\
-\tAC_DEFINE([JEMALLOC_PURGE_MADVISE_DONTNEED_ZEROS], [ ], [ ])\
-\tAC_DEFINE([JEMALLOC_HAS_ALLOCA_H], [ ], [ ])\
-\tAC_DEFINE([JEMALLOC_PROC_SYS_VM_OVERCOMMIT_MEMORY], [ ], [ ])\
-\tAC_DEFINE([JEMALLOC_THREADED_INIT], [ ], [ ])\
-\tif test "${LG_SIZEOF_PTR}" = "3"; then\
-\t\tdefault_retain="1"\
-\tfi\
-\tzero_realloc_default_free="1"\
-\t;;\
-  \*-\*-linux\*)/' \
-    configure.ac > _
-mv -f _ configure.ac
-
-sed 's/(__FreeBSD__))/(__FreeBSD__) || (defined(__linux__) \&\& !defined(__GLIBC__)))/' \
-    include/jemalloc/jemalloc_macros.h.in > _
-mv -f _ include/jemalloc/jemalloc_macros.h.in
-
-./autogen.sh \
-    --prefix=/usr \
-    --enable-xmalloc \
-    --enable-shared \
-    --disable-static \
-    --disable-doc \
-    --with-lg-page=12 \
-    --with-lg-hugepage=21
-make
-$SU make install_lib install_include
-
 ```
 
 ### Creeu l'usuari/grup `fulcrum`
@@ -207,13 +157,16 @@ git verify-commit v$VERSION
 * Ara compileu el codi font en un binari executable i instal·leu-lo.
 
 ```sh copy
+CC=gcc \
+CXX=g++ \
 qmake6 \
     Fulcrum.pro \
-    -spec "linux-$CC" \
     -o build/
 ```
 
 ```sh copy
+CC=gcc \
+CXX=g++ \
 make -C build
 ```
 
@@ -236,7 +189,7 @@ propi si vols
 ```sh copy
 $SU wget \
     https://gist.githubusercontent.com/doitwithnotepad/\
-4472a92414223672d9ab4c3b55d0cd23/raw/5241bfb860e709d4f6cf8eb436c264f9cc264d79/\
+4472a92414223672d9ab4c3b55d0cd23/raw/ecb086f1b8cca49f22929778ac167b35915842e7/\
 banner.txt \
     -O /etc/fulcrum/banner.txt
 ```
