@@ -61,22 +61,18 @@ printf "%s\n" \
     "Port 2222" \
     "PermitRootLogin no" \
     "PasswordAuthentication no" \
-    | $SU tee -a /etc/ssh/ssh_config.d/defaults.conf
+    | $SU tee -a /etc/ssh/sshd_config.d/defaults.conf
 
 ```
     </Tabs.Tab>
 </Tabs>
 ### Restart service to apply changes
 ```sh copy
-$SU rc-service \
-    $(which dropbear >/dev/null && {
-            printf "%s" "dropbear"
-        } || {
-            $(which openssh >/dev/null &&
-                printf "%s" "sshd"
-            )
-        }
-    ) restart
+if $SU rc-service dropbear status | grep -q "started"; then
+    $SU rc-service dropbear restart
+elif $SU rc-service sshd status | grep -q "started"; then
+    $SU rc-service sshd restart
+fi
 ```
 </Steps>
 
