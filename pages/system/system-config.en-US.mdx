@@ -21,7 +21,7 @@ Add in a profile config file, replace `<...>` with your own choice
 ```sh
 printf "%s\n" \
     "export EDITOR=<notepad,vi,vim,neovim,nano,micro,emacs...>" \
-    "export SU=<sudo,doas,ssu...>" \
+    "export SU=<sudo,doas...>" \
     > /etc/profile.d/defaults.sh
 ```
 
@@ -62,7 +62,7 @@ adduser satoshi wheel
 
 ### Allow members of the **wheel** group to use root privileges with `$SU`
 
-<Tabs items={['doas', 'sudo', 'ssu']}>
+<Tabs items={['doas', 'sudo']}>
     <Tabs.Tab>
 ```sh copy
 sed 's/# permit persist :wheel/permit persist keepenv :wheel/' /etc/doas.conf > _
@@ -76,11 +76,6 @@ printf "%s\n" \
     "Defaults env_keep += \"*\"" \
     > /etc/sudoers.d/wheel
 ```
-    </Tabs.Tab>
-    <Tabs.Tab>
-<Callout type="warning">
-    🚧 Work in progress 🚧
-</Callout>
     </Tabs.Tab>
 </Tabs>
 
