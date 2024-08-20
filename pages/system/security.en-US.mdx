@@ -82,24 +82,124 @@ fi
 $SU passwd -l root
 ```
 
-## Enabling the Uncomplicated Firewall
+## Firewall
 
 A firewall controls what kind of outside traffic your machine accepts and which
 applications can send data out. By default, many network ports are open and
 listening for incoming connections. Closing unnecessary ports can mitigate many
 potential system vulnerabilities.
 
-<Steps>
-### Install `ufw`
+For now, only SSH should be reachable from the outside. Bitcoin Core and LND are
+using Tor and don't need incoming ports.
+
+<Tabs items={['awall', 'ufw']}>
+    <Tabs.Tab>
+- Install `awall`
+
+```sh copy
+$SU apk add awall iptables ip6tables
+```
+
+- Load the necessary kernel modules and load them at boot
+
+```sh copy
+$SU modprobe -av ip_tables ip6_tables
+```
+    
+```sh copy
+printf "%s\n" \
+    "ip_tables" \
+    "ip6_tables" \
+    | $SU tee /etc/modules-load.d/awall.conf
+```
+
+- Configure and enable the firewall rules
+
+<Callout type="info">
+Replace `eth0` with your network interface
+</Callout>
+
+```sh copy
+$SU $EDITOR /etc/awall/optional/base-config.json
+```
+
+```json copy filename="/etc/awall/optional/base-config.json" {5}
+{
+  "description": "Base zones and policies",
+
+  "zone": {
+    "internet": { "iface": "eth0" }
+  },
+
+  "policy": [
+     { "in": "internet", "action": "drop" },
+     { "out": "internet", "action": "accept" }
+  ]
+}
+```
+
+```sh copy
+$SU $EDITOR /etc/awall/optional/ssh.json
+```
+
+<Callout>
+If you changed the SSH port, replace `"service": "ssh"` with your new port
+`"port": "2222/tcp"` or whatever you chose
+</Callout>
+
+```json copy filename="/etc/awall/optional/ssh.json" {8}
+{
+  "description": "Allow incoming SSH access (TCP/22)",
+
+  "filter": [
+    {
+      "in": "internet",
+      "out": "_fw",
+      "service": "ssh",
+      "action": "accept",
+      "conn-limit": { "count": 3, "interval": 60 }
+    }
+  ]
+}
+```
+
+- Enable the firewall on boot
+
+```sh copy
+$SU rc-update add iptables
+$SU rc-update add ip6tables
+```
+
+- Start the firewall
+
+```sh copy
+$SU awall list
+```
+
+```output filename="output"
+base-config  disabled  Base zones and policies
+ssh          disabled  Allow incoming SSH access (TCP/22)
+```
+
+```sh copy
+$SU awall enable base-config ssh
+$SU awall activate
+```
+
+<Callout>
+More: [Alpine Wall User’s Guide](https://git.alpinelinux.org/awall/about)
+
+How-To: [How-To Alpine Wall](https://wiki.alpinelinux.org/wiki/How-To_Alpine_Wall)
+</Callout>
+    </Tabs.Tab>
+    <Tabs.Tab>
+- Install `ufw`
 
 ```sh copy
 $SU apk add ip6tables ufw
 ```
 
-For now, only SSH should be reachable from the outside. Bitcoin Core and LND are
-using Tor and don't need incoming ports.
-
-### With user `satoshi`, configure and enable the firewall rules
+- Configure and enable the firewall rules
 
 <Callout type="info">
 Replace `22` with your choosen port
@@ -116,12 +216,13 @@ $SU ufw logging off
 $SU ufw enable
 ```
 
-### Make sure that the UFW is started automatically on boot
+- Make sure that the UFW is started automatically on boot
+
 ```sh copy
 $SU rc-update add ufw default
 ```
 
-### Check if the UFW is properly configured and active
+- Check if the UFW is properly configured and active
 
 ```sh copy
 $SU ufw status verbose
@@ -138,13 +239,14 @@ To                         Action      From
 22/tcp                   ALLOW IN    Anywhere                   # allow SSH
 22/tcp (v6)              ALLOW IN    Anywhere (v6)              # allow SSH
 ```
-</Steps>
 
 <Callout>
 More: [UFW Essentials](https://wiki.alpinelinux.org/wiki/Uncomplicated_Firewall)
 </Callout>
+    </Tabs.Tab>
+</Tabs>
 
-<Callout type="info" emoji="ℹ️">
+<Callout type="info">
 If you find yourself locked out by mistake, you can connect a keyboard and
 screen to your PC to log in locally and fix these settings (especially for the
 SSH port). 

@@ -84,24 +84,124 @@ fi
 $SU passwd -l root
 ```
 
-## Habilitació de l'Uncomplicated Firewall
+## Tallafoc
 
 Un tallafoc controla quin tipus de trànsit extern accepta la vostra màquina i
 quines aplicacions poden enviar dades. Per defecte, molts ports de xarxa estan
 oberts i escolten les connexions entrants. Tancar ports innecessaris pot mitigar
 moltes vulnerabilitats potencials del sistema.
 
-<Steps>
-### Instal·leu `ufw`
+De moment, només SSH hauria de ser accessible des de l'exterior. Bitcoin i
+Lightning utilitzen Tor i no necessiten ports d'entrada.
+
+<Tabs items={['awall', 'ufw']}>
+    <Tabs.Tab>
+- Instal·leu `awall`
+
+```sh copy
+$SU apk add awall iptables ip6tables
+```
+
+- Carrega els mòduls necessaris del nucli i carrega'ls a l'arrencada
+
+```sh copy
+$SU modprobe -av ip_tables ip6_tables
+```
+    
+```sh copy
+printf "%s\n" \
+    "ip_tables" \
+    "ip6_tables" \
+    | $SU tee /etc/modules-load.d/awall.conf
+```
+
+- Configura i habilita les regles del tallafoc
+
+<Callout type="info">
+Reemplaça `eth0` per la interfície de xarxa
+</Callout>
+
+```sh copy
+$SU $EDITOR /etc/awall/optional/base-config.json
+```
+
+```json copy filename="/etc/awall/optional/base-config.json" {5}
+{
+  "description": "Base zones and policies",
+
+  "zone": {
+    "internet": { "iface": "eth0" }
+  },
+
+  "policy": [
+     { "in": "internet", "action": "drop" },
+     { "out": "internet", "action": "accept" }
+  ]
+}
+```
+
+```sh copy
+$SU $EDITOR /etc/awall/optional/ssh.json
+```
+
+<Callout>
+Si heu canviat el port SSH, reemplaceu `"service": "ssh"` amb el vostre nou port
+`"port": "2222/tcp"` o el que tu triïs
+</Callout>
+
+```json copy filename="/etc/awall/optional/ssh.json" {8}
+{
+  "description": "Allow incoming SSH access (TCP/22)",
+
+  "filter": [
+    {
+      "in": "internet",
+      "out": "_fw",
+      "service": "ssh",
+      "action": "accept",
+      "conn-limit": { "count": 3, "interval": 60 }
+    }
+  ]
+}
+```
+
+- Activa el tallafoc en arrencar
+
+```sh copy
+$SU rc-update add iptables
+$SU rc-update add ip6tables
+```
+
+- Inicia el tallafoc
+
+```sh copy
+$SU awall list
+```
+
+```output filename="output"
+base-config  disabled  Base zones and policies
+ssh          disabled  Allow incoming SSH access (TCP/22)
+```
+
+```sh copy
+$SU awall enable base-config ssh
+$SU awall activate
+```
+
+<Callout>
+Més: [Alpine Wall User’s Guide](https://git.alpinelinux.org/awall/about)
+
+Com: [How-To Alpine Wall](https://wiki.alpinelinux.org/wiki/How-To_Alpine_Wall)
+</Callout>
+    </Tabs.Tab>
+    <Tabs.Tab>
+- Instal·leu `ufw`
 
 ```sh copy
 $SU apk add ip6tables ufw
 ```
 
-De moment, només SSH hauria de ser accessible des de l'exterior. Bitcoin i
-Lightning utilitzen Tor i no necessiten ports d'entrada.
-
-### Amb l'usuari `satoshi`, configureu i activeu les regles del tallafoc
+- Amb l'usuari `satoshi`, configureu i activeu les regles del tallafoc
 
 <Callout type="info">
 Substituïu `22` pel port escollit
@@ -118,13 +218,13 @@ $SU ufw logging off
 $SU ufw enable
 ```
 
-### Assegureu-vos que l'UFW s'inicia automàticament a l'arrencada
+- Assegureu-vos que l'UFW s'inicia automàticament a l'arrencada
 
 ```sh copy
 $SU rc-update add ufw default
 ```
 
-### Comproveu si l'UFW està correctament configurat i actiu
+- Comproveu si l'UFW està correctament configurat i actiu
 
 ```sh copy
 $SU ufw status verbose
@@ -141,11 +241,12 @@ To                         Action      From
 22/tcp                   ALLOW IN    Anywhere                   # permet SSH
 22/tcp (v6)              ALLOW IN    Anywhere (v6)              # permet SSH
 ```
-</Steps>
 
 <Callout>
 Més: [UFW Essentials](https://wiki.alpinelinux.org/wiki/Uncomplicated_Firewall)
 </Callout>
+    </Tabs.Tab>
+</Tabs>
 
 <Callout type="info">
 Si us trobeu bloquejat per error, podeu connectar un teclat i una pantalla al
