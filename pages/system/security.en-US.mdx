@@ -138,14 +138,14 @@ $SU $EDITOR /etc/awall/optional/base-config.json
 }
 ```
 
-```sh copy
-$SU $EDITOR /etc/awall/optional/ssh.json
-```
-
 <Callout>
 If you changed the SSH port, replace `"service": "ssh"` with your new port
 `"port": "2222/tcp"` or whatever you chose
 </Callout>
+
+```sh copy
+$SU $EDITOR /etc/awall/optional/ssh.json
+```
 
 ```json copy filename="/etc/awall/optional/ssh.json" {8}
 {
