@@ -71,9 +71,41 @@ $SU rc-service nginx restart
 
 * Configure the firewall to allow incoming HTTPS requests
 
+<Tabs items={['awall', 'ufw']}>
+    <Tabs.Tab>
 ```sh copy
-$SU ufw allow 8081/tcp comment 'allow LND rest SSL from anywhere'
+$SU $EDITOR /etc/awall/optional/lnd-rest.json
 ```
+
+```json copy filename="/etc/awall/optional/lnd-rest.json"
+{
+  "description": "Allow LND rest SSL",
+
+  "filter": [
+    {
+      "in": "internet",
+      "out": "_fw",
+      "service": { "proto": "tcp", "port": 8081 },
+      "action": "accept",
+      "conn-limit": { "count": 10, "interval": 60 }
+    }
+  ]
+}
+```
+
+* Enable it
+
+```sh copy
+$SU awall enable lnd-rest
+$SU awall activate
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+```sh copy
+$SU ufw allow 8081/tcp comment 'Allow LND rest SSL'
+```
+    </Tabs.Tab>
+</Tabs>
 
 <FAQBox title="Access over Tor">
 * Add the following lines in the section for “location-hidden services” in the

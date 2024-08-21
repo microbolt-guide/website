@@ -1,4 +1,4 @@
-import { Callout, Steps } from 'nextra/components'
+import { Callout, Steps, Tabs } from 'nextra/components'
 import { FAQBox } from '@components'
 
 # Web app
@@ -98,9 +98,41 @@ $SU rc-service nginx restart
 
 * Configure the firewall to allow incoming HTTPS requests
 
+<Tabs items={['awall', 'ufw']}>
+    <Tabs.Tab>
 ```sh copy
-$SU ufw allow 4002/tcp comment 'allow ThunderHub SSL from anywhere'
+$SU $EDITOR /etc/awall/optional/thunderhub.json
 ```
+
+```json copy filename="/etc/awall/optional/thunderhub.json"
+{
+  "description": "Allow ThunderHub SSL",
+
+  "filter": [
+    {
+      "in": "internet",
+      "out": "_fw",
+      "service": { "proto": "tcp", "port": 4002 },
+      "action": "accept",
+      "conn-limit": { "count": 10, "interval": 60 }
+    }
+  ]
+}
+```
+
+* Enable it
+
+```sh copy
+$SU awall enable thunderhub
+$SU awall activate
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+```sh copy
+$SU ufw allow 4002/tcp comment 'Allow ThunderHub SSL'
+```
+    </Tabs.Tab>
+</Tabs>
 </Steps>
 
 ## Installation

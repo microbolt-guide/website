@@ -72,9 +72,41 @@ $SU rc-service nginx restart
 
 * Configura el tallafoc per permetre les sol·licituds HTTPS entrants
 
+<Tabs items={['awall', 'ufw']}>
+    <Tabs.Tab>
 ```sh copy
-$SU ufw allow 8081/tcp comment 'allow LND rest SSL from anywhere'
+$SU $EDITOR /etc/awall/optional/lnd-rest.json
 ```
+
+```json copy filename="/etc/awall/optional/lnd-rest.json"
+{
+  "description": "Allow LND rest SSL",
+
+  "filter": [
+    {
+      "in": "internet",
+      "out": "_fw",
+      "service": { "proto": "tcp", "port": 8081 },
+      "action": "accept",
+      "conn-limit": { "count": 10, "interval": 60 }
+    }
+  ]
+}
+```
+
+* Habilitar-ho
+
+```sh copy
+$SU awall enable lnd-rest
+$SU awall activate
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+```sh copy
+$SU ufw allow 8081/tcp comment 'Allow LND rest SSL'
+```
+    </Tabs.Tab>
+</Tabs>
 
 <FAQBox title="Accés remot per Tor">
 * Afegiu les línies següents a la secció de "location-hidden services" al fitxer

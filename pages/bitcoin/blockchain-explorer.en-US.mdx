@@ -132,9 +132,41 @@ $SU rc-service nginx restart
 
 * Configure the firewall to allow incoming HTTPS requests
 
+<Tabs items={['awall', 'ufw']}>
+    <Tabs.Tab>
 ```sh copy
-$SU ufw allow 4000/tcp comment 'allow BTC RPC Explorer SSL'
+$SU $EDITOR /etc/awall/optional/btcrpcexpl.json
 ```
+
+```json copy filename="/etc/awall/optional/btcrpcexpl.json"
+{
+  "description": "Allow BTC RPC Explorer SSL",
+
+  "filter": [
+    {
+      "in": "internet",
+      "out": "_fw",
+      "service": { "proto": "tcp", "port": 4000 },
+      "action": "accept",
+      "conn-limit": { "count": 10, "interval": 60 }
+    }
+  ]
+}
+```
+
+* Enable it
+
+```sh copy
+$SU awall enable btcrpcexpl
+$SU awall activate
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+```sh copy
+$SU ufw allow 4000/tcp comment 'Allow BTC RPC Explorer SSL'
+```
+    </Tabs.Tab>
+</Tabs>
 
 ### Modify node flags
 

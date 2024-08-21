@@ -1,4 +1,4 @@
-import { Callout,Steps } from 'nextra/components'
+import { Callout, Steps, Tabs } from 'nextra/components'
 import { FAQBox } from '@components'
 
 # Electrs
@@ -95,9 +95,41 @@ $SU rc-service nginx restart
 
 * Configure the firewall to allow incoming requests
 
+<Tabs items={['awall', 'ufw']}>
+    <Tabs.Tab>
 ```sh copy
-$SU ufw allow 50002/tcp comment 'allow Electrum SSL from anywhere'
+$SU $EDITOR /etc/awall/optional/electrum.json
 ```
+
+```json copy filename="/etc/awall/optional/electrum.json"
+{
+  "description": "Allow Electrum SSL",
+
+  "filter": [
+    {
+      "in": "internet",
+      "out": "_fw",
+      "service": { "proto": "tcp", "port": 50002 },
+      "action": "accept",
+      "conn-limit": { "count": 10, "interval": 60 }
+    }
+  ]
+}
+```
+
+* Enable it
+
+```sh copy
+$SU awall enable electrum
+$SU awall activate
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+```sh copy
+$SU ufw allow 50002/tcp comment 'Allow Electrum SSL'
+```
+    </Tabs.Tab>
+</Tabs>
 </Steps>
 
 ## Installation
