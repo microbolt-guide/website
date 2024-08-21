@@ -142,7 +142,7 @@ $SU $EDITOR /etc/awall/optional/base-config.json
 
 <Callout>
 Si heu canviat el port SSH, reemplaceu `"service": "ssh"` amb el vostre nou port
-`"port": "2222/tcp"` o el que tu triïs
+`"service": { "proto": "tcp", "port": 2222 },` o el que tu triïs
 </Callout>
 
 ```sh copy
