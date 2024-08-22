@@ -168,8 +168,8 @@ $SU awall activate
     </Tabs.Tab>
     <Tabs.Tab>
 ```sh copy
-$SU ufw allow 4040/tcp comment 'Allow Public Pool UI SSL'
-$SU ufw allow 23333/tcp comment 'Allow Public Pool Stratum'
+$SU ufw limit 4040/tcp comment 'Allow Public Pool UI SSL'
+$SU ufw limit 23333/tcp comment 'Allow Public Pool Stratum'
 ```
     </Tabs.Tab>
 </Tabs>

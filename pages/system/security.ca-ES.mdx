@@ -210,7 +210,7 @@ Substituïu `22` pel port escollit
 ```sh copy
 $SU ufw default deny incoming
 $SU ufw default allow outgoing
-$SU ufw allow 22/tcp comment 'permet SSH'
+$SU ufw limit 22/tcp comment 'Allow SSH'
 ```
 
 ```sh copy
@@ -238,8 +238,8 @@ New profiles: skip
 
 To                         Action      From
 --                         ------      ----
-22/tcp                   ALLOW IN    Anywhere                   # permet SSH
-22/tcp (v6)              ALLOW IN    Anywhere (v6)              # permet SSH
+22/tcp                     LIMIT IN    Anywhere                   # Allow SSH
+22/tcp (v6)                LIMIT IN    Anywhere (v6)              # Allow SSH
 ```
 
 <Callout>
@@ -252,34 +252,6 @@ Més: [UFW Essentials](https://wiki.alpinelinux.org/wiki/Uncomplicated_Firewall)
 Si us trobeu bloquejat per error, podeu connectar un teclat i una pantalla al
 vostre PC per iniciar sessió localment i corregir aquesta configuració
 (especialment per al port SSH).
-</Callout>
-
-## fail2ban
-
-L'inici de sessió SSH al node ha d'estar especialment protegit.
-Una mesura addicional és instal·lar `fail2ban`, que impedeix que un atacant
-tingui accés mitjançant la força bruta.
-Simplement talla qualsevol sistema remot amb cinc intents d'inici de sessió
-fallits durant deu minuts.
-
-* Instal·leu `fail2ban`
-
-```sh copy
-$SU apk add fail2ban
-```
-
-* Inicieu i activeu a l'arrencada
-
-```sh copy
-$SU rc-service fail2ban start
-$SU rc-update add fail2ban default
-```
-
-La configuració inicial està bé, ja que protegeix SSH per defecte.
-
-<Callout>
-Més: [personalitzeu
-fail2ban](https://linode.com/docs/security/using-fail2ban-for-security/)
 </Callout>
 
 ## Nginx

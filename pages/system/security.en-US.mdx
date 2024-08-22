@@ -208,7 +208,7 @@ Replace `22` with your choosen port
 ```sh copy
 $SU ufw default deny incoming
 $SU ufw default allow outgoing
-$SU ufw allow 22/tcp comment 'allow SSH'
+$SU ufw limit 22/tcp comment 'Allow SSH'
 ```
 
 ```sh copy
@@ -236,8 +236,8 @@ New profiles: skip
 
 To                         Action      From
 --                         ------      ----
-22/tcp                   ALLOW IN    Anywhere                   # allow SSH
-22/tcp (v6)              ALLOW IN    Anywhere (v6)              # allow SSH
+22/tcp                     LIMIT IN    Anywhere                   # Allow SSH
+22/tcp (v6)                LIMIT IN    Anywhere (v6)              # Allow SSH
 ```
 
 <Callout>
@@ -250,34 +250,6 @@ More: [UFW Essentials](https://wiki.alpinelinux.org/wiki/Uncomplicated_Firewall)
 If you find yourself locked out by mistake, you can connect a keyboard and
 screen to your PC to log in locally and fix these settings (especially for the
 SSH port). 
-</Callout>
-
-## fail2ban
-
-The SSH login to the node must be specially protected.
-An additional measure is to install `fail2ban`, which prevents an attacker from
-gaining access via brute force.
-It simply cuts off any remote system with five failed login attempts for ten
-minutes.
-
-* Install `fail2ban`
-
-```sh copy
-$SU apk add fail2ban
-```
-
-* Start and enable on boot
-
-```sh copy
-$SU rc-service fail2ban start
-$SU rc-update add fail2ban default
-```
-
-The initial configuration is fine, as it protects SSH by default.
-
-<Callout>
-More: [customize
-fail2ban](https://linode.com/docs/security/using-fail2ban-for-security/)
 </Callout>
 
 ## Nginx
