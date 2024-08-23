@@ -295,7 +295,7 @@ read -r username password; \
 $SU $EDITOR /etc/bitcoin/bitcoin.conf
 ```
 
-```nginx filename="/etc/bitcoin/bitcoin.conf" {2,4,6,8,10,12,14,16,18,20,22,24,26,28,29,31}
+```nginx filename="/etc/bitcoin/bitcoin.conf" {2,4,6,8,10,12,14,16,18,20,22,24,26,28-29,31,33,35}
 [...]
 assumevalid=0
 [...]
@@ -325,6 +325,10 @@ zmqpubrawtx=tcp://127.0.0.1:28333
 [...]
 debug=i2p
 debug=tor
+[...]
+datacarrier=0
+[...]
+permitbaremultisig=0
 [...]
 server=1
 [...]
