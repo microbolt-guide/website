@@ -419,9 +419,22 @@ depend() {
 
     if service_started fulcrum; then
         need fulcrum
-    else
+    elif service_started electrs; then
         need electrs
+    else
+        if service_exists fulcrum; then
+            need fulcrum
+        elif service_exists electrs; then
+            need electrs
+        else
+            eerror "Neither fulcrum nor electrs is installed or started"
+            return 1
+        fi
     fi
+}
+
+service_exists() {
+    rc-service --list | grep -q "^$1$"
 }
 
 start_pre() {

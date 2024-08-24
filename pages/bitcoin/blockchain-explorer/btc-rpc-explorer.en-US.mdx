@@ -411,13 +411,19 @@ start_stop_daemon_args="--stdout ${BTCRPCEXPL_LOGDIR}/debug.log
 depend() {
     need bitcoind
 
-    if service_exists fulcrum; then
+    if service_started fulcrum; then
         need fulcrum
-    elif service_exists electrs; then
+    elif service_started electrs; then
         need electrs
     else
-        eerror "Neither fulcrum nor electrs is installed or started"
-        return 1
+        if service_exists fulcrum; then
+            need fulcrum
+        elif service_exists electrs; then
+            need electrs
+        else
+            eerror "Neither fulcrum nor electrs is installed or started"
+            return 1
+        fi
     fi
 }
 
