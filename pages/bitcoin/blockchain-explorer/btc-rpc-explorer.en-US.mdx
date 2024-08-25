@@ -21,7 +21,7 @@ transactions.
 (`txindex=1`), and you can skip to the next section.
 * If this is not the case, you need to set the `txindex=1` parameter in your
 Bitcoin client configuration file (`bitcoin.conf`): [Bitcoin node
-configuration](bitcoin-client).
+configuration](../bitcoin-client).
 * After adding the parameter, restart Bitcoin client, which will now index the
 whole blockchain
 
@@ -43,7 +43,7 @@ tail -f /var/log/bitcoind/debug.log
 These are make dependencies (safe to remove after installation, if you want)
 
 ```sh copy
-$SU apk add git npm
+$SU apk add git gnupg npm
 ```
 
 These are runtime dependencies
@@ -507,7 +507,7 @@ browsing to https://nakamoto01:4000 (or your equivalent IP address).
 
 ## For the future: BTC RPC Explorer update
 
-Follow again [Blockchain explorer](./blockchain-explorer) page replacing the
+Follow again [BTC RPC Explorer](./btc-rpc-explorer) page replacing the
 environment variable `VERSION=x.xx` value for the latest if it has not been
 already changed in this guide.
 

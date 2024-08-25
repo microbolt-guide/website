@@ -21,7 +21,7 @@ indexar totes les transaccions.
 habilitat (`txindex=1`) i podeu saltar a la secció següent.
 * Si no és així, cal que configureu el paràmetre `txindex=1` al fitxer de
 configuració del vostre client Bitcoin (`bitcoin.conf`): [Configuració del node
-Bitcoin](bitcoin-client).
+Bitcoin](../bitcoin-client).
 * Després d'afegir el paràmetre, reinicieu el client Bitcoin, que ara indexarà
 tota la cadena de blocs
 
@@ -44,7 +44,7 @@ Aquestes són dependències de creació (es pot eliminar després de la
 instal·lació, si voleu)
 
 ```sh copy
-$SU apk add git npm
+$SU apk add git gnupg npm
 ```
 
 Aquestes són dependències en temps d'execució
@@ -514,9 +514,9 @@ local navegant a https://nakamoto01:4000 (o la vostra adreça IP equivalent).
 
 ## Per al futur: actualització de BTC RPC Explorer
 
-Torneu a seguir la pàgina [Explorador de cadena de blocs](./blockchain-explorer)
-substituint el valor de la variable d'entorn `VERSION=x.xx` per l'últim si
-encara no s'ha modificat en aquesta guia.
+Torneu a seguir la pàgina [BTC RPC Explorer](./btc-rpc-explorer) substituint el
+valor de la variable d'entorn `VERSION=x.xx` per l'últim si encara no s'ha
+modificat en aquesta guia.
 
 * Actualitzeu la configuració de BTC RPC Explorer si cal (vegeu les notes de la
 versió)
