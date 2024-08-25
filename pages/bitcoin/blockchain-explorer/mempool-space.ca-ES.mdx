@@ -1,0 +1,718 @@
+import { Callout, Steps, Tabs } from 'nextra/components'
+import { FAQBox } from '@components'
+
+# Mempool Space
+
+El [Mempool](https://github.com/mempool/mempool) és un visualitzador/explorador
+de la blockchain i mempool de Bitcoin autoallotjat. Busca les teves operacions
+en cadena i estima les comissions de les transaccions sense cap fuita de
+privacitat.
+
+## Preparacions
+
+<Steps>
+### Indexació de transaccions
+
+Perquè el Mempool Space funcioni, necessiteu el vostre node complet per indexar
+totes les transaccions.
+
+* Si heu seguit aquesta guia, el paràmetre d'índex de transaccions ja està
+habilitat (`txindex=1`) i podeu saltar a la secció següent.
+* Si no és així, cal que configureu el paràmetre `txindex=1` al fitxer de
+configuració del vostre client Bitcoin (`bitcoin.conf`): [Configuració del node
+Bitcoin](../bitcoin-client).
+* Després d'afegir el paràmetre, reinicieu el client Bitcoin, que ara indexarà
+tota la cadena de blocs
+
+```sh copy
+$SU rc-service bitcoind restart
+```
+
+Tingueu en compte que la reindexació pot trigar més d'un dia. Podeu seguir el
+progrés utilitzant
+
+```sh copy
+tail -f /var/log/bitcoind/debug.log
+```
+
+### Instal·leu dependències
+
+* Instal·leu Node.js mitjançant el gestor de paquets apk.
+
+Aquestes són dependències de creació (es pot eliminar després de la
+instal·lació, si voleu)
+
+```sh copy
+$SU apk add git gnupg npm rsync
+```
+
+Aquestes són dependències en temps d'execució
+
+```sh copy
+$SU apk add mariadb mariadb-client nodejs-current
+```
+
+### Creeu l'usuari/grup `mempool`
+
+```sh copy
+$SU addgroup -S mempool
+```
+
+```sh copy
+$SU adduser \
+    -S \
+    -D \
+    -H \
+    -h /dev/null \
+    -s /sbin/nologin \
+    -G mempool \
+    -g mempool \
+    mempool
+```
+
+### Afegeix l'usuari `mempool` al grup `bitcoin`
+
+```sh copy
+$SU adduser mempool bitcoin
+```
+
+### Afegiu també l'usuari `satoshi` al grup `mempool`
+
+```sh copy
+$SU adduser satoshi mempool
+```
+
+### Tallafoc i servidor intermediari invers
+
+A la secció de [Seguretat](/system/security#nginx), hem configurat NGINX com a
+servidor intermediari invers. Ara podem afegir la configuració de Mempool Space.
+
+* Habilita el servidor intermediari invers de NGINX per encaminar el trànsit
+HTTPS extern xifrat internament cap a Mempool Space
+
+```sh copy
+$SU $EDITOR /etc/nginx/sites-available/mempool-reverse-proxy.conf
+```
+
+```nginx copy filename="/etc/nginx/sites-available/mempool-reverse-proxy.conf"
+proxy_read_timeout 300;
+proxy_connect_timeout 300;
+proxy_send_timeout 300;
+
+map $http_accept_language $header_lang {
+    default en-US;
+    ~*^en-US en-US;
+    ~*^en en-US;
+    ~*^ar ar;
+    ~*^ca ca;
+    ~*^cs cs;
+    ~*^de de;
+    ~*^es es;
+    ~*^fa fa;
+    ~*^fr fr;
+    ~*^ko ko;
+    ~*^it it;
+    ~*^he he;
+    ~*^ka ka;
+    ~*^hu hu;
+    ~*^mk mk;
+    ~*^nl nl;
+    ~*^ja ja;
+    ~*^nb nb;
+    ~*^pl pl;
+    ~*^pt pt;
+    ~*^ro ro;
+    ~*^ru ru;
+    ~*^sl sl;
+    ~*^fi fi;
+    ~*^sv sv;
+    ~*^th th;
+    ~*^tr tr;
+    ~*^uk uk;
+    ~*^vi vi;
+    ~*^zh zh;
+    ~*^hi hi;
+}
+
+map $cookie_lang $lang {
+    default $header_lang;
+    ~*^en-US en-US;
+    ~*^en en-US;
+    ~*^ar ar;
+    ~*^ca ca;
+    ~*^cs cs;
+    ~*^de de;
+    ~*^es es;
+    ~*^fa fa;
+    ~*^fr fr;
+    ~*^ko ko;
+    ~*^it it;
+    ~*^he he;
+    ~*^ka ka;
+    ~*^hu hu;
+    ~*^mk mk;
+    ~*^nl nl;
+    ~*^ja ja;
+    ~*^nb nb;
+    ~*^pl pl;
+    ~*^pt pt;
+    ~*^ro ro;
+    ~*^ru ru;
+    ~*^sl sl;
+    ~*^fi fi;
+    ~*^sv sv;
+    ~*^th th;
+    ~*^tr tr;
+    ~*^uk uk;
+    ~*^vi vi;
+    ~*^zh zh;
+    ~*^hi hi;
+}
+  
+server {
+    listen 4081 ssl;  
+    include /etc/nginx/snippets/nginx-mempool.conf;
+
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+
+    server_tokens off;
+    server_name_in_redirect off;
+
+    default_type application/octet-stream;
+
+    reset_timedout_connection on;
+    client_body_timeout 10s;
+    client_header_timeout 10s;
+    keepalive_timeout 69s;
+    send_timeout 69s;
+
+    keepalive_requests 1337;
+
+    gzip on;
+    gzip_vary on;
+    gzip_comp_level 6;
+    gzip_min_length 1000;
+    gzip_proxied expired no-cache no-store private auth;
+    gzip_types application/javascript application/json application/ld+json application/manifest+json application/x-font-ttf application/x-web-app-manifest+json application/xhtml+xml application/xml font/opentype image/bmp image/svg+xml image/x-icon text/cache-manifest text/css text/plain text/vcard;
+
+    client_max_body_size 10m;
+
+    proxy_cache off;
+    proxy_cache_path /var/cache/nginx keys_zone=cache:20m levels=1:2 inactive=600s max_size=500m;
+    types_hash_max_size 2048;
+
+    geo $limited_ip {
+      default    1;
+      127.0.0.1  0;
+    }
+    map $limited_ip $limited_ip_key {
+      1 $binary_remote_addr;
+      0 '';
+    }
+
+    limit_req_zone $limited_ip_key zone=api:5m rate=200r/m;
+    limit_req_zone $limited_ip_key zone=electrs:5m rate=2000r/m;
+    limit_req_status 429;
+
+    limit_conn_zone $limited_ip_key zone=websocket:10m;
+    limit_conn_status 429;
+}
+```
+
+```sh copy
+$SU ln \
+    -s \
+    ../sites-available/mempool-reverse-proxy.conf \
+    /etc/nginx/sites-enabled/mempool-reverse-proxy.conf
+```
+
+* Prova i torna a carregar la configuració de NGINX
+
+```sh copy
+$SU nginx -t
+$SU rc-service nginx restart
+
+```
+
+* Configura el tallafoc per permetre les sol·licituds entrants
+
+<Tabs items={['awall', 'ufw']}>
+    <Tabs.Tab>
+```sh copy
+$SU $EDITOR /etc/awall/optional/mempool.json
+```
+
+```json copy filename="/etc/awall/optional/mempool.json"
+{
+  "description": "Allow Mempool Space SSL",
+
+  "filter": [
+    {
+      "in": "internet",
+      "out": "_fw",
+      "service": { "proto": "tcp", "port": 4081 },
+      "action": "accept",
+      "conn-limit": { "count": 10, "interval": 60 }
+    }
+  ]
+}
+```
+
+* Habilitar-ho
+
+```sh copy
+$SU awall enable mempool
+$SU awall activate
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+```sh copy
+$SU ufw limit 4081/tcp comment 'Allow Mempool Space SSL'
+```
+    </Tabs.Tab>
+</Tabs>
+
+### Modificar els indicadors de node
+
+```sh copy
+printf "%s\n" \
+    "export npm_config_cache=\"./npm-cache\"" \
+    "export npm_config_devdir=\"./.gyp\"" \
+    | $SU tee -a /etc/profile.d/node.sh
+```
+
+```sh copy
+. /etc/profile.d/node.sh
+```
+</Steps>
+
+## Instal·lació
+
+<Steps>
+### Descarrega el codi font
+
+Obtenim la darrera versió del codi font de Mempool Space i l'instal·lem.
+
+* Baixeu el codi font de la darrera versió de Mempool Space. Podeu consultar la
+[pàgina de llançament](https://github.com/mempool/mempool/releases) per veure si
+hi ha disponible una versió més recent. Tanmateix, és possible que altres
+versions no s'hagin provat correctament amb la resta de la configuració de
+Microbolt.
+
+```sh copy
+cd /tmp
+```
+
+```sh copy
+VERSION=3.0.0
+```
+
+```sh copy
+git clone --branch v$VERSION https://github.com/mempool/mempool.git && cd mempool
+```
+
+### Comprovació de la signatura
+
+* Per a evitar utilitzar un codi font incorrecte, verifiqueu que el llançament ha estat correctament signat almenys per
+un dels desenvolupadors principals [wiz](https://github.com/wiz).
+
+```sh copy
+url="https://gist.githubusercontent.com/wiz/8f585a0eb4e3886ba574e3072f6b1e2f/raw/7708491cfdfbbf0f7a17cbdfdb9d27cc80438caf/913C5FF1F579B66CA10378DBA394E332255A6173.asc"
+wget -qO- "$url" | gpg --import
+```
+
+```sh copy
+git verify-tag v$VERSION
+```
+
+### MariaDB
+
+[MariaDB](https://mariadb.org) és una base de dades relacional de codi obert.
+
+* Primer cal crear bases de dades inicials i iniciar el servei
+
+```sh copy
+$SU /etc/init.d/mariadb setup
+$SU rc-service mariadb start
+```
+
+* Aquestes ordres us permeten crear una base de dades mempool i concedir
+privilegis a l'usuari `mempool` the directament des de la línia d'ordres
+
+```sh copy
+$SU mysql -e "create database mempool;"
+$SU mysql -e "grant all privileges on mempool.* to 'mempool'@'localhost' identified via unix_socket;"
+```
+
+### Backend
+
+* Instal·la les dependències del backend i construeix el projecte
+
+```sh copy
+cd /tmp/mempool/backend
+npm install --omit=dev
+```
+
+La instal·lació pot trigar un temps. Pot ser que hi hagi moltes sortides
+confuses, però si veieu alguna cosa semblant a la següent, la instal·lació ha
+estat correcta:
+
+```output filename="output"
+8 vulnerabilities (3 moderate, 3 high, 2 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+```
+
+<Callout type="warning">
+A data de `2024-08-24`, hi ha com a mínim **8 vulnerabilitats** que no es poden
+abordar sense fer canvis substancials que podrien afectar altres parts del
+programari
+
+```sh copy
+npm audit fix --force
+```
+</Callout>
+
+* Feu-ne una instal·lació permanent global
+
+```sh copy
+npm run build
+```
+
+```sh copy
+mkdir ./dist/bin
+```
+
+```sh copy
+printf "%s\n" \
+    "#!/bin/sh" \
+    "node --max-old-space-size=16384 /var/lib/mempool/index.js" \
+    > ./dist/bin/cli.sh
+```
+
+```sh copy
+chmod +x ./dist/bin/cli.sh
+```
+
+```sh copy
+$SU install -D -m 0660 -o mempool -g mempool ./mempool-config.sample.json /etc/mempool/mempool-config.json
+$SU install -D -m 0644 -o root -g root ../nginx-mempool.conf /etc/nginx/snippets/nginx-mempool.conf
+```
+
+```sh copy
+$SU mv -f /tmp/mempool/backend/dist /var/lib/mempool
+```
+
+```sh copy
+$SU ln -s /var/lib/mempool /usr/lib/node_modules/mempool
+$SU ln -s ../lib/node_modules/mempool/bin/cli.sh /usr/bin/mempool
+```
+
+### Frontend
+
+* Instal·la les dependències del frontend i construeix el projecte
+
+```sh copy
+cd /tmp/mempool/frontend
+npm install --omit=dev
+```
+
+La instal·lació pot trigar un temps. Pot ser que hi hagi moltes sortides
+confuses, però si veieu alguna cosa semblant a la següent, la instal·lació ha
+estat correcta:
+
+```output filename="output"
+37 vulnerabilities (2 low, 15 moderate, 17 high, 3 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
+
+Run `npm audit` for details.
+```
+
+<Callout type="warning">
+A data de `2024-08-24`, hi ha com a mínim **37 vulnerabilitats** que no es poden
+abordar sense fer canvis substancials que podrien afectar altres parts del
+programari
+
+```sh copy
+npm audit fix --force
+```
+</Callout>
+
+* Feu-ne una instal·lació permanent global
+
+```sh copy
+npm run build
+```
+
+```sh copy
+$SU mv -f ./dist/mempool /var/www/
+```
+
+</Steps>
+
+## Configuració
+
+* Comprova el fitxer de configuració i canvia els valors ressaltats
+
+```sh copy
+$SU $EDITOR /etc/mempool/mempool-config.json
+```
+
+```json filename="/etc/mempool/mempool-config.json" {2,4,6-7,11-12,14-15,18-19,22,26,29,32,35,37,40}
+[...]
+    "INDEXING_BLOCKS_AMOUNT": 52560,
+[...]
+    "STDOUT_LOG_MIN_PRIORITY": "info",
+[...]
+    "POOLS_JSON_URL": "",
+    "POOLS_JSON_TREE_URL": "",
+[...]
+  "CORE_RPC": {
+[...]
+    "USERNAME": "",
+    "PASSWORD": "",
+[...]
+    "COOKIE": true,
+    "COOKIE_PATH": "/var/lib/bitcoind/.cookie"
+  },
+  "ESPLORA": {
+    "REST_API_URL": "",
+    "UNIX_SOCKET_PATH": "",
+[...]
+  "SECOND_CORE_RPC": {
+    "HOST": "",
+[...]
+  "DATABASE": {
+[...]
+    "PASSWORD": "",
+[...]
+  "STATISTICS": {
+    "ENABLED": false,
+[...]
+  "SOCKS5PROXY": {
+    "ENABLED": true,
+[...]
+  "EXTERNAL_DATA_SERVER": {
+    "MEMPOOL_API": "",
+[...]
+    "LIQUID_API": "",
+[...]
+  "FIAT_PRICE": {
+    "ENABLED": false,
+[...]
+```
+
+<FAQBox title="Remote access over Tor">
+Per utilitzar el vostre explorador de cadena de blocs quan esteu en remot, podeu
+crear fàcilment un servei ocult Tor al Microbolt i accedir al Mempool Space amb
+el navegador Tor des de qualsevol dispositiu.
+
+* Afegiu les tres línies següents a la secció "location-hidden services" al
+fitxer `torrc`.
+
+```sh copy
+$SU $EDITOR /etc/tor/torrc
+```
+
+```sh copy filename="/etc/tor/torrc"
+# Hidden Service Mempool Space
+HiddenServiceDir /var/lib/tor/mempool/
+HiddenServiceVersion 3
+HiddenServicePoWDefensesEnabled 1
+HiddenServicePort 80 127.0.0.1:4081
+```
+
+* Torneu a carregar la configuració de Tor i obteniu la vostra adreça de
+connexió.
+
+```sh copy
+$SU rc-service tor reload
+$SU cat /var/lib/tor/mempool/hostname
+```
+
+```output filename="output"
+abcdefg..............xyz.onion
+```
+
+* Ara hauríeu de poder connectar-vos al vostre Mempool Space de forma remota
+mitjançant Tor mitjançant el vostre nom d'amfitrió i el vostre port `4081`
+</FAQBox>
+
+### Inici automàtic a l'arrencada
+
+Ara ens assegurarem que el nostre explorador de cadena de blocs s'iniciï com a
+servei a l'ordinador perquè estigui sempre en execució.
+
+* Creeu la unitat init.d de Mempool Space i copieu/enganxeu la configuració
+següent. Guardar i sortir.
+
+```sh copy
+$SU $EDITOR /etc/init.d/mempool
+```
+
+```sh copy filename="/etc/init.d/mempool"
+#!/sbin/openrc-run
+
+: ${MEMPOOL_CONFIGFILE:=/etc/mempool/mempool-config.json}
+: ${MEMPOOL_DATADIR:=/var/lib/mempool}
+: ${MEMPOOL_LOGDIR:=/var/log/mempool}
+: ${MEMPOOL_USER:=mempool}
+: ${MEMPOOL_GROUP:=mempool}
+: ${MEMPOOL_BIN:=/usr/bin/mempool}
+: ${MEMPOOL_OPTS=${MEMPOOL_OPTS}}
+: ${MEMPOOL_SIGTERM_TIMEOUT:=600}
+
+MEMPOOL_PIDDIR="/run/mempool"
+
+name="Mempool Space"
+description="A self-hosted Bitcoin blockchain and mempool visualizer/explorer"
+
+directory="${MEMPOOL_DATADIR}"
+required_files="${MEMPOOL_CONFIGFILE}"
+pidfile="${MEMPOOL_PIDDIR}/${SVCNAME}.pid"
+retry="${MEMPOOL_SIGTERM_TIMEOUT}"
+
+command="${MEMPOOL_BIN}"
+command_args="${MEMPOOL_OPTS}"
+command_user="${MEMPOOL_USER}:${MEMPOOL_GROUP}"
+command_background="true"
+
+start_stop_daemon_args="--stdout ${MEMPOOL_LOGDIR}/debug.log
+                        --stderr ${MEMPOOL_LOGDIR}/debug.log"
+
+depend() {
+    need bitcoind
+    need mariadb
+
+    if service_started fulcrum; then
+        need fulcrum
+    elif service_started electrs; then
+        need electrs
+    else
+        if service_exists fulcrum; then
+            need fulcrum
+        elif service_exists electrs; then
+            need electrs
+        else
+            eerror "Neither fulcrum nor electrs is installed or started"
+            return 1
+        fi
+    fi
+}
+
+service_exists() {
+    rc-service --list | grep -q "^$1$"
+}
+
+start_pre() {
+    checkpath --file      --mode 0660 --owner "${command_user}" "${MEMPOOL_CONFIGFILE}"
+    checkpath --directory --mode 0750 --owner "${command_user}" "${MEMPOOL_DATADIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${MEMPOOL_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${MEMPOOL_PIDDIR}"
+    checkconfig
+}
+
+checkconfig() {
+    COOKIE=$(grep -oP '"CORE_RPC":\s*{[^}]*"COOKIE":\s*\Ktrue' "${MEMPOOL_CONFIGFILE}")
+    COOKIE_PATH=$(grep -oP '"CORE_RPC":\s*{[^}]*"COOKIE_PATH":\s*"\K[^"]+' "${MEMPOOL_CONFIGFILE}")
+
+    if [ "$COOKIE" != "true" ] || [ -z "$COOKIE_PATH" ]; then
+        eerror ""
+        eerror "ERROR: You must set CORE_RPC.COOKIE to true and provide a valid"
+        eerror "CORE_RPC.COOKIE_PATH to run"
+        eerror "Mempool Space."
+        eerror "The settings must appear in ${MEMPOOL_CONFIGFILE}"
+        eerror ""
+        return 1
+    fi
+}
+```
+
+* Habilita el permís d'execució
+
+```sh copy
+$SU chmod +x /etc/init.d/mempool
+```
+
+### Habilita logrotate
+
+* Introduïu la configuració següent completa. Guardar i sortir
+
+```sh copy
+$SU $EDITOR /etc/logrotate.d/mempool
+```
+
+```sh copy filename="/etc/logrotate.d/mempool"
+/var/log/mempool/*.log {
+    weekly
+    missingok
+    rotate 104
+    compress
+    delaycompress
+    notifempty
+    create 0640 mempool mempool
+    sharedscripts
+    postrotate
+        killall -HUP `cat /run/mempool/mempool.pid`
+    endscript
+}
+```
+
+* Prova
+
+```sh copy
+$SU logrotate /etc/logrotate.d/mempool --debug
+```
+
+## Activa i inicia Mempool Space
+
+```sh copy
+$SU rc-update add mempool
+$SU rc-service mempool start
+
+```
+
+* Comproveu el registre per veure la sortida de Mempool Space. Sortiu amb
+`Ctrl-C`
+
+```sh copy
+tail -f /var/log/mempool/debug.log
+```
+
+* Ara podeu accedir al vostre propi Mempool Space des de la vostra xarxa local
+navegant a https://nakamoto01:4081 (o la vostra adreça IP equivalent).
+
+## Per al futur: actualització de Mempool Space
+
+Torneu a seguir la pàgina [Mempool Space](./mempool-space) substituint el valor
+de la variable d'entorn `VERSION=x.xx` per l'últim si encara no s'ha modificat
+en aquesta guia.
+
+* Actualitzeu la configuració de Mempool Space si cal (vegeu les notes de la
+versió)
+
+```sh copy
+$SU $EDITOR /etc/mempool/mempool-config.json
+```
+
+* Reinicieu el servei per aplicar els canvis
+
+```sh copy
+$SU rc-service mempool restart
+```
