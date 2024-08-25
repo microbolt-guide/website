@@ -161,7 +161,8 @@ export default {
       const { locale } = useRouter()
       if (locale === 'ca-ES') return 'En aquesta pàgina'
       if (locale === 'en-US') return 'On This Page'
-    }
+    },
+    backToTop: true
   },
   editLink: {
     text() {
