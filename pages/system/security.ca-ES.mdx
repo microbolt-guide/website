@@ -268,7 +268,7 @@ vostre PC per iniciar sessió localment i corregir aquesta configuració
 (especialment per al port SSH).
 </Callout>
 
-## Proxy invers
+## Servidor intermediari invers
 
 Diversos components d'aquesta guia exposaran un port de comunicació, per
 exemple, l'explorador de blocs o la interfície web ThunderHub per al vostre node
@@ -279,10 +279,10 @@ dispositiu de la mateixa xarxa pot escoltar les dades intercanviades, incloses
 les contrasenyes.
 
 Utilitzem Caddy per xifrar la comunicació amb SSL/TLS (Transport Layer
-Security). Aquesta configuració s'anomena "proxy invers": Caddy proporciona una
-comunicació segura a l'exterior i encamina el trànsit de tornada al servei
-intern sense xifratge. Alternativament, podeu utilitzar Nginx per fer la mateixa
-funcionalitat.
+Security). Aquesta configuració s'anomena "servidor intermediari invers": Caddy
+proporciona una comunicació segura a l'exterior i encamina el trànsit de tornada
+al servei intern sense xifratge. Alternativament, podeu utilitzar Nginx per fer
+la mateixa funcionalitat.
 
 <Tabs items={['caddy', 'nginx']}>
     <Tabs.Tab>
