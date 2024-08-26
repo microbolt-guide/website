@@ -320,6 +320,13 @@ $SU rc-update add caddy
 $SU rc-service caddy start
 ```
       </Steps>
+
+* Podeu controlar els registres de Caddy introduint aquesta ordre. Sortiu amb
+`Ctrl + C`
+
+```sh copy
+tail -f /var/log/caddy/debug.log
+```
     </Tabs.Tab>
     <Tabs.Tab>
       <Steps>

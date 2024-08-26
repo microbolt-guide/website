@@ -316,6 +316,12 @@ $SU rc-service caddy start
 $SU rc-update add caddy
 ```
       </Steps>
+
+* You can monitor the Caddy logs by entering this command. Exit with `Ctrl + C`
+
+```sh copy
+tail -f /var/log/caddy/debug.log
+```
     </Tabs.Tab>
     <Tabs.Tab>
 <Steps>
