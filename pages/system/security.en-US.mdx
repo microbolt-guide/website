@@ -289,12 +289,21 @@ functions.
 $SU apk add caddy
 ```
 
+```sh copy
+$SU mkdir -p /var/log/caddy
+$SU chown -R caddy:caddy /var/log/caddy
+```
+
 {<h3>Edit the Caddyfile</h3>}
 
 ```sh copy
 printf "%s\n" \
     "{" \
     "	local_certs" \
+    "	log {" \
+    "		output file /var/log/caddy/debug.log" \
+    "		format console" \
+    "	}" \
     "}" \
     "import /etc/caddy/*.caddy" \
     | $SU tee -a /etc/caddy/Caddyfile
