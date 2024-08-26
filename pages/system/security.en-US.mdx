@@ -1,4 +1,4 @@
-import { Callout,Steps,Tabs } from 'nextra/components'
+import { Callout, Steps, Tabs } from 'nextra/components'
 
 # Security
 
@@ -94,13 +94,14 @@ using Tor and don't need incoming ports.
 
 <Tabs items={['awall', 'ufw']}>
     <Tabs.Tab>
-- Install `awall`
+      <Steps>
+{<h3>Install awall</h3>}
 
 ```sh copy
 $SU apk add awall iptables ip6tables
 ```
 
-- Load the necessary kernel modules and load them at boot
+{<h3>Load the necessary kernel modules and load them at boot</h3>}
 
 ```sh copy
 $SU modprobe -av ip_tables ip6_tables
@@ -113,7 +114,7 @@ printf "%s\n" \
     | $SU tee /etc/modules-load.d/awall.conf
 ```
 
-- Configure and enable the firewall rules
+{<h3>Configure and enable the firewall rules</h3>}
 
 <Callout type="info">
 Replace `eth0` with your network interface
@@ -163,14 +164,14 @@ $SU $EDITOR /etc/awall/optional/ssh.json
 }
 ```
 
-- Enable the firewall on boot
+{<h3>Enable the firewall on boot</h3>}
 
 ```sh copy
 $SU rc-update add iptables
 $SU rc-update add ip6tables
 ```
 
-- Start the firewall
+{<h3>Start the firewall</h3>}
 
 ```sh copy
 $SU awall list
@@ -186,20 +187,32 @@ $SU awall enable base-config ssh
 $SU awall activate
 ```
 
+{<h3>Check if the firewall is properly configured and active</h3>}
+
+```sh copy
+$SU iptables -S | grep 22
+```
+
+```output filename="output"
+-A INPUT -i eth0 -p tcp -m tcp --dport 22 -j limit-ssh-0
+```
+
 <Callout>
 More: [Alpine Wall User’s Guide](https://git.alpinelinux.org/awall/about)
 
 How-To: [How-To Alpine Wall](https://wiki.alpinelinux.org/wiki/How-To_Alpine_Wall)
 </Callout>
+      </Steps>
     </Tabs.Tab>
     <Tabs.Tab>
-- Install `ufw`
+      <Steps>
+{<h3>Install ufw</h3>}
 
 ```sh copy
 $SU apk add ip6tables ufw
 ```
 
-- Configure and enable the firewall rules
+{<h3>Configure and enable the firewall rules</h3>}
 
 <Callout type="info">
 Replace `22` with your choosen port
@@ -216,13 +229,13 @@ $SU ufw logging off
 $SU ufw enable
 ```
 
-- Make sure that the UFW is started automatically on boot
+{<h3>Make sure that the UFW is started automatically on boot</h3>}
 
 ```sh copy
 $SU rc-update add ufw default
 ```
 
-- Check if the UFW is properly configured and active
+{<h3>Check if the UFW is properly configured and active</h3>}
 
 ```sh copy
 $SU ufw status verbose
@@ -243,6 +256,7 @@ To                         Action      From
 <Callout>
 More: [UFW Essentials](https://wiki.alpinelinux.org/wiki/Uncomplicated_Firewall)
 </Callout>
+      </Steps>
     </Tabs.Tab>
 </Tabs>
 
@@ -252,7 +266,7 @@ screen to your PC to log in locally and fix these settings (especially for the
 SSH port). 
 </Callout>
 
-## Nginx
+## Reverse proxy
 
 Several components of this guide will expose a communication port, for example,
 the Block Explorer, or the ThunderHub web interface for your Lightning node.
@@ -260,19 +274,49 @@ Even if you use these services only within your own home network, communication
 should always be encrypted. Otherwise, any device in the same network can listen
 to the exchanged data, including passwords.
 
-We use Ngnix to encrypt the communication with SSL/TLS (Transport Layer
-Security). This setup is called a "reverse proxy": Nginx provides secure
+We use Caddy to encrypt the communication with SSL/TLS (Transport Layer
+Security). This setup is called a "reverse proxy": Caddy provides secure
 communication to the outside and routes the traffic back to the internal service
-without encryption.
+without encryption. Alternatively you can also install nginx to perform the same
+functions.
 
+<Tabs items={['caddy', 'nginx']}>
+    <Tabs.Tab>
+      <Steps>
+{<h3>Install caddy</h3>}
+
+```sh copy
+$SU apk add caddy
+```
+
+{<h3>Edit the Caddyfile</h3>}
+
+```sh copy
+printf "%s\n" \
+    "{" \
+    "	local_certs" \
+    "}" \
+    "import /etc/caddy/*.caddy" \
+    | $SU tee -a /etc/caddy/Caddyfile
+```
+
+{<h3>Enable and start the Caddy service</h3>}
+
+```sh copy
+$SU rc-service caddy start
+$SU rc-update add caddy
+```
+      </Steps>
+    </Tabs.Tab>
+    <Tabs.Tab>
 <Steps>
-### Install `ngnix`
+{<h3>Install ngnix</h3>}
 
 ```sh copy
 $SU apk add nginx nginx-mod-stream
 ```
 
-### Create a self-signed SSL/TLS certificate (valid for 10 years)
+{<h3>Create a self-signed SSL/TLS certificate (valid for 10 years)</h3>}
 
 ```sh copy
 $SU openssl req \
@@ -285,7 +329,7 @@ $SU openssl req \
     -days 3650
 ```
 
-### Backup and create new configuration
+{<h3>Backup and create new configuration</h3>}
 
 NGINX is also a full web server. To use it only as a reverse proxy, backup the
 default configuration and paste the following configuration into the
@@ -333,7 +377,7 @@ stream {
 }
 ```
 
-### Create directories for future configuration files
+{<h3>Create directories for future configuration files</h3>}
 
 ```sh copy
 $SU mkdir -p \
@@ -343,7 +387,7 @@ $SU mkdir -p \
     /etc/nginx/streams-enabled
 ```
 
-### Test this barebone Nginx configuration
+{<h3>Test this barebone Nginx configuration</h3>}
 
 ```sh copy
 $SU nginx -t
@@ -354,27 +398,24 @@ nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
 nginx: configuration file /etc/nginx/nginx.conf test is successful
 ```
 
-### Start Nginx to apply the configuration
-
-```sh copy
-$SU rc-service nginx start
-```
-
-### Add nginx service to runlevel
+{<h3>Enable and start the Nginx service</h3>}
 
 ```sh copy
 $SU rc-update add nginx default
+$SU rc-service nginx start
 ```
 </Steps>
 
-You can monitor the Nginx logs by entering this command. Exit with `Ctrl + C`
+* You can monitor the Nginx logs by entering this command. Exit with `Ctrl + C`
 
 ```sh copy
 tail -f /var/log/messages | grep nginx
 ```
 
-You can monitor Nginx error logs by entering this command. Exit with `Ctrl + C`
+* You can monitor Nginx error logs by entering this command. Exit with `Ctrl + C`
 
 ```sh copy
 $SU tail -f /var/log/nginx/error.log
 ```
+    </Tabs.Tab>
+</Tabs>
