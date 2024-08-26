@@ -25,14 +25,37 @@ restlisten=0.0.0.0:8080
 [...]
 ```
 
-### Firewall & reverse proxy
+### Reverse proxy
 
-In the [Security section](/system/security#nginx), we set up Nginx as a reverse
+In the [Security section](/system/security#reverse-proxy), we set up a reverse
 proxy. Now we can add the LND rest configuration.
 
-* Enable NGINX reverse proxy to route external encrypted HTTPS traffic
-internally to the LND rest.
+* Enable the reverse proxy to route external encrypted HTTPS traffic internally
+to the LND rest.
 
+<Tabs items={['caddy', 'nginx']}>
+    <Tabs.Tab>
+```sh copy
+$SU $EDITOR /etc/caddy/lnd-rest.caddy
+```
+
+```caddy copy filename="/etc/caddy/lnd-rest.caddy"
+:8081 {
+    reverse_proxy https://127.0.0.1:8080 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }
+}
+```
+
+* Reload Caddy
+
+```sh copy
+$SU rc-service caddy restart
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
 ```sh copy
 $SU $EDITOR /etc/nginx/sites-available/lnd-rest-reverse-proxy.conf
 ```
@@ -66,8 +89,11 @@ $SU ln \
 ```sh copy
 $SU nginx -t
 $SU rc-service nginx restart
-
 ```
+    </Tabs.Tab>
+</Tabs>
+
+### Firewall
 
 * Configure the firewall to allow incoming HTTPS requests
 

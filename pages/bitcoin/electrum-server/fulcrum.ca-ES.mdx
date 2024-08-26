@@ -59,16 +59,35 @@ $SU adduser fulcrum bitcoin
 $SU adduser satoshi fulcrum
 ```
 
-### Tallafoc i servidor intermediari invers
+### Servidor intermediari invers
 
-A la secció [Seguretat](/system/security#nginx), ja hem configurat NGINX com a
-servidor intermediari invers. Ara podem afegir la configuració del servidor
-Electrum.
+A la secció [Seguretat](/system/security#servidor-intermediari-invers), ja hem
+configurat un servidor intermediari invers. Ara podem afegir la configuració del
+servidor Electrum.
 
-* Habiliteu el servidor intermediari invers NGINX per afegir xifratge SSL/TLS a
-la comunicació del servidor Electrum. Creeu el fitxer de configuració i enganxeu
-el contingut següent
+* Habiliteu el servidor intermediari invers per afegir xifratge SSL/TLS a la
+comunicació del servidor Electrum. Creeu el fitxer de configuració i enganxeu el
+contingut següent
 
+<Tabs items={['caddy', 'nginx']}>
+    <Tabs.Tab>
+```sh copy
+$SU $EDITOR /etc/caddy/electrum.caddy
+```
+
+```caddy copy filename="/etc/caddy/electrum.caddy"
+:50002 {
+    reverse_proxy 127.0.0.1:50001
+}
+```
+
+* Torna a carregar el Caddy
+
+```sh copy
+$SU rc-service caddy restart
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
 ```sh copy
 $SU $EDITOR /etc/nginx/streams-available/electrum-reverse-proxy.conf
 ```
@@ -96,8 +115,11 @@ $SU ln \
 ```sh copy
 $SU nginx -t
 $SU rc-service nginx restart
-
 ```
+    </Tabs.Tab>
+</Tabs>
+
+### Tallafoc
 
 * Configura el tallafoc per permetre les sol·licituds entrants
 

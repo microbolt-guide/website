@@ -60,14 +60,34 @@ $SU adduser thunderhub lnd
 $SU adduser satoshi thunderhub
 ```
 
-### Tallafoc i servidor intermediari invers
+### Servidor intermediari invers
 
-A la secció de [Seguretat](/system/security#nginx), hem configurat NGINX com a
-servidor intermediari invers. Ara podem afegir la configuració de ThunderHub.
+A la secció de [Seguretat](/system/security#servidor-intermediari-invers), hem
+configurat un servidor intermediari invers. Ara podem afegir la configuració de
+ThunderHub.
 
-* Habilita el servidor intermediari invers de NGINX per encaminar el trànsit
-HTTPS extern xifrat internament cap a ThunderHub
+* Habilita el servidor intermediari invers per encaminar el trànsit HTTPS extern
+xifrat internament cap a ThunderHub
 
+<Tabs items={['caddy', 'nginx']}>
+    <Tabs.Tab>
+```sh copy
+$SU $EDITOR /etc/caddy/thunderhub.caddy
+```
+
+```caddy copy filename="/etc/caddy/thunderhub.caddy"
+:4002 {
+    reverse_proxy 127.0.0.1:3010
+}
+```
+
+* Torna a carregar el Caddy
+
+```sh copy
+$SU rc-service caddy restart
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
 ```sh copy
 $SU $EDITOR /etc/nginx/streams-available/thunderhub-reverse-proxy.conf
 ```
@@ -76,6 +96,7 @@ $SU $EDITOR /etc/nginx/streams-available/thunderhub-reverse-proxy.conf
 upstream thunderhub {
   server 127.0.0.1:3010;
 }
+
 server {
   listen 4002 ssl;
   proxy_pass thunderhub;
@@ -94,8 +115,11 @@ $SU ln \
 ```sh copy
 $SU nginx -t
 $SU rc-service nginx restart
-
 ```
+    </Tabs.Tab>
+</Tabs>
+
+### Tallafoc
 
 * Configura el tallafoc per permetre les sol·licituds HTTPS entrants
 

@@ -58,14 +58,33 @@ $SU adduser fulcrum bitcoin
 $SU adduser satoshi fulcrum
 ```
 
-### Firewall & reverse proxy
+### Reverse proxy
 
-In the [Security section](/system/security#nginx), we already set up NGINX as a
-reverse proxy. Now we can add the Electrum server configuration.
+In the [Security section](/system/security#reverse-proxy), we already set up
+a reverse proxy. Now we can add the Electrum server configuration.
 
-* Enable NGINX reverse proxy to add SSL/TLS encryption to the Electrum server
+* Enable the reverse proxy to add SSL/TLS encryption to the Electrum server
 communication. Create the configuration file and paste the following content
 
+<Tabs items={['caddy', 'nginx']}>
+    <Tabs.Tab>
+```sh copy
+$SU $EDITOR /etc/caddy/electrum.caddy
+```
+
+```caddy copy filename="/etc/caddy/electrum.caddy"
+:50002 {
+    reverse_proxy 127.0.0.1:50001
+}
+```
+
+* Reload Caddy
+
+```sh copy
+$SU rc-service caddy restart
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
 ```sh copy
 $SU $EDITOR /etc/nginx/streams-available/electrum-reverse-proxy.conf
 ```
@@ -93,8 +112,11 @@ $SU ln \
 ```sh copy
 $SU nginx -t
 $SU rc-service nginx restart
-
 ```
+    </Tabs.Tab>
+</Tabs>
+
+### Firewall
 
 * Configure the firewall to allow incoming requests
 

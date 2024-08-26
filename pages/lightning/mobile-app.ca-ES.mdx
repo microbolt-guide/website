@@ -26,14 +26,38 @@ restlisten=0.0.0.0:8080
 [...]
 ```
 
-### Tallafoc i servidor intermediari invers
+### Servidor intermediari invers
 
-A la secció de [Seguretat](/system/security#nginx), hem configurat NGINX com a
-servidor intermediari invers. Ara podem afegir la configuració de LND rest.
+A la secció de [Seguretat](/system/security#servidor-intermediari-invers), hem
+configurat un servidor intermediari invers. Ara podem afegir la configuració de
+LND rest.
 
-* Habilita el servidor intermediari invers de NGINX per encaminar el trànsit
-HTTPS extern xifrat internament cap a LND rest
+* Habilita el servidor intermediari invers per encaminar el trànsit HTTPS extern
+xifrat internament cap a LND rest
 
+<Tabs items={['caddy', 'nginx']}>
+    <Tabs.Tab>
+```sh copy
+$SU $EDITOR /etc/caddy/lnd-rest.caddy
+```
+
+```caddy copy filename="/etc/caddy/lnd-rest.caddy"
+:8081 {
+    reverse_proxy https://127.0.0.1:8080 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }
+}
+```
+
+* Torna a carregar el Caddy
+
+```sh copy
+$SU rc-service caddy restart
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
 ```sh copy
 $SU $EDITOR /etc/nginx/sites-available/lnd-rest-reverse-proxy.conf
 ```
@@ -67,8 +91,11 @@ $SU ln \
 ```sh copy
 $SU nginx -t
 $SU rc-service nginx restart
-
 ```
+    </Tabs.Tab>
+</Tabs>
+
+### Firewall
 
 * Configura el tallafoc per permetre les sol·licituds HTTPS entrants
 

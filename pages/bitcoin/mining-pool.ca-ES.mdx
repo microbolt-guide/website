@@ -70,14 +70,41 @@ $SU adduser public-pool bitcoin
 $SU adduser satoshi public-pool
 ```
 
-### Tallafoc i servidor intermediari invers
+### Servidor intermediari invers
 
-A la secció de [Seguretat](/system/security#nginx), hem configurat NGINX com a
-servidor intermediari invers. Ara podem afegir la configuració de Public Pool.
+A la secció de [Seguretat](/system/security#servidor-intermediari-invers), hem
+configurat un servidor intermediari invers. Ara podem afegir la configuració de
+Public Pool.
 
-* Habilita el servidor intermediari invers de NGINX per encaminar el trànsit
-HTTPS extern xifrat internament cap a Public Pool
+* Habilita el servidor intermediari invers per encaminar el trànsit HTTPS extern
+xifrat internament cap a Public Pool
 
+<Tabs items={['caddy', 'nginx']}>
+    <Tabs.Tab>
+```sh copy
+$SU $EDITOR /etc/caddy/public-pool.caddy
+```
+
+```caddy copy filename="/etc/caddy/public-pool.caddy"
+:4040 {
+    root * /var/www/public-pool-ui
+    file_server
+
+    try_files {path} {path}/ =404
+
+    handle_path /api/* {
+        reverse_proxy 127.0.0.1:23334
+    }
+}
+```
+
+* Torna a carregar el Caddy
+
+```sh copy
+$SU rc-service caddy restart
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
 ```sh copy
 $SU $EDITOR /etc/nginx/sites-available/public-pool-reverse-proxy.conf
 ```
@@ -112,8 +139,11 @@ $SU ln \
 ```sh copy
 $SU nginx -t
 $SU rc-service nginx restart
- 
 ```
+    </Tabs.Tab>
+</Tabs>
+
+### Firewall
 
 * Configura el tallafoc per permetre les sol·licituds HTTPS entrants
 

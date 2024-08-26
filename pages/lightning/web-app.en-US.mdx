@@ -59,14 +59,33 @@ $SU adduser thunderhub lnd
 $SU adduser satoshi thunderhub
 ```
 
-### Firewall & reverse proxy
+### Reverse proxy
 
-In the [Security section](/system/security#nginx), we set up Nginx as a reverse
+In the [Security section](/system/security#reverse-proxy), we set up a reverse
 proxy. Now we can add the ThunderHub configuration.
 
-* Enable NGINX reverse proxy to route external encrypted HTTPS traffic
+* Enable the reverse proxy to route external encrypted HTTPS traffic
 internally to the ThunderHub.
 
+<Tabs items={['caddy', 'nginx']}>
+    <Tabs.Tab>
+```sh copy
+$SU $EDITOR /etc/caddy/thunderhub.caddy
+```
+
+```caddy copy filename="/etc/caddy/thunderhub.caddy"
+:4002 {
+    reverse_proxy 127.0.0.1:3010
+}
+```
+
+* Reload Caddy
+
+```sh copy
+$SU rc-service caddy restart
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
 ```sh copy
 $SU $EDITOR /etc/nginx/streams-available/thunderhub-reverse-proxy.conf
 ```
@@ -75,6 +94,7 @@ $SU $EDITOR /etc/nginx/streams-available/thunderhub-reverse-proxy.conf
 upstream thunderhub {
   server 127.0.0.1:3010;
 }
+
 server {
   listen 4002 ssl;
   proxy_pass thunderhub;
@@ -93,8 +113,11 @@ $SU ln \
 ```sh copy
 $SU nginx -t
 $SU rc-service nginx restart
-
 ```
+    </Tabs.Tab>
+</Tabs>
+
+### Firewall
 
 * Configure the firewall to allow incoming HTTPS requests
 
