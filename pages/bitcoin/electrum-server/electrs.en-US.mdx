@@ -66,19 +66,24 @@ communication. Create the configuration file and paste the following content
 <Tabs items={['caddy', 'nginx']}>
     <Tabs.Tab>
 ```sh copy
-$SU $EDITOR /etc/caddy/electrum.caddy
+$SU $EDITOR /etc/caddy/streams/electrum.caddy
 ```
 
-```caddy copy filename="/etc/caddy/electrum.caddy"
+```caddy copy filename="/etc/caddy/streams/electrum.caddy"
 :50002 {
-    reverse_proxy 127.0.0.1:50001
+        route {
+                tls 
+                proxy {
+                        upstream localhost:50001
+                }
+        }
 }
 ```
 
 * Reload Caddy
 
 ```sh copy
-$SU rc-service caddy restart
+$SU rc-service caddy reload
 ```
     </Tabs.Tab>
     <Tabs.Tab>

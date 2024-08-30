@@ -70,19 +70,24 @@ internally to the ThunderHub.
 <Tabs items={['caddy', 'nginx']}>
     <Tabs.Tab>
 ```sh copy
-$SU $EDITOR /etc/caddy/thunderhub.caddy
+$SU $EDITOR /etc/caddy/streams/thunderhub.caddy
 ```
 
-```caddy copy filename="/etc/caddy/thunderhub.caddy"
+```caddy copy filename="/etc/caddy/streams/thunderhub.caddy"
 :4002 {
-    reverse_proxy 127.0.0.1:3010
+        route {
+                tls 
+                proxy {
+                        upstream localhost:3010
+                }
+        }
 }
 ```
 
 * Reload Caddy
 
 ```sh copy
-$SU rc-service caddy restart
+$SU rc-service caddy reload
 ```
     </Tabs.Tab>
     <Tabs.Tab>
