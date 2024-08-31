@@ -213,9 +213,6 @@ git verify-tag v$VERSION
 * Ara compileu el codi font en un binari executable i instal·leu-lo.
 
 ```sh copy
-ROCKSDB_INCLUDE_DIR=/usr/include \
-ROCKSDB_LIB_DIR=/usr/lib \
-CARGO_HOME="$PWD/.cargo" \
 cargo auditable build \
     --bin electrs \
     --features "metrics_process" \

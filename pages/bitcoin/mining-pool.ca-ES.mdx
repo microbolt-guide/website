@@ -203,19 +203,6 @@ $SU ufw limit 23333/tcp comment 'Allow Public Pool Stratum'
 ```
     </Tabs.Tab>
 </Tabs>
-
-### Modificar els indicadors de node
-
-```sh copy
-printf "%s\n" \
-    "export npm_config_cache=\"./npm-cache\"" \
-    "export npm_config_devdir=\"./.gyp\"" \
-    | $SU tee -a /etc/profile.d/node.sh
-```
-
-```sh copy
-. /etc/profile.d/node.sh
-```
 </Steps>
 
 ## Instal·lació

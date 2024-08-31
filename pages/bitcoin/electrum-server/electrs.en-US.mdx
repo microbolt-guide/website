@@ -207,9 +207,6 @@ git verify-tag v$VERSION
 compilation process can take up to one hour.
 
 ```sh copy
-ROCKSDB_INCLUDE_DIR=/usr/include \
-ROCKSDB_LIB_DIR=/usr/lib \
-CARGO_HOME="$PWD/.cargo" \
 cargo auditable build \
     --bin electrs \
     --features "metrics_process" \

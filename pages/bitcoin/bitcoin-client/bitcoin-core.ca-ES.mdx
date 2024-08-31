@@ -54,23 +54,6 @@ $SU adduser bitcoin tor
 ```sh copy
 ln -s /var/lib/bitcoind "$HOME/.bitcoin"
 ```
-
-### Modificar els indicadors del compilador
-
-```sh copy
-printf "%s\n" \
-    "export CC=\"clang\"" \
-    "export CXX=\"\${CC}++\"" \
-    "export CFLAGS=\"-O3 -pipe -march=native -fPIE\"" \
-    "export CXXFLAGS=\"\$CFLAGS\"" \
-    "export LDFLAGS=\"-pie -Wl,--as-needed\"" \
-    "export MAKEFLAGS=\"-j$(nproc)\"" \
-    | $SU tee -a /etc/profile.d/compiler.sh
-```
-
-```sh copy
-. /etc/profile.d/compiler.sh
-```
 </Steps>
 
 ## Instal·lació
