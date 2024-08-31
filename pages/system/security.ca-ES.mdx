@@ -372,10 +372,13 @@ printf "%s\n" \
     "                import /etc/caddy/streams/*.caddy" \
     "        }" \
     "}" \
-    "https:// {" \
+    "(tls) {" \
     "        tls internal {" \
     "                on_demand" \
     "        }" \
+    "}" \
+    "https:// {" \
+    "        import tls" \
     "}" \
     "import /etc/caddy/sites/*.caddy" \
     | $SU tee -a /etc/caddy/Caddyfile
@@ -400,7 +403,7 @@ $SU chown \
 
 ```diff filename="/etc/caddy/Caddyfile"
  [...]
- https:// {
+ (tls) {
 -        tls internal {
 +        tls /path/to/your-cert.pem /path/to/your-key.pem {
                  on_demand
