@@ -45,7 +45,7 @@ Aquestes són dependències de creació (es pot eliminar després de la
 instal·lació, si voleu)
 
 ```sh copy
-$SU apk add git gnupg npm rsync
+$SU apk add cargo git gnupg npm rsync
 ```
 
 Aquestes són dependències en temps d'execució
@@ -84,6 +84,12 @@ $SU adduser mempool bitcoin
 $SU adduser satoshi mempool
 ```
 
+### Afegeix l'usuari `mempool` al grup `tor`
+    
+```sh copy
+$SU adduser mempool tor
+```
+
 ### Servidor intermediari invers
 
 A la secció de [Seguretat](/system/security#servidor-intermediari-invers), hem
@@ -96,11 +102,12 @@ xifrat internament cap a Mempool Space
 <Tabs items={['caddy', 'nginx']}>
     <Tabs.Tab>
 ```sh copy
-$SU $EDITOR /etc/caddy/mempool-space.caddy
+$SU $EDITOR /etc/caddy/sites/mempool-space.caddy
 ```
 
-```caddy copy filename="/etc/caddy/mempool-space.caddy"
+```caddy copy filename="/etc/caddy/sites/mempool-space.caddy"
 :4081 {
+    import tls
 	root /var/www/mempool/browser
 
 	handle /api/v1/* {
@@ -209,7 +216,7 @@ $SU $EDITOR /etc/caddy/mempool-space.caddy
 * Torna a carregar el Caddy
 
 ```sh copy
-$SU rc-service caddy restart
+$SU rc-service caddy reload
 ```
     </Tabs.Tab>
     <Tabs.Tab>
@@ -323,24 +330,7 @@ server {
     client_max_body_size 10m;
 
     proxy_cache off;
-    proxy_cache_path /var/cache/nginx keys_zone=cache:20m levels=1:2 inactive=600s max_size=500m;
     types_hash_max_size 2048;
-
-    geo $limited_ip {
-      default    1;
-      127.0.0.1  0;
-    }
-    map $limited_ip $limited_ip_key {
-      1 $binary_remote_addr;
-      0 '';
-    }
-
-    limit_req_zone $limited_ip_key zone=api:5m rate=200r/m;
-    limit_req_zone $limited_ip_key zone=electrs:5m rate=2000r/m;
-    limit_req_status 429;
-
-    limit_conn_zone $limited_ip_key zone=websocket:10m;
-    limit_conn_status 429;
 }
 ```
 
@@ -399,19 +389,6 @@ $SU ufw limit 4081/tcp comment 'Allow Mempool Space SSL'
 ```
     </Tabs.Tab>
 </Tabs>
-
-### Modificar els indicadors de node
-
-```sh copy
-printf "%s\n" \
-    "export npm_config_cache=\"./npm-cache\"" \
-    "export npm_config_devdir=\"./.gyp\"" \
-    | $SU tee -a /etc/profile.d/node.sh
-```
-
-```sh copy
-. /etc/profile.d/node.sh
-```
 </Steps>
 
 ## Instal·lació
@@ -478,7 +455,10 @@ $SU mysql -e "grant all privileges on mempool.* to 'mempool'@'localhost' identif
 
 ```sh copy
 cd /tmp/mempool/backend
-npm install --omit=dev
+```
+    
+```sh copy
+npm install --omit=dev --omit=optional
 ```
 
 La instal·lació pot trigar un temps. Pot ser que hi hagi moltes sortides
@@ -486,46 +466,43 @@ confuses, però si veieu alguna cosa semblant a la següent, la instal·lació h
 estat correcta:
 
 ```output filename="output"
-8 vulnerabilities (3 moderate, 3 high, 2 critical)
+3 high severity vulnerabilities
 
-To address issues that do not require attention, run:
+To address all issues, run:
   npm audit fix
-
-To address all issues (including breaking changes), run:
-  npm audit fix --force
 
 Run `npm audit` for details.
 ```
 
 <Callout type="warning">
-A data de `2024-08-24`, hi ha com a mínim **8 vulnerabilitats** que no es poden
+A data de `2024-08-31`, hi ha com a mínim **3 vulnerabilitats** que no es poden
 abordar sense fer canvis substancials que podrien afectar altres parts del
 programari
 
 ```sh copy
-npm audit fix --force
+npm audit fix
 ```
 </Callout>
 
 * Feu-ne una instal·lació permanent global
 
 ```sh copy
-npm run build
+npm run package
 ```
 
 ```sh copy
-mkdir ./dist/bin
+mkdir ./package/bin
 ```
 
 ```sh copy
 printf "%s\n" \
     "#!/bin/sh" \
-    "node --max-old-space-size=16384 /var/lib/mempool/index.js" \
-    > ./dist/bin/cli.sh
+    "node /var/lib/mempool/index.js" \
+    > ./package/bin/cli.sh
 ```
 
 ```sh copy
-chmod +x ./dist/bin/cli.sh
+chmod +x ./package/bin/cli.sh
 ```
 
 ```sh copy
@@ -534,7 +511,7 @@ $SU install -D -m 0644 -o root -g root ../nginx-mempool.conf /etc/nginx/snippets
 ```
 
 ```sh copy
-$SU mv -f /tmp/mempool/backend/dist /var/lib/mempool
+$SU mv -f /tmp/mempool/backend/package /var/lib/mempool
 ```
 
 ```sh copy
@@ -548,7 +525,7 @@ $SU ln -s ../lib/node_modules/mempool/bin/cli.sh /usr/bin/mempool
 
 ```sh copy
 cd /tmp/mempool/frontend
-npm install --omit=dev
+npm install --omit=dev --omit=optional
 ```
 
 La instal·lació pot trigar un temps. Pot ser que hi hagi moltes sortides
@@ -556,22 +533,19 @@ confuses, però si veieu alguna cosa semblant a la següent, la instal·lació h
 estat correcta:
 
 ```output filename="output"
-37 vulnerabilities (2 low, 15 moderate, 17 high, 3 critical)
+16 vulnerabilities (2 low, 4 moderate, 10 high)
 
 To address issues that do not require attention, run:
   npm audit fix
 
-To address all issues possible (including breaking changes), run:
+To address all issues (including breaking changes), run:
   npm audit fix --force
-
-Some issues need review, and may require choosing
-a different dependency.
 
 Run `npm audit` for details.
 ```
 
 <Callout type="warning">
-A data de `2024-08-24`, hi ha com a mínim **37 vulnerabilitats** que no es poden
+A data de `2024-08-31`, hi ha com a mínim **16 vulnerabilitats** que no es poden
 abordar sense fer canvis substancials que podrien afectar altres parts del
 programari
 
@@ -600,14 +574,11 @@ $SU mv -f ./dist/mempool /var/www/
 $SU $EDITOR /etc/mempool/mempool-config.json
 ```
 
-```json filename="/etc/mempool/mempool-config.json" {2,4,6-7,11-12,14-15,18-19,22,26,29,32,35,37,40}
+```json filename="/etc/mempool/mempool-config.json" {2,4,8-9,11-12,15-16,19,23,25,28}
 [...]
     "INDEXING_BLOCKS_AMOUNT": 52560,
 [...]
     "STDOUT_LOG_MIN_PRIORITY": "info",
-[...]
-    "POOLS_JSON_URL": "",
-    "POOLS_JSON_TREE_URL": "",
 [...]
   "CORE_RPC": {
 [...]
@@ -626,21 +597,12 @@ $SU $EDITOR /etc/mempool/mempool-config.json
 [...]
   "DATABASE": {
 [...]
-    "PASSWORD": "",
+    "SOCKET": "/var/run/mysqld/mysqld.sock",
 [...]
-  "STATISTICS": {
-    "ENABLED": false,
+    "PASSWORD": "",
 [...]
   "SOCKS5PROXY": {
     "ENABLED": true,
-[...]
-  "EXTERNAL_DATA_SERVER": {
-    "MEMPOOL_API": "",
-[...]
-    "LIQUID_API": "",
-[...]
-  "FIAT_PRICE": {
-    "ENABLED": false,
 [...]
 ```
 
@@ -661,7 +623,7 @@ $SU $EDITOR /etc/tor/torrc
 HiddenServiceDir /var/lib/tor/mempool/
 HiddenServiceVersion 3
 HiddenServicePoWDefensesEnabled 1
-HiddenServicePort 80 127.0.0.1:4081
+HiddenServicePort 443 127.0.0.1:4081
 ```
 
 * Torneu a carregar la configuració de Tor i obteniu la vostra adreça de
@@ -677,7 +639,7 @@ abcdefg..............xyz.onion
 ```
 
 * Ara hauríeu de poder connectar-vos al vostre Mempool Space de forma remota
-mitjançant Tor mitjançant el vostre nom d'amfitrió i el vostre port `4081`
+mitjançant Tor mitjançant el vostre nom d'amfitrió
 </FAQBox>
 
 ### Inici automàtic a l'arrencada
@@ -719,7 +681,8 @@ command_args="${MEMPOOL_OPTS}"
 command_user="${MEMPOOL_USER}:${MEMPOOL_GROUP}"
 command_background="true"
 
-start_stop_daemon_args="--stdout ${MEMPOOL_LOGDIR}/debug.log
+start_stop_daemon_args="--env MEMPOOL_CONFIG_FILE=${MEMPOOL_CONFIGFILE}
+                        --stdout ${MEMPOOL_LOGDIR}/debug.log
                         --stderr ${MEMPOOL_LOGDIR}/debug.log"
 
 depend() {
@@ -751,22 +714,17 @@ start_pre() {
     checkpath --directory --mode 0750 --owner "${command_user}" "${MEMPOOL_DATADIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${MEMPOOL_LOGDIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${MEMPOOL_PIDDIR}"
-    checkconfig
 }
 
-checkconfig() {
-    COOKIE=$(grep -oP '"CORE_RPC":\s*{[^}]*"COOKIE":\s*\Ktrue' "${MEMPOOL_CONFIGFILE}")
-    COOKIE_PATH=$(grep -oP '"CORE_RPC":\s*{[^}]*"COOKIE_PATH":\s*"\K[^"]+' "${MEMPOOL_CONFIGFILE}")
-
-    if [ "$COOKIE" != "true" ] || [ -z "$COOKIE_PATH" ]; then
-        eerror ""
-        eerror "ERROR: You must set CORE_RPC.COOKIE to true and provide a valid"
-        eerror "CORE_RPC.COOKIE_PATH to run"
-        eerror "Mempool Space."
-        eerror "The settings must appear in ${MEMPOOL_CONFIGFILE}"
-        eerror ""
-        return 1
-    fi
+stop() {
+    ebegin "Stopping ${SVCNAME}"
+    pkill -TERM -P "$(cat ${pidfile})" > /dev/null 2>&1
+    start-stop-daemon \
+        --stop \
+        --pidfile="${pidfile}" \
+        --retry="${MEMPOOL_SIGTERM_TIMEOUT}" \
+        --exec="${MEMPOOL_BIN}"
+    eend $?
 }
 ```
 
@@ -810,8 +768,10 @@ $SU logrotate /etc/logrotate.d/mempool --debug
 
 ```sh copy
 $SU rc-update add mempool
+```
+    
+```sh copy
 $SU rc-service mempool start
-
 ```
 
 * Comproveu el registre per veure la sortida de Mempool Space. Sortiu amb
