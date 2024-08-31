@@ -93,17 +93,13 @@ to the BTC RPC Explorer
 <Tabs items={['caddy', 'nginx']}>
     <Tabs.Tab>
 ```sh copy
-$SU $EDITOR /etc/caddy/streams/btc-rpc-explorer.caddy
+$SU $EDITOR /etc/caddy/sites/btc-rpc-explorer.caddy
 ```
 
-```caddy copy filename="/etc/caddy/streams/btc-rpc-explorer.caddy"
+```caddy copy filename="/etc/caddy/sites/btc-rpc-explorer.caddy"
 :4000 {
-        route {
-                tls 
-                proxy {
-                        upstream localhost:3002
-                }
-        }
+        import tls
+        reverse_proxy 127.0.0.1:3002
 }
 ```
 
