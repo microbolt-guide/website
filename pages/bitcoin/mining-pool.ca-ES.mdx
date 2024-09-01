@@ -31,7 +31,7 @@ Aquestes són dependències de creació (es pot eliminar després de la
 instal·lació, si voleu)
 
 ```sh copy
-$SU apk add npm
+$SU apk add git npm
 ```
 
 Aquestes són dependències en temps d'execució
@@ -82,18 +82,21 @@ xifrat internament cap a Public Pool
 <Tabs items={['caddy', 'nginx']}>
     <Tabs.Tab>
 ```sh copy
-$SU $EDITOR /etc/caddy/public-pool.caddy
+$SU $EDITOR /etc/caddy/sites/public-pool.caddy
 ```
 
-```caddy copy filename="/etc/caddy/public-pool.caddy"
+```nginx copy filename="/etc/caddy/sites/public-pool.caddy"
 :4040 {
-    root * /var/www/public-pool-ui
-    file_server
+    import tls
+    root /var/www/public-pool-ui
 
-    try_files {path} {path}/ =404
-
-    handle_path /api/* {
+    handle /api/* {
         reverse_proxy 127.0.0.1:23334
+    }
+
+    handle {
+        try_files {path} {path}/ =404
+        file_server
     }
 }
 ```
@@ -123,6 +126,10 @@ server {
 
     location ~* ^/api/ {
         proxy_pass http://127.0.0.1:23334;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
 ```
@@ -212,7 +219,8 @@ interfície web lleugera i fàcil d'utilitzar per aconseguir just això: una
 piscina minera en solitari.
 
 <Steps>
-### Descarrega el codi font del servidor
+### Backend
+#### Descarrega el codi font
 
 Obtenim l'últim commit del codi font del servidor Public Pool i l'instal·lem.
 
@@ -230,13 +238,16 @@ cd /tmp
 git clone https://github.com/benjamin-wilson/public-pool.git && cd public-pool
 ```
 
-### Configura i instal·la
+```sh copy
+git checkout 8ce057b3b51c33bf915f57f3a30822b449613276
+```
+
+#### Instal·la dependències i construeix
 
 * Instal·leu totes les dependències mitjançant el Node Package Manager (NPM).
 
 ```sh copy
 npm install
-npm audit fix
 ```
 
 La instal·lació pot trigar un temps. Pot ser que hi hagi moltes sortides
@@ -244,64 +255,67 @@ confuses, però si veieu alguna cosa semblant a la següent, la instal·lació h
 estat correcta:
 
 <Callout type="warning">
-A data de `2024-03-18`, hi ha com a mínim **8 vulnerabilitats moderades** que no
-es poden abordar sense fer canvis substancials que podrien afectar altres parts
-del programari
+A data de `2024-09-01`, hi ha com a mínim **23 vulnerabilitats** que no es poden
+abordar sense fer canvis substancials que podrien afectar altres parts del
+programari
 
 ```sh copy
-npm audit fix --force
+npm audit fix
 ```
 </Callout>
 
 ```output filename="output"
-8 moderate severity vulnerabilities
- 
+23 vulnerabilities (2 low, 14 moderate, 6 high, 1 critical)
+
 To address issues that do not require attention, run:
   npm audit fix
- 
+
 To address all issues possible (including breaking changes), run:
   npm audit fix --force
- 
+
 Some issues need review, and may require choosing
 a different dependency.
+
+Run `npm audit` for details.
 ```
 
 * Feu-ne una instal·lació permanent global
 
 ```sh copy
-mkdir ./bin
+npm run build
+```
+
+```sh copy
+mkdir ./dist/bin
 ```
 
 ```sh copy
 printf "%s\n" \
     "#!/bin/sh" \
-    "./node_modules/.bin/nest start --config ./nest-cli.json" \
-    > ./bin/cli.sh
+    "node \$@ /var/lib/public-pool/main" \
+    > ./dist/bin/cli.sh
 ```
 
 ```sh copy
-chmod +x ./bin/cli.sh
+chmod +x ./dist/bin/cli.sh
 ```
 
 ```sh copy
-$SU install -D -m 0660 -o public-pool -g public-pool ./.env.example /etc/public-pool/.env
+$SU install -D -m 0660 -o public-pool -g public-pool ./.env.example /etc/public-pool/public-pool.conf
 ```
 
 ```sh copy
-$SU mv -f /tmp/public-pool /var/lib/
+$SU mv -f /tmp/public-pool/dist /var/lib/public-pool
+$SU cp -R node_modules /var/lib/public-pool
 ```
 
 ```sh copy
-$SU ln -s /etc/public-pool/.env /var/lib/public-pool/.env
 $SU ln -s /var/lib/public-pool /usr/lib/node_modules/public-pool
 $SU ln -s ../lib/node_modules/public-pool/bin/cli.sh /usr/bin/public-pool
 ```
-</Steps>
 
----
-
-<Steps>
-### Descarrega el codi font del client
+### Frontend
+#### Descarrega el codi font
 
 Obtenim l'últim commit del codi font del servidor Public Pool i l'instal·lem.
 
@@ -319,22 +333,25 @@ cd /tmp
 git clone https://github.com/benjamin-wilson/public-pool-ui.git && cd public-pool-ui
 ```
 
-### Configura i instal·la
+```sh copy
+git checkout 80081e337d3af829b0edf3990ad97ea430bd73d4
+```
+
+#### Instal·la dependències i construeix
 
 * Instal·leu totes les dependències mitjançant el Node Package Manager (NPM).
 
 ```sh copy
 npm install
-npm audit fix
 ```
 
 <Callout type="warning">
-A data de `2024-03-06`, hi ha com a mínim **8 vulnerabilitats (5 moderades, 2
-altes, 1 critica)** que no es poden abordar sense fer canvis substancials que
-podrien afectar altres parts del programari
+A data de `2024-09-01`, hi ha com a mínim **3 vulnerabilitats moderades** que no
+es poden abordar sense fer canvis substancials que podrien afectar altres parts
+del programari
 
 ```sh copy
-npm audit fix --force
+npm audit fix
 ```
 </Callout>
 
@@ -343,18 +360,14 @@ confuses, però si veieu alguna cosa semblant a la següent, la instal·lació h
 estat correcta:
 
 ```output filename="output"
-npm WARN deprecated uuid@2.0.3: Please upgrade  to version 7 or higher.  Older versions may use Math.random() in certain circumstances, which is known to be problematic.  See https://v8.dev/blog/math-random for details.
- 
-added 1040 packages, and audited 1041 packages in 10s
- 
-144 packages are looking for funding
-  run `npm fund` for details
- 
-8 vulnerabilities (5 moderate, 2 high, 1 critical)
- 
-To address all issues, run:
+3 moderate severity vulnerabilities
+
+To address issues that do not require attention, run:
   npm audit fix
- 
+
+To address all issues, run:
+  npm audit fix --force
+
 Run `npm audit` for details.
 ```
 
@@ -362,10 +375,14 @@ Run `npm audit` for details.
 
 ```sh copy
 printf "%s\n" \
+    "let path = window.location.origin + window.location.pathname;" \
+    "path = path.endsWith('/') ? path.slice(0, -1) : path;" \
+    "let stratumUrl = path.replace(/(^\\w+:|^)\\/\\//, '').replace(/:\\d+/, '');" \
+    "" \
     "export const environment = {" \
     "    production: true," \
-    "    API_URL: 'https://nakamoto01.local:4040'," \
-    "    STRATUM_URL: 'nakamoto01.local:23333'" \
+    "    API_URL: path," \
+    "    STRATUM_URL: stratumUrl + ':23333'" \
     "};" \
     > ./src/environments/environment.prod.ts
 ```
@@ -384,26 +401,21 @@ $SU mv -f ./dist/public-pool-ui /var/www/
 * Activa qualsevol configuració retirant el `#` del principi de la línia.
 
 ```sh copy
-$EDITOR /etc/public-pool/.env
+$SU $EDITOR /etc/public-pool/public-pool.conf
 ```
 
-```sh filename="/etc/public-pool/.env"
+```sh filename="/etc/public-pool/public-pool.conf" {2,4,6,8-9,11}
 [...]
 BITCOIN_RPC_URL=http://127.0.0.1
 [...]
-BITCOIN_RPC_USER=microbolt
-BITCOIN_RPC_PASSWORD="[ B ] Bitcoin RPC password"
-BITCOIN_RPC_PORT=8332
+BITCOIN_RPC_COOKIEFILE="/var/lib/bitcoind/.cookie"
 [...]
 BITCOIN_ZMQ_HOST="tcp://127.0.0.1:28332"
 [...]
 API_PORT=23334
 STRATUM_PORT=23333
 [...]
-NETWORK=mainnet
-[...]
-ENABLE_SOLO=true
-ENABLE_PROXY=false
+POOL_IDENTIFIER="microbolt"
 [...]
 ```
 
@@ -420,7 +432,7 @@ $SU $EDITOR /etc/tor/torrc
 HiddenServiceDir /var/lib/tor/public-pool/
 HiddenServiceVersion 3
 HiddenServicePoWDefensesEnabled 1
-HiddenServicePort 80 127.0.0.1:4040
+HiddenServicePort 443 127.0.0.1:4040
 ```
 
 * Torneu a carregar la configuració de Tor i obteniu la vostra adreça de
@@ -455,7 +467,7 @@ $SU $EDITOR /etc/init.d/public-pool
 ```sh copy filename="/etc/init.d/public-pool"
 #!/sbin/openrc-run
 
-: ${PUBLICPOOL_CONFIGFILE:=/etc/public-pool/.env}
+: ${PUBLICPOOL_CONFIGFILE:=/etc/public-pool/public-pool.conf}
 : ${PUBLICPOOL_WEBUI:=/var/www/public-pool-ui}
 : ${PUBLICPOOL_DATADIR:=/var/lib/public-pool}
 : ${PUBLICPOOL_LOGDIR:=/var/log/public-pool}
@@ -475,7 +487,8 @@ name="Public Pool"
 description="Fully Open Source Solo Bitcoin Mining Pool"
 
 command="${PUBLICPOOL_BIN}"
-command_args="${PUBLICPOOL_OPTS}"
+command_args="--env-file ${PUBLICPOOL_CONFIGFILE}
+              ${PUBLICPOOL_OPTS}"
 command_user="${PUBLICPOOL_USER}:${PUBLICPOOL_GROUP}"
 command_background="true"
 
@@ -495,18 +508,12 @@ start_pre() {
     checkconfig
 }
 
-start_post() {
-    checkpath --file --owner "${command_user}" "${pidfile}"
-    chown -R "${command_user}" "${PUBLICPOOL_WEBUI}"
-}
-
 checkconfig() {
-    if ! grep -qs '^BITCOIN_RPC_USER='     "${PUBLICPOOL_CONFIGFILE}" &&
-       ! grep -qs '^BITCOIN_RPC_PASSWORD=' "${PUBLICPOOL_CONFIGFILE}"
+    if ! grep -qs '^BITCOIN_RPC_COOKIEFILE=' "${PUBLICPOOL_CONFIGFILE}"
     then
         eerror ""
-        eerror "ERROR: You must set a BITCOIN_RPC_USER and"
-        eerror "BITCOIN_RPC_PASSWORD path to run Public pool."
+        eerror "ERROR: You must set a BITCOIN_RPC_COOKIEFILE path"
+        eerror "to run Public pool."
         eerror "The setting must appear in ${PUBLICPOOL_CONFIGFILE}"
         eerror ""
         return 1
@@ -515,7 +522,7 @@ checkconfig() {
 
 stop() {
     ebegin "Stopping ${SVCNAME}"
-    pkill -TERM -P "$(pgrep -P $(cat ${pidfile}))"
+    pkill -TERM -P "$(cat ${pidfile})"
     start-stop-daemon \
         --stop \
         --pidfile="${pidfile}" \
@@ -565,8 +572,10 @@ $SU logrotate /etc/logrotate.d/public-pool --debug
 
 ```sh copy
 $SU rc-update add public-pool
-$SU rc-service public-pool start
+```
 
+```sh copy
+$SU rc-service public-pool start
 ```
 
 <Callout emoji="🎉">
