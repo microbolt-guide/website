@@ -75,7 +75,7 @@ cd /tmp
 ```
 
 ```sh copy
-VERSION=0.17.4-beta
+VERSION=0.18.2-beta
 ```
 
 ```sh copy
@@ -171,11 +171,7 @@ procedir a instal·lar-lo de forma segura!
 * Instal·lar LND
 
 ```sh copy
-tar xzf lnd-linux-amd64-v$VERSION.tar.gz
-```
-
-```sh copy
-$SU install -m 0755 -o root -g root -t /usr/bin lnd-linux-amd64-v$VERSION/*
+$SU tar xzf lnd-linux-amd64-v$VERSION.tar.gz -C /usr/bin --strip-components=1
 ```
 
 ```sh copy
@@ -196,7 +192,7 @@ lnd version 0.17.4-beta commit=v0.17.4-beta
 * Modifica/descomenta aquestes línies. Desa i surt.
 
 ```sh copy
-$EDITOR /etc/lnd/lnd.conf
+$SU $EDITOR /etc/lnd/lnd.conf
 ```
 
 ```conf filename="/etc/lnd/lnd.conf" {2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,68,70,72}
