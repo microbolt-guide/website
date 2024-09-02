@@ -256,7 +256,7 @@ found 0 vulnerabilities
 * Make it a global permanent installation
 
 ```sh copy
-$SU install -D -m 0660 -o btc-rpc-explorer -g btc-rpc-explorer ./.env-sample /etc/btc-rpc-explorer/.env
+$SU install -D -m 0660 -o btc-rpc-explorer -g btc-rpc-explorer ./.env-sample /etc/btc-rpc-explorer/btc-rpc-explorer.env
 ```
 
 ```sh copy
@@ -274,10 +274,10 @@ $SU ln -s ../lib/node_modules/btc-rpc-explorer/bin/cli.js /usr/bin/btc-rpc-explo
 * Activate any setting by removing the `#` at the beginning of the line.
 
 ```sh copy
-$EDITOR /etc/btc-rpc-explorer/.env
+$EDITOR /etc/btc-rpc-explorer/btc-rpc-explorer.env
 ```
 
-```sh filename="/etc/btc-rpc-explorer/.env" {2,4,6,8,10,12,14}
+```sh filename="/etc/btc-rpc-explorer/btc-rpc-explorer.env" {2,4,6,8,10,12,14}
 [...]
 BTCEXP_BITCOIND_HOST=127.0.0.1
 [...]
@@ -296,7 +296,7 @@ BTCEXP_UI_THEME={dark|light} # Choose one
 ```
 
 <FAQBox title="Slow device mode">
-```sh filename="/etc/btc-rpc-explorer/.env" {2,4}
+```sh filename="/etc/btc-rpc-explorer/btc-rpc-explorer.env" {2,4}
 [...]
 BTCEXP_BITCOIND_RPC_TIMEOUT=10000
 [...]
@@ -308,7 +308,7 @@ BTCEXP_SLOW_DEVICE_MODE=true
 <FAQBox title="Privacy mode">
 * More information mode, including Bitcoin exchange rates:
 
-```sh filename="/etc/btc-rpc-explorer/.env" {2,4}
+```sh filename="/etc/btc-rpc-explorer/btc-rpc-explorer.env" {2,4}
 [...]
 BTCEXP_PRIVACY_MODE=false
 [...]
@@ -318,7 +318,7 @@ BTCEXP_NO_RATES=false
 
 * More privacy mode, no external queries:
 
-```sh filename="/etc/btc-rpc-explorer/.env" {2,4}
+```sh filename="/etc/btc-rpc-explorer/btc-rpc-explorer.env" {2,4}
 [...]
 BTCEXP_PRIVACY_MODE=true
 [...]
@@ -332,7 +332,7 @@ BTCEXP_NO_RATES=true
 `password [D]` for the following option, for which the browser will then prompt
 you. You can enter any user name; only the password is checked.
 
-```sh filename="/etc/btc-rpc-explorer/.env" {2,4}
+```sh filename="/etc/btc-rpc-explorer/btc-rpc-explorer.env" {2,4}
 [...]
 BTCEXP_DEMO=true
 [...]
@@ -358,7 +358,7 @@ $SU $EDITOR /etc/tor/torrc
 HiddenServiceDir /var/lib/tor/btc-rpc-explorer/
 HiddenServiceVersion 3
 HiddenServicePoWDefensesEnabled 1
-HiddenServicePort 80 127.0.0.1:4000
+HiddenServicePort 443 127.0.0.1:4000
 ```
 
 * Reload Tor configuration and get your connection address.
@@ -391,7 +391,7 @@ $SU $EDITOR /etc/init.d/btc-rpc-explorer
 ```sh copy filename="/etc/init.d/btc-rpc-explorer"
 #!/sbin/openrc-run
 
-: ${BTCRPCEXPL_CONFIGFILE:=/etc/btc-rpc-explorer/.env}
+: ${BTCRPCEXPL_ENVFILE:=/etc/btc-rpc-explorer/btc-rpc-explorer.env}
 : ${BTCRPCEXPL_DATADIR:=/var/lib/btc-rpc-explorer}
 : ${BTCRPCEXPL_LOGDIR:=/var/log/btc-rpc-explorer}
 : ${BTCRPCEXPL_USER:=btc-rpc-explorer}
@@ -406,7 +406,7 @@ name="BTC RPC Explorer"
 description="Simple, database-free Bitcoin blockchain explorer, via RPC to Bitcoin Core"
 
 directory="${BTCRPCEXPL_DATADIR}"
-required_files="${BTCRPCEXPL_CONFIGFILE}"
+required_files="${BTCRPCEXPL_ENVFILE}"
 pidfile="${BTCRPCEXPL_PIDDIR}/${SVCNAME}.pid"
 retry="${BTCRPCEXPL_SIGTERM_TIMEOUT}"
 
@@ -442,7 +442,7 @@ service_exists() {
 }
 
 start_pre() {
-    checkpath --file      --mode 0660 --owner "${command_user}" "${BTCRPCEXPL_CONFIGFILE}"
+    checkpath --file      --mode 0660 --owner "${command_user}" "${BTCRPCEXPL_ENVFILE}"
     checkpath --directory --mode 0750 --owner "${command_user}" "${BTCRPCEXPL_DATADIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${BTCRPCEXPL_LOGDIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${BTCRPCEXPL_PIDDIR}"
@@ -450,12 +450,12 @@ start_pre() {
 }
 
 checkconfig() {
-    if ! grep -qs '^BTCEXP_BITCOIND_COOKIE=' "${BTCRPCEXPL_CONFIGFILE}"
+    if ! grep -qs '^BTCEXP_BITCOIND_COOKIE=' "${BTCRPCEXPL_ENVFILE}"
     then
         eerror ""
         eerror "ERROR: You must set a BTCEXP_BITCOIND_COOKIE path to run"
         eerror "BTC RPC Explorer."
-        eerror "The setting must appear in ${BTCRPCEXPL_CONFIGFILE}"
+        eerror "The setting must appear in ${BTCRPCEXPL_ENVFILE}"
         eerror ""
         return 1
     fi
@@ -502,8 +502,10 @@ $SU logrotate /etc/logrotate.d/btc-rpc-explorer --debug
 
 ```sh copy
 $SU rc-update add btc-rpc-explorer
+```
+    
+```sh copy
 $SU rc-service btc-rpc-explorer start
-
 ```
 
 * Check the log to see BTC RPC Explorer output. Exit with `Ctrl-C`
@@ -525,7 +527,7 @@ already changed in this guide.
 notes](https://github.com/janoside/btc-rpc-explorer/releases))
 
 ```sh copy
-$SU $EDITOR /etc/btc-rpc-explorer/.env
+$SU $EDITOR /etc/btc-rpc-explorer/btc-rpc-explorer.env
 ```
 
 * Restart the service to apply the changes
