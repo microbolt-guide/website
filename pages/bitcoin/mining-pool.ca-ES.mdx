@@ -301,7 +301,7 @@ chmod +x ./dist/bin/cli.sh
 ```
 
 ```sh copy
-$SU install -D -m 0660 -o public-pool -g public-pool ./.env.example /etc/public-pool/public-pool.conf
+$SU install -D -m 0660 -o public-pool -g public-pool ./.env.example /etc/public-pool/public-pool.env
 ```
 
 ```sh copy
@@ -401,10 +401,10 @@ $SU mv -f ./dist/public-pool-ui /var/www/
 * Activa qualsevol configuració retirant el `#` del principi de la línia.
 
 ```sh copy
-$SU $EDITOR /etc/public-pool/public-pool.conf
+$SU $EDITOR /etc/public-pool/public-pool.env
 ```
 
-```sh filename="/etc/public-pool/public-pool.conf" {2,4,6,8-9,11}
+```sh filename="/etc/public-pool/public-pool.env" {2,4,6,8-9,11}
 [...]
 BITCOIN_RPC_URL=http://127.0.0.1
 [...]
@@ -447,7 +447,6 @@ $SU cat /var/lib/tor/public-pool/hostname
 abcdefg..............xyz.onion
 ```
 
-
 * Ara hauries de poder connectar-te de forma remota al teu Public Pool a través
 de Tor utilitzant el teu nom d'amfitrió
 </FAQBox>
@@ -467,7 +466,7 @@ $SU $EDITOR /etc/init.d/public-pool
 ```sh copy filename="/etc/init.d/public-pool"
 #!/sbin/openrc-run
 
-: ${PUBLICPOOL_CONFIGFILE:=/etc/public-pool/public-pool.conf}
+: ${PUBLICPOOL_ENVFILE:=/etc/public-pool/public-pool.env}
 : ${PUBLICPOOL_WEBUI:=/var/www/public-pool-ui}
 : ${PUBLICPOOL_DATADIR:=/var/lib/public-pool}
 : ${PUBLICPOOL_LOGDIR:=/var/log/public-pool}
@@ -480,14 +479,14 @@ $SU $EDITOR /etc/init.d/public-pool
 PUBLICPOOL_PIDDIR="/run/public-pool"
 
 directory="${PUBLICPOOL_DATADIR}"
-required_files="${PUBLICPOOL_CONFIGFILE}"
+required_files="${PUBLICPOOL_ENVFILE}"
 pidfile="${PUBLICPOOL_PIDDIR}/${SVCNAME}.pid"
 
 name="Public Pool"
 description="Fully Open Source Solo Bitcoin Mining Pool"
 
 command="${PUBLICPOOL_BIN}"
-command_args="--env-file ${PUBLICPOOL_CONFIGFILE}
+command_args="--env-file=${PUBLICPOOL_ENVFILE}
               ${PUBLICPOOL_OPTS}"
 command_user="${PUBLICPOOL_USER}:${PUBLICPOOL_GROUP}"
 command_background="true"
@@ -500,7 +499,7 @@ depend() {
 }
 
 start_pre() {
-    checkpath --file      --mode 0660 --owner "${command_user}" "${PUBLICPOOL_CONFIGFILE}"
+    checkpath --file      --mode 0660 --owner "${command_user}" "${PUBLICPOOL_ENVFILE}"
     checkpath --directory --mode 0750 --owner "${command_user}" "${PUBLICPOOL_DATADIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${PUBLICPOOL_LOGDIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${PUBLICPOOL_PIDDIR}"
@@ -509,12 +508,12 @@ start_pre() {
 }
 
 checkconfig() {
-    if ! grep -qs '^BITCOIN_RPC_COOKIEFILE=' "${PUBLICPOOL_CONFIGFILE}"
+    if ! grep -qs '^BITCOIN_RPC_COOKIEFILE=' "${PUBLICPOOL_ENVFILE}"
     then
         eerror ""
         eerror "ERROR: You must set a BITCOIN_RPC_COOKIEFILE path"
         eerror "to run Public pool."
-        eerror "The setting must appear in ${PUBLICPOOL_CONFIGFILE}"
+        eerror "The setting must appear in ${PUBLICPOOL_ENVFILE}"
         eerror ""
         return 1
     fi
