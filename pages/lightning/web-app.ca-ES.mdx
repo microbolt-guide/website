@@ -21,7 +21,7 @@ Aquestes són dependències de creació (es pot eliminar després de la
 instal·lació, si voleu)
 
 ```sh copy
-$SU apk add npm
+$SU apk add git gnupg npm
 ```
 
 Aquestes són dependències en temps d'execució
@@ -72,16 +72,19 @@ xifrat internament cap a ThunderHub
 <Tabs items={['caddy', 'nginx']}>
     <Tabs.Tab>
 ```sh copy
-$SU $EDITOR /etc/caddy/streams/thunderhub.caddy
+$SU $EDITOR /etc/caddy/sites/thunderhub.caddy
 ```
 
-```caddy copy filename="/etc/caddy/streams/thunderhub.caddy"
+```nginx copy filename="/etc/caddy/sites/thunderhub.caddy"
 :4002 {
-        route {
-                tls 
-                proxy {
-                        upstream localhost:3010
-                }
+        import tls
+
+        handle_errors 497 {
+                redir https://{host}:{port}{uri} 301
+        }
+
+        handle {
+                reverse_proxy 127.0.0.1:3000
         }
 }
 ```
@@ -94,25 +97,25 @@ $SU rc-service caddy reload
     </Tabs.Tab>
     <Tabs.Tab>
 ```sh copy
-$SU $EDITOR /etc/nginx/streams-available/thunderhub-reverse-proxy.conf
+$SU $EDITOR /etc/nginx/sites-available/thunderhub-reverse-proxy.conf
 ```
 
-```nginx copy filename="/etc/nginx/streams-available/thunderhub-reverse-proxy.conf"
-upstream thunderhub {
-  server 127.0.0.1:3010;
-}
-
+```nginx copy filename="/etc/nginx/sites-available/thunderhub-reverse-proxy.conf"
 server {
   listen 4002 ssl;
-  proxy_pass thunderhub;
+  error_page 497 =301 https://$host:$server_port$request_uri;
+
+  location / {
+    proxy_pass http://127.0.0.1:3000;
+  }
 }
 ```
 
 ```sh copy
 $SU ln \
     -s \
-    ../streams-available/thunderhub-reverse-proxy.conf \
-    /etc/nginx/streams-enabled/thunderhub-reverse-proxy.conf
+    ../sites-available/thunderhub-reverse-proxy.conf \
+    /etc/nginx/sites-enabled/thunderhub-reverse-proxy.conf
 ```
 
 * Prova i torna a carregar la configuració de NGINX
@@ -185,7 +188,7 @@ cd /tmp
 ```
 
 ```sh copy
-VERSION=0.13.30
+VERSION=0.13.31
 ```
 
 ```sh copy
@@ -206,113 +209,104 @@ wget -qO- https://github.com/apotdevin.gpg | gpg --import
 git verify-commit v$VERSION
 ```
 
-### Configura, corregiu i instal·la
-
-* Pegat [gh pr](https://github.com/apotdevin/thunderhub/pull/612)
-
-```sh copy
-sed 's/5.4.3/5.5.0/' package.json > _
-mv -f _ package.json
-```
+### Instal·la i compila
 
 * Instal·leu totes les dependències mitjançant el Node Package Manager (NPM).
 
 ```sh copy
 npm install
-npm audit fix
 ```
 
 La instal·lació pot trigar un temps. Pot ser que hi hagi moltes sortides
 confuses, però si veieu alguna cosa semblant a la següent, la instal·lació ha
 estat correcta:
 
+<Callout type="warning">
+A data de `2024-09-01`, hi ha com a mínim **26 vulnerabilitats** que no es poden
+abordar sense fer canvis substancials que podrien afectar altres parts del
+programari
+
+```sh copy
+npm audit fix
+```
+</Callout>
+
 ```output filename="output"
-[...]
-changed 2 packages, and audited 1986 packages in 4s
- 
-253 packages are looking for funding
-  run `npm fund` for details
- 
-found 0 vulnerabilities
+26 vulnerabilities (1 low, 10 moderate, 15 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
 ```
 
-* Millora la teva privadesa optant per sortir del
+<Callout type="info">
+Millora la teva privadesa optant per sortir del
 [telemetria](https://nextjs.org/telemetry) de Next.js
 
 ```sh copy
 npx next telemetry disable
 ```
+</Callout>
 
-* Compila-ho
+* Feu-ne una instal·lació permanent global
 
 ```sh copy
 npm run build
 ```
 
-* Redueix l'espai ocupat per ThunderHub
-
 ```sh copy
-npm prune --production
+npm install husky --omit=dev --omit=optional
 ```
 
-* Feu-ne una instal·lació permanent global
-
 ```sh copy
-mkdir ./bin
+mkdir ./dist/bin
 ```
 
 ```sh copy
 printf "%s\n" \
-    "#!/usr/bin/env node" \
-    "process.env.npm_package_version = '$VERSION';" \
-    "process.env.NODE_ENV = 'production';" \
-    "require('../dist/main');" \
-    > ./bin/cli.js
+    "#!/bin/sh" \
+    "npm_package_version='$VERSION' \\" \
+    "node \$@ /var/lib/thunderhub/main" \
+    > ./dist/bin/cli.sh
 ```
 
 ```sh copy
-chmod +x ./bin/cli.js
+chmod +x ./dist/bin/cli.sh
+```
+
+* Instal·la el backend i les dependències
+
+```sh copy
+$SU mv -f /tmp/thunderhub/dist /var/lib/thunderhub
+$SU cp -R node_modules /var/lib/thunderhub
+```
+
+* Instal·la el frontend
+
+```sh copy
+$SU mkdir -p /var/lib/thunderhub/src/client
+$SU cp -R /tmp/thunderhub/src/client/public         /var/lib/thunderhub/src/client/public
+$SU cp    /tmp/thunderhub/src/client/next.config.js /var/lib/thunderhub/src/client/next.config.js
+$SU mv -f /tmp/thunderhub/src/client/.next          /var/lib/thunderhub/src/client/.next
 ```
 
 ```sh copy
-$SU mkdir /etc/thunderhub
-```
-
-```sh copy
-cp -v ./.env ./.env.local
-```
-
-```sh copy
-$SU mv -f /tmp/thunderhub /var/lib/
+$SU chown -R thunderhub:thunderhub /var/lib/thunderhub
 ```
 
 ```sh copy
 $SU ln -s /var/lib/thunderhub /usr/lib/node_modules/thunderhub
-$SU ln -s ../lib/node_modules/thunderhub/bin/cli.js /usr/bin/thunderhub
+$SU ln -s ../lib/node_modules/thunderhub/bin/cli.sh /usr/bin/thunderhub
 ```
 </Steps>
 
 ## Configuració
 
 * Edita el fitxer de configuració
-
-```sh copy
-$SU $EDITOR /var/lib/thunderhub/.env.local
-```
-
-```.env filename="/var/lib/thunderhub/.env.local"
-[...]
-LOG_LEVEL='debug'
-[...]
-TOR_PROXY_SERVER=socks://127.0.0.1:9050
-[...]
-PORT=3010
-[...]
-ACCOUNT_CONFIG_PATH='/etc/thunderhub/thubConfig.yaml'
-[...]
-```
-
-* Edita el fitxer `thubConfig.yaml`
 
 ```sh copy
 $SU $EDITOR /etc/thunderhub/thubConfig.yaml
@@ -382,7 +376,7 @@ $SU $EDITOR /etc/tor/torrc
 HiddenServiceDir /var/lib/tor/thunderhub/
 HiddenServiceVersion 3
 HiddenServicePoWDefensesEnabled 1
-HiddenServicePort 80 127.0.0.1:3010
+HiddenServicePort 443 127.0.0.1:3000
 ```
 
 * Torneu a carregar la configuració de Tor i obteniu la vostra adreça de
@@ -397,9 +391,8 @@ $SU cat /var/lib/tor/thunderhub/hostname
 abcdefg..............xyz.onion
 ```
 
-* Amb el [navegador Tor](https://www.torproject.org), pots accedir a aquesta
-adreça onion des de qualsevol dispositiu. Tingues en compte que aquest accés no
-està protegit per contrasenya i no s'hauria de compartir amplament.
+* Ara hauries de poder connectar-te de forma remota al teu Public Pool a través
+de Tor utilitzant el teu nom d'amfitrió
 </FAQBox>
 
 ### Inici automàtic a l'arrencada
@@ -425,7 +418,6 @@ $SU $EDITOR /etc/init.d/thunderhub
 : ${THUNDERHUB_BIN:=/usr/bin/thunderhub}
 : ${THUNDERHUB_OPTS=${THUNDERHUB_OPTS}}
 : ${THUNDERHUB_SIGTERM_TIMEOUT:=600}
-: ${THUNDERHUB_ENVFILE:=${THUNDERHUB_DATADIR}/.env.local}
 
 THUNDERHUB_PIDDIR="/run/thunderhub"
 
@@ -442,18 +434,16 @@ command_args="${THUNDERHUB_OPTS}"
 command_user="${THUNDERHUB_USER}:${THUNDERHUB_GROUP}"
 command_background="true"
 
-start_stop_daemon_args="--stdout ${THUNDERHUB_LOGDIR}/debug.log
+start_stop_daemon_args="--env BASE_PATH=''
+                        --env COOKIE_PATH=''
+                        --env ACCOUNT_CONFIG_PATH='${THUNDERHUB_CONFIGFILE}'
+                        --env NODE_ENV='production'
+                        --env NEXT_TELEMETRY_DISABLED=1
+                        --stdout ${THUNDERHUB_LOGDIR}/debug.log
                         --stderr ${THUNDERHUB_LOGDIR}/debug.log"
 
 depend() {
-    need lnd
-    checkdepend TOR_PROXY_SERVER tor
-}
-
-checkdepend() {
-    if grep -qs "^${1}=" "${THUNDERHUB_ENVFILE}"; then
-        need "${2:-$1}"
-    fi
+    need lnd tor
 }
 
 start_pre() {
@@ -473,6 +463,17 @@ checkconfig() {
         eerror ""
         return 1
     fi
+}
+
+stop() {
+    ebegin "Stopping ${SVCNAME}"
+    pkill -TERM -P "$(cat ${pidfile})"
+    start-stop-daemon \
+        --stop \
+        --pidfile="${pidfile}" \
+        --retry="${THUNDERHUB_SIGTERM_TIMEOUT}" \
+        --exec="${THUNDERHUB_BIN}"
+    eend $?
 }
 ```
 
@@ -516,12 +517,21 @@ $SU logrotate /etc/logrotate.d/thunderhub --debug
 
 ```sh copy
 $SU rc-update add thunderhub
+```
+    
+```sh copy
 $SU rc-service thunderhub start
 ```
 
 <Callout emoji="🎉">
 **Felicitats!** Ara tens el Thunderhub funcionant.
 </Callout>
+
+* Comproveu el registre per veure la sortida de Thunderhub. Sortiu amb `Ctrl-C`
+
+```sh copy
+tail -f /var/log/thunderhub/debug.log
+```
 
 Ara pots accedir a ThunderHub des de la teva xarxa local navegant a
 https://nakamoto01:4002, https://nakamoto01.local:4002 (o la teva adreça IP
