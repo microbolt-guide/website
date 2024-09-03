@@ -102,111 +102,111 @@ to the Mempool Space
 $SU $EDITOR /etc/caddy/sites/mempool-space.caddy
 ```
 
-```caddy copy filename="/etc/caddy/sites/mempool-space.caddy"
+```nginx copy filename="/etc/caddy/sites/mempool-space.caddy"
 :4081 {
     import tls
-	root /var/www/mempool/browser
+    root /var/www/mempool/browser
 
-	handle /api/v1/* {
-		reverse_proxy 127.0.0.1:8999
-	}
+    handle /api/v1/* {
+        reverse_proxy 127.0.0.1:8999
+    }
 
-	handle /api/* {
-		uri replace /api/ /api/v1/
-		reverse_proxy 127.0.0.1:8999
-	}
+    handle /api/* {
+        uri replace /api/ /api/v1/
+        reverse_proxy 127.0.0.1:8999
+    }
 
-	handle {
-		map {header.accept-language} {header_lang} {
-			default "en-US"
-			~^ar "ar"
-			~^cs "cs"
-			~^da "da"
-			~^de "de"
-			~^en "en-US"
-			~^es "es"
-			~^fa "fa"
-			~^fi "fi"
-			~^fr "fr"
-			~^he "he"
-			~^hi "hi"
-			~^hr "hr"
-			~^hu "hu"
-			~^it "it"
-			~^ja "ja"
-			~^ka "ka"
-			~^ko "ko"
-			~^lt "lt"
-			~^mk "mk"
-			~^nb "nb"
-			~^ne "ne"
-			~^nl "nl"
-			~^pl "pl"
-			~^pt "pt"
-			~^ro "ro"
-			~^ru "ru"
-			~^sl "sl"
-			~^sv "sv"
-			~^th "th"
-			~^tr "tr"
-			~^uk "uk"
-			~^vi "vi"
-			~^zh "zh"
-		}
+    handle {
+        map {header.accept-language} {header_lang} {
+            default "en-US"
+            ~^ar "ar"
+            ~^cs "cs"
+            ~^da "da"
+            ~^de "de"
+            ~^en "en-US"
+            ~^es "es"
+            ~^fa "fa"
+            ~^fi "fi"
+            ~^fr "fr"
+            ~^he "he"
+            ~^hi "hi"
+            ~^hr "hr"
+            ~^hu "hu"
+            ~^it "it"
+            ~^ja "ja"
+            ~^ka "ka"
+            ~^ko "ko"
+            ~^lt "lt"
+            ~^mk "mk"
+            ~^nb "nb"
+            ~^ne "ne"
+            ~^nl "nl"
+            ~^pl "pl"
+            ~^pt "pt"
+            ~^ro "ro"
+            ~^ru "ru"
+            ~^sl "sl"
+            ~^sv "sv"
+            ~^th "th"
+            ~^tr "tr"
+            ~^uk "uk"
+            ~^vi "vi"
+            ~^zh "zh"
+        }
 
-		map {cookie.lang} {lang} {
-			default {header_lang}
-			ar "ar"
-			cs "cs"
-			da "da"
-			de "de"
-			en "en-US"
-			es "es"
-			fa "fa"
-			fi "fi"
-			fr "fr"
-			he "he"
-			hi "hi"
-			hr "hr"
-			hu "hu"
-			it "it"
-			ja "ja"
-			ka "ka"
-			ko "ko"
-			lt "lt"
-			mk "mk"
-			nb "nb"
-			ne "ne"
-			nl "nl"
-			pl "pl"
-			pt "pt"
-			ro "ro"
-			ru "ru"
-			sl "sl"
-			sv "sv"
-			th "th"
-			tr "tr"
-			uk "uk"
-			vi "vi"
-			zh "zh"
-		}
+        map {cookie.lang} {lang} {
+            default {header_lang}
+            ar "ar"
+            cs "cs"
+            da "da"
+            de "de"
+            en "en-US"
+            es "es"
+            fa "fa"
+            fi "fi"
+            fr "fr"
+            he "he"
+            hi "hi"
+            hr "hr"
+            hu "hu"
+            it "it"
+            ja "ja"
+            ka "ka"
+            ko "ko"
+            lt "lt"
+            mk "mk"
+            nb "nb"
+            ne "ne"
+            nl "nl"
+            pl "pl"
+            pt "pt"
+            ro "ro"
+            ru "ru"
+            sl "sl"
+            sv "sv"
+            th "th"
+            tr "tr"
+            uk "uk"
+            vi "vi"
+            zh "zh"
+        }
 
-		header {
-			Cache-Control "public, no-transform, max-age=1800"
-			Vary "Accept-Language, Cookie"
-		}
+        header {
+            Cache-Control "public, no-transform, max-age=1800"
+            Vary "Accept-Language, Cookie"
+        }
 
-		@lang-override path_regexp ^/([a-z]{2})/
-		handle @lang-override {
-			try_files {path} /{re.lang-override.1}/index.html /en-US{path} /en-US/index.html
-		}
+        @lang-override path_regexp ^/([a-z]{2})/
+        handle @lang-override {
+            try_files {path} /{re.lang-override.1}/index.html /en-US{path} /en-US/index.html
+        }
 
-		handle {
-			try_files {path} /{lang}{path} /en-US{path} /{lang}/index.html /en-US/index.html
-		}
+        handle {
+            try_files {path} /{lang}{path} /en-US{path} /{lang}/index.html /en-US/index.html
+        }
 
-		file_server
-	}
+        file_server
+    }
 }
 ```
 

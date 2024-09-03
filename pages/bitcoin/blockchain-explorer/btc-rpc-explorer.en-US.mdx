@@ -96,7 +96,7 @@ to the BTC RPC Explorer
 $SU $EDITOR /etc/caddy/sites/btc-rpc-explorer.caddy
 ```
 
-```caddy copy filename="/etc/caddy/sites/btc-rpc-explorer.caddy"
+```nginx copy filename="/etc/caddy/sites/btc-rpc-explorer.caddy"
 :4000 {
         import tls
         reverse_proxy 127.0.0.1:3002
