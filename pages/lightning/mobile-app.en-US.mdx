@@ -1,4 +1,4 @@
-import { Tabs } from 'nextra/components'
+import { Callout, Tabs } from 'nextra/components'
 import { FAQBox } from '@components'
 
 # Mobile app
@@ -21,7 +21,7 @@ $SU $EDITOR /etc/lnd/lnd.conf
 
 ```conf filename="/etc/lnd/lnd.conf" {2}
 [...]
-restlisten=0.0.0.0:8080
+restlisten=localhost:8080
 [...]
 ```
 
@@ -36,16 +36,14 @@ to the LND rest.
 <Tabs items={['caddy', 'nginx']}>
     <Tabs.Tab>
 ```sh copy
-$SU $EDITOR /etc/caddy/lnd-rest.caddy
+$SU $EDITOR /etc/caddy/streams/lnd-rest.caddy
 ```
 
-```caddy copy filename="/etc/caddy/lnd-rest.caddy"
+```nginx copy filename="/etc/caddy/streams/lnd-rest.caddy"
 :8081 {
-    reverse_proxy https://127.0.0.1:8080 {
-        transport http {
-            tls_insecure_skip_verify
+        route {
+                proxy 127.0.0.1:8080
         }
-    }
 }
 ```
 
@@ -60,7 +58,7 @@ $SU rc-service caddy restart
 $SU $EDITOR /etc/nginx/sites-available/lnd-rest-reverse-proxy.conf
 ```
 
-```nginx copy filename="/etc/nginx/sites-available/lnd-rest-reverse-proxy.conf" showLineNumbers
+```nginx copy filename="/etc/nginx/sites-available/lnd-rest-reverse-proxy.conf"
 server {
     listen 8081 ssl;
 
@@ -178,10 +176,19 @@ can generate a qr with a valid lndconnect url very easily like this
 
 <Tabs items={['local/VPN', 'tor']}>
     <Tabs.Tab>
+<Callout type="info">
+Define the hostname or IP address of your node in the `HOP` variable. Leave
+blank to use the default value `nakamoto01.local`.
+
+```sh
+HOP=192.168.21.40
+```
+</Callout>
+
 ```sh copy
 printf "%s" \
     "lndconnect://" \
-    "nakamoto01.local" \
+    "${HOP:-nakamoto01.local}" \
     ":8081" \
     "?cert=" \
     "$(
