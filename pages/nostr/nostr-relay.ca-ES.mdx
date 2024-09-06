@@ -1,0 +1,274 @@
+import { Steps } from 'nextra/components'
+
+# Relé Nostr
+
+Un [relé de nostr escrit en Rust](https://sr.ht/~gheartsfield/nostr-rs-relay)
+amb suport per a tot el protocol de relés i persistència de dades utilitzant
+SQLite.
+
+![Nostr Relé](/img/nostr/nostr-relay.webp)
+
+## Preparacions
+
+<Steps>
+### Instal·leu dependències
+
+Aquestes són dependències de creació (es pot eliminar després de la
+instal·lació, si voleu)
+
+```sh copy
+$SU apk add cargo cargo-auditable clang-dev cmake git make pkgconf protobuf-c-compiler sqlite-dev
+```
+
+Aquestes són dependències en temps d'execució
+  
+```sh copy
+$SU apk add sqlite
+```
+
+### Creeu l'usuari/grup `nostr`
+
+```sh copy
+$SU addgroup -S nostr
+```
+
+```sh copy
+$SU adduser \
+    -S \
+    -D \
+    -H \
+    -h /dev/null \
+    -s /sbin/nologin \
+    -G nostr \
+    -g nostr \
+    nostr
+```
+
+### Afegiu també l'usuari `satoshi` al grup `nostr`
+  
+```sh copy
+$SU adduser satoshi nostr
+```
+</Steps>
+
+## Instal·lació
+
+<Steps>
+### Clona el codi font
+
+Obtenim l'última versió del codi font de nostr-rs-relay, el compilem en un
+binari executable i l'instal·lem.
+
+* Baixeu el codi font de la darrera versió de nostr-rs-relay. Podeu consultar la
+[pàgina de llançament](https://git.sr.ht/~gheartsfield/nostr-rs-relay/refs) per
+veure si hi ha disponible una versió més recent. Tanmateix, és possible que
+altres versions no s'hagin provat correctament amb la resta de la configuració
+de Microbolt.
+
+```sh copy
+cd /tmp
+```
+
+```sh copy
+VERSION=0.8.13
+```
+
+```sh copy
+git clone --branch $VERSION https://git.sr.ht/~gheartsfield/nostr-rs-relay && cd nostr-rs-relay
+```
+
+### Configurar, compilar i instal·lar
+
+* Ara compileu el codi font en un binari executable i instal·leu-lo.
+
+```sh copy
+PROTOC=/usr/bin/protoc-c \
+cargo auditable build \
+    --bin nostr-rs-relay \
+    --release \
+    --locked \
+    --jobs "$(nproc)"
+```
+
+```sh copy
+$SU install -m 0755 -o root -g root -t /usr/bin ./target/release/nostr-rs-relay
+```
+
+```sh copy
+$SU install -D -m 0660 -o nostr -g nostr ./config.toml /etc/nostr-rs-relay/config.toml
+```
+
+### "Strip" els binaris instal·lats
+
+```sh copy
+$SU strip /usr/bin/nostr-rs-relay
+```
+</Steps>
+
+## Configuració
+
+* Modifiqueu el fitxer de configuració amb el contingut següent
+
+```sh copy
+$SU $EDITOR /etc/nostr-rs-relay/config.toml
+```
+
+```toml filename="/etc/nostr-rs-relay/config.toml" {2,4,6,8,10}
+[...]
+#relay_url = "wss://nostr.example.com/"
+[...]
+name = "Microbolt Nostr Relay"
+[...]
+description = "A Nostr Relay running on Microbolt"
+[...]
+address = "127.0.0.1"
+[...]
+port = 8880
+[...]
+```
+
+### Inici automàtic a l'arrencada
+
+Nostr Relay s'ha d'iniciar automàticament a l'arrencada del sistema.
+
+* Creeu la unitat nostr-rs-relay init.d i copieu/enganxeu la configuració
+següent
+
+```sh copy
+$SU $EDITOR /etc/init.d/nostr-rs-relay
+```
+
+```sh copy filename="/etc/init.d/nostr-rs-relay"
+#!/sbin/openrc-run
+
+: ${NOSTR_RELAY_CONFIGFILE:=/etc/nostr-rs-relay/config.toml}
+: ${NOSTR_RELAY_DATADIR:=/var/lib/nostr-rs-relay}
+: ${NOSTR_RELAY_LOGDIR:=/var/log/nostr-rs-relay}
+: ${NOSTR_RELAY_USER:=nostr}
+: ${NOSTR_RELAY_GROUP:=nostr}
+: ${NOSTR_RELAY_BIN:=/usr/bin/nostr-rs-relay}
+: ${NOSTR_RELAY_RUST_LOG:=info,nostr_rs_relay=info}
+: ${NOSTR_RELAY_OPTS=${NOSTR_RELAY_OPTS}}
+: ${NOSTR_RELAY_SIGTERM_TIMEOUT:=600}
+
+NOSTR_RELAY_PIDDIR="/run/nostr-rs-relay"
+
+required_files="${NOSTR_RELAY_CONFIGFILE}"
+pidfile="${NOSTR_RELAY_PIDDIR}/${SVCNAME}.pid"
+retry="${NOSTR_RELAY_SIGTERM_TIMEOUT}"
+
+name="Nostr Relay"
+description="A Rust implementation of Nostr relay"
+
+command="${NOSTR_RELAY_BIN}"
+command_args="--db ${NOSTR_RELAY_DATADIR}
+              --config ${NOSTR_RELAY_CONFIGFILE}
+              ${NOSTR_RELAY_OPTS}"
+command_user="${NOSTR_RELAY_USER}:${NOSTR_RELAY_GROUP}"
+command_background="true"
+
+start_stop_daemon_args="--env RUST_LOG=${NOSTR_RELAY_RUST_LOG}
+                        --stdout ${NOSTR_RELAY_LOGDIR}/debug.log
+                        --stderr ${NOSTR_RELAY_LOGDIR}/debug.log"
+
+depend() {
+    need net
+    after logger firewall
+}
+
+start_pre() {
+    checkpath --file      --mode 0660 --owner "${command_user}" "${NOSTR_RELAY_CONFIGFILE}"
+    checkpath --directory --mode 0750 --owner "${command_user}" "${NOSTR_RELAY_DATADIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${NOSTR_RELAY_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${NOSTR_RELAY_PIDDIR}"
+}
+
+stop() {
+    ebegin "Stopping ${SVCNAME}"
+    pkill -TERM -P "$(cat ${pidfile})" > /dev/null 2>&1
+    start-stop-daemon \
+        --stop \
+        --pidfile="${pidfile}" \
+        --retry="${NOSTR_RELAY_SIGTERM_TIMEOUT}" \
+        --exec="${NOSTR_RELAY_BIN}"
+    eend $?
+}
+```
+
+* Habilita el permís d'execució
+
+```sh copy
+$SU chmod +x /etc/init.d/nostr-rs-relay
+```
+
+### Habilita logrotate
+
+* Introduïu la configuració següent completa. Guardar i sortir
+
+```sh copy filename="/etc/logrotate.d/nostr-rs-relay"
+/var/log/nostr-rs-relay/*.log {
+    weekly
+    missingok
+    rotate 104
+    compress
+    delaycompress
+    notifempty
+    create 0640 nostr nostr
+    sharedscripts
+    postrotate
+        killall -HUP `cat /run/nostr-rs-relay/nostr-rs-relay.pid`
+    endscript
+}
+```
+
+* Prova
+
+```sh copy
+$SU logrotate /etc/logrotate.d/nostr-rs-relay --debug
+```
+
+## Activa i inicia Nostr relay
+
+```sh copy
+$SU rc-update add nostr-rs-relay
+```
+
+```sh copy
+$SU rc-service nostr-rs-relay start
+```
+
+* Comproveu el registre per veure la sortida del relé Nostr. Sortiu amb `Ctrl-C`
+
+```sh copy
+tail -f /var/log/nostr-rs-relay/debug.log
+```
+
+* Assegureu-vos que el servei estigui funcionant i escoltant al port
+predeterminat `8880`
+
+```sh copy
+$SU netstat -lntup | grep LISTEN | grep nostr
+```
+
+```output filename="output"
+tcp        0      0 0.0.0.0:8880            0.0.0.0:*               LISTEN      7030/nostr-rs-relay
+```
+
+## Per al futur: actualització de Nostr relay
+
+Torneu a seguir la pàgina [Relé Nostr](./nostr-relay) substituint el valor de la
+variable d'entorn `VERSION=x.xx` per l'últim si encara no s'ha modificat en
+aquesta guia.
+
+* Actualitzeu la configuració del relé Nostr si cal (vegeu les notes de la
+versió)
+
+```sh copy
+$SU $EDITOR /etc/nostr-rs-relay/config.toml
+```
+
+* Reinicieu el servei per aplicar els canvis
+
+```sh copy
+$SU rc-service nostr-rs-relay restart
+```
