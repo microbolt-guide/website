@@ -445,8 +445,10 @@ $SU logrotate /etc/logrotate.d/fulcrum --debug
 
 ```sh copy
 $SU rc-update add fulcrum
-$SU rc-service fulcrum start
+```
 
+```sh copy
+$SU rc-service fulcrum start
 ```
 
 * Check the log to see Fulcrum output. Exit with `Ctrl-C`
