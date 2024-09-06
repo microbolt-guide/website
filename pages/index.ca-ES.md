@@ -56,6 +56,9 @@ privada transaccions, blocs i molt més
 ⚡ **Lightning**: client complet amb canals estables a llarg termini i
 interfícies de gestió web i mòbil
 
+🪽 **Nostr**: xarxes socials globals, descentralitzades i resistents a la
+censura
+
 🔋 **Sempre actiu**: els serveis es sincronitzen constantment i estan
 disponibles les 24 hores del dia
 

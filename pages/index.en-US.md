@@ -53,6 +53,8 @@ transactions, blocks, and more
 ⚡ **Lightning**: full client with stable long-term channels and web-based and
 mobile-based management interfaces
 
+🪽 **Nostr**: global, decentralized, and censorship-resistant social media
+
 🔋 **Always on**: services are constantly synced and available 24/7
 
 🧅 **Reachable from anywhere**: connect to all your services through the Tor
