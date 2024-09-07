@@ -357,27 +357,29 @@ $SU mkdir -p \
 ```
 
 ```sh copy
-printf "%s\n" \
-    "{" \
-    "        local_certs" \
-    "        ocsp_stapling off" \
-    "        log {" \
-    "                format console" \
-    "        }" \
-    "        layer4 {" \
-    "                import /etc/caddy/streams/*.caddy" \
-    "        }" \
-    "}" \
-    "(tls) {" \
-    "        tls internal {" \
-    "                on_demand" \
-    "        }" \
-    "}" \
-    "https:// {" \
-    "        import tls" \
-    "}" \
-    "import /etc/caddy/sites/*.caddy" \
-    | $SU tee -a /etc/caddy/Caddyfile
+$SU $EDITOR /etc/caddy/Caddyfile
+```
+
+```nginx copy filename="/etc/caddy/Caddyfile"
+{
+        local_certs
+        ocsp_stapling off
+        log {
+                format console
+        }
+        layer4 {
+                import /etc/caddy/streams/*.caddy
+        }
+}
+(tls) {
+        tls internal {
+                on_demand
+        }
+}
+https:// {
+        import tls
+}
+import /etc/caddy/sites/*.caddy
 ```
 
 <FAQBox title="Use your own self-signed certificates">
