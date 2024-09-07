@@ -1,0 +1,570 @@
+import { Callout, Steps, Tabs } from 'nextra/components'
+import { FAQBox } from '@components'
+
+# Aplicació web
+
+Executa la teva WebGUI privada de Nostr Relay per fer una còpia de seguretat de
+tota la teva activitat a Nostr. Una aplicació oficial de
+[Umbrel](https://github.com/getumbrel/umbrel-nostr-relay). Impulsat per
+[nostr-rs-relay](https://sr.ht/~gheartsfield/nostr-rs-relay).
+
+![Umbrel Nostr Relay webapp](/img/nostr/umbrel-nostr-relay-webapp.webp)
+
+## Preparacions
+
+<Steps>
+### Instal·leu dependències
+
+Aquestes són dependències de construcció (es pot eliminar després de la
+instal·lació, si voleu)
+
+```sh copy
+$SU apk add --virtual .build-deps git npm
+```
+
+Aquestes són dependències en temps d'execució
+  
+```sh copy
+$SU apk add nodejs-current
+```
+
+### Creeu l'usuari/grup `umbrel`
+
+```sh copy
+$SU addgroup -S umbrel
+```
+
+```sh copy
+$SU adduser \
+    -S \
+    -D \
+    -H \
+    -h /dev/null \
+    -s /sbin/nologin \
+    -G umbrel \
+    -g umbrel \
+    umbrel
+```
+
+### Afegiu també l'usuari `satoshi` al grup `umbrel`
+  
+```sh copy
+$SU adduser satoshi umbrel
+```
+
+### Afegeix l'usuari `umbrel` al grup `tor`
+
+```sh copy
+$SU adduser umbrel tor
+```
+
+### Servidor intermediari invers
+
+A la secció [Seguretat](/system/security#servidor-intermediari-invers), ja hem
+configurat un servidor intermediari invers. Ara podem afegir la configuració del
+servidor Umbrel Nostr Relay.
+
+* Habiliteu el servidor intermediari invers per afegir xifratge SSL/TLS a la
+comunicació del servidor Umbrel Nostr Relay. Creeu el fitxer de configuració i
+enganxeu el contingut següent
+
+<Tabs items={['caddy', 'nginx']}>
+    <Tabs.Tab>
+```sh copy
+$SU $EDITOR /etc/caddy/sites/umbrel-nostr-relay.caddy
+```
+
+```nginx copy filename="/etc/caddy/sites/umbrel-nostr-relay.caddy"
+:8881 {
+        import tls
+        root * /var/www/umbrel-nostr-relay
+        encode gzip
+
+        @websockets {
+                header Connection *Upgrade*
+                header Upgrade    websocket
+        }
+
+        @nostr {
+                header Accept application/nostr+json
+        }
+
+        @relayproxy {
+                path /relay-proxy/*
+        }
+
+        reverse_proxy @websockets 127.0.0.1:8880
+        reverse_proxy @nostr 127.0.0.1:8880
+        reverse_proxy @relayproxy 127.0.0.1:81
+
+        file_server
+}
+```
+
+* Torna a carregar el Caddy
+
+```sh copy
+$SU rc-service caddy reload
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+```sh copy
+$SU $EDITOR /etc/nginx/sites-available/umbrel-nostr-relay-reverse-proxy.conf
+```
+
+```nginx copy filename="/etc/nginx/sites-available/umbrel-nostr-relay-reverse-proxy.conf"
+server {
+    listen 8881 ssl;
+
+    root /var/www/umbrel-nostr-relay;
+
+    gzip on;
+
+    location = / {
+        try_files $uri $uri/ =404;
+
+        if ($http_upgrade = "websocket") {
+            proxy_pass http://127.0.0.1:8880; 
+        }
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection Upgrade;
+        proxy_set_header Host $host;
+
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /relay-proxy/ {
+        proxy_pass http://127.0.0.1:81;
+    }
+}
+```
+
+```sh copy
+$SU ln \
+    -s \
+    ../sites-available/umbrel-nostr-relay-reverse-proxy.conf \
+    /etc/nginx/sites-enabled/umbrel-nostr-relay-reverse-proxy.conf
+```
+
+* Prova i torna a carregar la configuració de NGINX
+
+```sh copy
+$SU nginx -t
+$SU rc-service nginx restart
+```
+    </Tabs.Tab>
+</Tabs>
+
+### Tallafoc
+
+* Configura el tallafoc per permetre les sol·licituds entrants
+
+<Tabs items={['awall', 'ufw']}>
+    <Tabs.Tab>
+```sh copy
+$SU $EDITOR /etc/awall/optional/umbrel-nostr-relay.json
+```
+
+```json copy filename="/etc/awall/optional/umbrel-nostr-relay.json"
+{
+  "description": "Allow Umbrel Nostr Relay webGUI SSL",
+
+  "filter": [
+    {
+      "in": "internet",
+      "out": "_fw",
+      "service": { "proto": "tcp", "port": 8881 },
+      "action": "accept",
+      "conn-limit": { "count": 10, "interval": 60 }
+    }
+  ]
+}
+```
+
+* Habilitar-ho
+
+```sh copy
+$SU awall enable umbrel-nostr-relay
+$SU awall activate
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+```sh copy
+$SU ufw limit 8881/tcp comment 'Allow Umbrel Nostr Relay webGUI SSL'
+```
+    </Tabs.Tab>
+</Tabs>
+</Steps>
+
+## Instal·lació
+
+<Steps>
+### Clona el codi font
+
+Obtenim l'última versió del codi font d'umbrel-nostr-relay, el verifiquem, el
+compilem en un binari executable i l'instal·lem.
+
+* Baixeu el codi font de la darrera versió d'umbrel-nostr-relay. Podeu consultar
+la [pàgina de llançament](https://github.com/getumbrel/umbrel-nostr-relay/tags)
+per veure si hi ha disponible una versió més recent. Tanmateix, és possible que
+altres versions no s'hagin provat correctament amb la resta de la configuració
+de Microbolt.
+
+```sh copy
+cd /tmp
+```
+
+```sh copy
+VERSION=1.1.0
+```
+
+```sh copy
+git clone --branch v$VERSION https://github.com/getumbrel/umbrel-nostr-relay
+```
+
+### Backend
+
+* Instal·la les dependències del backend i construeix el projecte
+
+```sh copy
+cd /tmp/umbrel-nostr-relay/relay-proxy
+```
+
+```sh copy
+npm ci --omit=dev --omit=optional
+```
+
+La instal·lació pot trigar un temps. Pot ser que hi hagi moltes sortides
+confuses, però si veieu alguna cosa semblant a la següent, la instal·lació ha
+estat correcta:
+
+```output filename="output"
+2 vulnerabilities (1 low, 1 moderate)
+
+To address all issues, run:
+  npm audit fix
+
+Run `npm audit` for details.
+```
+
+<Callout type="warning">
+A data de `2024-09-03`, hi ha com a mínim **2 vulnerabilitats** que no es poden
+abordar sense fer canvis substancials que podrien afectar altres parts del
+programari
+
+```sh copy
+npm audit fix
+```
+</Callout>
+
+* Feu-ne una instal·lació permanent global
+
+```sh copy
+mkdir ./bin
+```
+
+```sh copy
+printf "%s\n" \
+    "#!/bin/sh" \
+    "node \$@ /var/lib/umbrel-nostr-relay/server" \
+    > ./bin/cli.sh
+```
+
+```sh copy
+chmod +x ./bin/cli.sh
+```
+
+* Reemplaça la constant de `port` i `STORE` amb una variable d'entorn
+
+```sh copy
+sed 's/const port = 80;/const port = process.env.RELAY_PROXY_PORT || 80;/' server.js > _
+mv -f _ server.js
+```
+
+```sh copy
+sed 's/export const STORE = ".\/data\/store.json";/export const STORE = process.env.RELAY_DATA_STORE || ".\/data\/store.json";/' constants.js > _
+mv -f _ constants.js
+```
+
+```sh copy
+$SU mv -f /tmp/umbrel-nostr-relay/relay-proxy /var/lib/umbrel-nostr-relay
+```
+
+```sh copy
+$SU ln -s /var/lib/umbrel-nostr-relay /usr/lib/node_modules/umbrel-nostr-relay
+$SU ln -s ../lib/node_modules/umbrel-nostr-relay/bin/cli.sh /usr/bin/umbrel-nostr-relay
+```
+
+### Frontend
+
+* Instal·la les dependències del frontend i construeix el projecte
+
+```sh copy
+cd /tmp/umbrel-nostr-relay/ui
+```
+
+```sh copy
+npm ci
+```
+
+La instal·lació pot trigar un temps. Pot ser que hi hagi moltes sortides
+confuses, però si veieu alguna cosa semblant a la següent, la instal·lació ha
+estat correcta:
+
+```output filename="output"
+21 vulnerabilities (8 moderate, 11 high, 2 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+```
+
+<Callout type="warning">
+A data de `2024-09-03`, hi ha com a mínim **21 vulnerabilitats** que no es poden
+abordar sense fer canvis substancials que podrien afectar altres parts del
+programari
+
+```sh copy
+npm audit fix
+```
+</Callout>
+
+* Feu-ne una instal·lació permanent global
+
+```sh copy
+sed 's/Umbrel/Microbolt/' public/index.html > _
+mv -f _ public/index.html
+```
+
+```sh copy
+sed \
+    -e 's/{ relayPort }//' \
+    -e '/<p className="text-slate-800 dark:text-slate-400 text-xs mt-4 mb-6">/,/<\/p>/d' \
+    src/components/ConnectClient.js > _
+mv -f _ src/components/ConnectClient.js
+```
+
+```sh copy
+npm run build
+```
+
+```sh copy
+$SU rm -rf /var/www/umbrel-nostr-relay
+$SU mv -f ./build /var/www/umbrel-nostr-relay
+```
+
+* Neteja
+
+```sh copy
+$SU apk del .build-deps
+```
+</Steps>
+
+## Configuració
+
+* Afegeix aquests valors al fitxer `umbrel.env`
+
+```sh copy
+$SU mkdir /etc/umbrel-nostr-relay
+```
+
+```sh copy
+$SU $EDITOR /etc/umbrel-nostr-relay/umbrel.env
+```
+
+```env copy filename="/etc/umbrel-nostr-relay/umbrel.env"
+RELAY_HOST=127.0.0.1
+RELAY_PORT=8880
+RELAY_PROXY_PORT=81
+RELAY_DATA_STORE=/etc/umbrel-nostr-relay/store.json
+```
+
+<FAQBox title="Accés remot per Tor">
+Per utilitzar el vostre relé Nostr quan esteu en remot, podeu crear fàcilment un
+servei ocult Tor al Microbolt i accedir al Umbrel Nostr Relay amb el navegador
+Tor des de qualsevol dispositiu.
+
+* Afegiu les tres línies següents a la secció "location-hidden services" al
+fitxer `torrc`.
+
+```sh copy
+$SU $EDITOR /etc/tor/torrc
+```
+
+```sh copy filename="/etc/tor/torrc"
+# Hidden Service Umbrel Nostr Relay
+HiddenServiceDir /var/lib/tor/mempool/
+HiddenServiceVersion 3
+HiddenServicePoWDefensesEnabled 1
+HiddenServicePort 443 127.0.0.1:8881
+```
+
+* Torneu a carregar la configuració de Tor i obteniu la vostra adreça de
+connexió.
+
+```sh copy
+$SU rc-service tor reload
+$SU cat /var/lib/tor/mempool/hostname
+```
+
+```output filename="output"
+abcdefg..............xyz.onion
+```
+
+* Ara hauríeu de poder connectar-vos al vostre Umbrel Nostr Relay de forma
+remota mitjançant Tor mitjançant el vostre nom d'amfitrió
+</FAQBox>
+
+### Inici automàtic a l'arrencada
+
+Ara ens assegurarem que el nostre relé Nostr s'iniciï com a servei a l'ordinador
+perquè estigui sempre en execució.
+
+* Creeu la unitat init.d de Umbrel Nostr Relay i copieu/enganxeu la configuració
+següent. Guardar i sortir.
+
+```sh copy
+$SU $EDITOR /etc/init.d/umbrel-nostr-relay
+```
+
+```sh copy filename="/etc/init.d/umbrel-nostr-relay"
+#!/sbin/openrc-run
+
+: ${UMBREL_NOSTR_RELAY_ENVFILE:=/etc/umbrel-nostr-relay/umbrel.env}
+: ${UMBREL_NOSTR_RELAY_DATADIR:=/var/lib/umbrel-nostr-relay}
+: ${UMBREL_NOSTR_RELAY_LOGDIR:=/var/log/umbrel-nostr-relay}
+: ${UMBREL_NOSTR_RELAY_USER:=umbrel}
+: ${UMBREL_NOSTR_RELAY_GROUP:=umbrel}
+: ${UMBREL_NOSTR_RELAY_BIN:=/usr/bin/umbrel-nostr-relay}
+: ${UMBREL_NOSTR_RELAY_OPTS=${UMBREL_NOSTR_RELAY_OPTS}}
+: ${UMBREL_NOSTR_RELAY_SIGTERM_TIMEOUT:=600}
+
+UMBREL_NOSTR_RELAY_PIDDIR="/run/umbrel-nostr-relay"
+
+directory="${UMBREL_NOSTR_RELAY_DATADIR}"
+required_files="${UMBREL_NOSTR_RELAY_ENVFILE}"
+pidfile="${UMBREL_NOSTR_RELAY_PIDDIR}/${SVCNAME}.pid"
+retry="${UMBREL_NOSTR_RELAY_SIGTERM_TIMEOUT}"
+capabilities="^cap_net_bind_service"
+
+name="Umbrel Nostr Relay"
+description="A Nostr relay webGUI made by Umbrel"
+
+command="${UMBREL_NOSTR_RELAY_BIN}"
+command_args="--env-file=${UMBREL_NOSTR_RELAY_ENVFILE}
+              ${UMBREL_NOSTR_RELAY_OPTS}"
+command_user="${UMBREL_NOSTR_RELAY_USER}:${UMBREL_NOSTR_RELAY_GROUP}"
+command_background="true"
+
+start_stop_daemon_args="--stdout ${UMBREL_NOSTR_RELAY_LOGDIR}/debug.log
+                        --stderr ${UMBREL_NOSTR_RELAY_LOGDIR}/debug.log"
+
+depend() {
+    need nostr-rs-relay
+}
+
+start_pre() {
+    checkpath --directory --mode 0755 --owner "${command_user}" "${UMBREL_NOSTR_RELAY_ENVFILE%/*}"
+    checkpath --file      --mode 0660 --owner "${command_user}" "${UMBREL_NOSTR_RELAY_ENVFILE}"
+    checkpath --directory --mode 0750 --owner "${command_user}" "${UMBREL_NOSTR_RELAY_DATADIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${UMBREL_NOSTR_RELAY_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${UMBREL_NOSTR_RELAY_PIDDIR}"
+}
+
+stop() {
+    ebegin "Stopping ${SVCNAME}"
+    pkill -TERM -P "$(cat ${pidfile})" > /dev/null 2>&1
+    start-stop-daemon \
+        --stop \
+        --pidfile="${pidfile}" \
+        --retry="${UMBREL_NOSTR_RELAY_SIGTERM_TIMEOUT}" \
+        --exec="${UMBREL_NOSTR_RELAY_BIN}"
+    eend $?
+}
+```
+
+* Habilita el permís d'execució
+
+```sh copy
+$SU chmod +x /etc/init.d/umbrel-nostr-relay
+```
+
+### Habilita logrotate
+
+* Introduïu la configuració següent completa. Guardar i sortir
+
+```sh copy filename="/etc/logrotate.d/umbrel-nostr-relay"
+/var/log/umbrel-nostr-relay/*.log {
+    weekly
+    missingok
+    rotate 104
+    compress
+    delaycompress
+    notifempty
+    create 0640 nostr nostr
+    sharedscripts
+    postrotate
+        killall -HUP `cat /run/umbrel-nostr-relay/umbrel-nostr-relay.pid`
+    endscript
+}
+```
+
+* Prova
+
+```sh copy
+$SU logrotate /etc/logrotate.d/umbrel-nostr-relay --debug
+```
+
+## Activa i inicia Nostr relay
+
+```sh copy
+$SU rc-update add umbrel-nostr-relay
+```
+
+```sh copy
+$SU rc-service umbrel-nostr-relay start
+```
+
+* Comproveu el registre per veure la sortida de Umbrel Nostr Relay. Sortiu amb
+`Ctrl-C`
+
+```sh copy
+tail -f /var/log/umbrel-nostr-relay/debug.log
+```
+
+* Assegura't que el servei funciona i escolta al port per defecte `8881`
+
+```sh copy
+$SU netstat -lntup | grep LISTEN | grep umbrel
+```
+
+```output filename="output"
+tcp        0      0 0.0.0.0:8881            0.0.0.0:*               LISTEN      7140/umbrel-nostr-relay
+```
+
+## Per al futur: actualització de Umbrel Nostr Relay
+
+Torneu a seguir la pàgina [Umbrel Nostr Relay](./web-app) substituint el valor
+de la variable d'entorn `VERSION=x.xx` per l'últim si encara no s'ha modificat
+en aquesta guia.
+
+* Actualitzeu la configuració de Umbrel Nostr Relay si cal (vegeu les notes de
+la versió)
+
+```sh copy
+$SU $EDITOR /etc/umbrel-nostr-relay/umbrel.env
+```
+
+* Reinicieu el servei per aplicar els canvis
+
+```sh copy
+$SU rc-service nostr-rs-relay restart
+```
