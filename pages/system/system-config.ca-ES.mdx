@@ -17,29 +17,29 @@ Tot i aixi, desde Microbolt recomanem `EDITOR=vim` i `SU=doas`
 <Steps>
 ### Definiu quin **editor de text**, **eina d'escalada de privilegis** i **indicadors del compilador** que voleu
 
-Afegiu en un fitxer de configuració de perfil, substituïu `<...>` per la vostra
-pròpia elecció
+```sh
+vi /etc/profile.d/defaults.sh
+```
 
-```sh copy
-printf "%s\n" \
-    "# Text editor" \
-    "export EDITOR=vim" \
-    """# Root privileges tool" \
-    "export SU=doas" \
-    """# Compile flags" \
-    "export CC=\"clang\"" \
-    "export CXX=\"\${CC}++\"" \
-    "export CFLAGS=\"-O3 -pipe -march=native -fPIE\"" \
-    "export CXXFLAGS=\"\$CFLAGS\"" \
-    "export LDFLAGS=\"-pie -Wl,--as-needed\"" \
-    "export MAKEFLAGS=\"-j\$(nproc)\"" \
-    """# Environment variables" \
-    "export CARGO_HOME=\"./.cargo\"" \
-    "export npm_config_cache=\"./npm-cache\"" \
-    "export npm_config_devdir=\"./.gyp\"" \
-    "export ROCKSDB_INCLUDE_DIR=/usr/include" \
-    "export ROCKSDB_LIB_DIR=/usr/lib" \
-    > /etc/profile.d/defaults.sh
+```sh copy filename="/etc/profile.d/defaults.sh"
+# Text editor
+export EDITOR=vim # or notepad,vi,neovim,emacs,nano,micro...
+# Root privileges tool
+export SU=doas # or sudo...
+# Compile flags
+export CC="clang"
+export CXX="${CC}++"
+export CFLAGS="-O3 -pipe -march=native -fPIE"
+export CXXFLAGS="$CFLAGS"
+export LDFLAGS="-pie -Wl,--as-needed"
+export MAKEFLAGS="-j$(nproc)"
+# Environment variables
+export CARGO_HOME="./.cargo"
+export npm_config_cache="./npm-cache"
+export npm_config_devdir="./.gyp"
+export ROCKSDB_INCLUDE_DIR=/usr/include
+export ROCKSDB_LIB_DIR=/usr/lib
+export PROTOC=protoc-c
 ```
 
 ### Aplica els canvis
