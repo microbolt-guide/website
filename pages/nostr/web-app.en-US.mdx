@@ -352,9 +352,11 @@ $SU rm -rf /var/www/umbrel-nostr-relay
 $SU mv -f ./build /var/www/umbrel-nostr-relay
 ```
 
-* Clean up
+### Clean up
 
 ```sh copy
+cd
+rm -rf /tmp/umbrel-nostr-relay
 $SU apk del .build-deps
 ```
 </Steps>
@@ -553,5 +555,5 @@ $SU $EDITOR /etc/umbrel-nostr-relay/umbrel.env
 * Restart the service to apply the changes
 
 ```sh copy
-$SU rc-service nostr-rs-relay restart
+$SU rc-service umbrel-nostr-relay restart
 ```
