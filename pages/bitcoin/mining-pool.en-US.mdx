@@ -26,10 +26,10 @@ your hashrate to a third-party Mining Pool.
 
 * Install Node.js using the apk package manager.
 
-These are make dependencies (safe to remove after installation, if you want)
+These are build dependencies (safe to remove after installation, if you want)
 
 ```sh copy
-$SU apk add git npm
+$SU apk add --virtual .build-deps git npm
 ```
 
 These are runtime dependencies
@@ -244,7 +244,7 @@ git checkout 8ce057b3b51c33bf915f57f3a30822b449613276
 * Install all dependencies using the Node Package Manager (NPM).
 
 ```sh copy
-npm install
+npm ci
 ```
 
 Installation can take some time. There might be a lot of confusing output, but
@@ -337,7 +337,7 @@ git checkout 80081e337d3af829b0edf3990ad97ea430bd73d4
 * Install all dependencies using the Node Package Manager (NPM).
 
 ```sh copy
-npm install
+npm ci
 ```
 
 <Callout type="warning">
@@ -386,6 +386,14 @@ npm run build
 
 ```sh copy
 $SU mv -f ./dist/public-pool-ui /var/www/
+```
+
+### Cleanup
+
+```sh copy
+cd
+rm -rf /tmp/public-pool*
+$SU apk del .build-deps
 ```
 </Steps>
 

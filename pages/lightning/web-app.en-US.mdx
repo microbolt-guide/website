@@ -17,10 +17,10 @@ up-to-date tech stack.
 
 * Install Node.js using the apk package manager.
 
-These are make dependencies (safe to remove after installation, if you want)
+These are build dependencies (safe to remove after installation, if you want)
 
 ```sh copy
-$SU apk add git gnupg npm
+$SU apk add --virtual .build-deps git gnupg npm
 ```
 
 These are runtime dependencies
@@ -211,7 +211,7 @@ git verify-commit v$VERSION
 * Install all dependencies using the Node Package Manager (NPM).
 
 ```sh copy
-npm install
+npm ci
 ```
 
 Installation can take some time. There might be a lot of confusing output, but
@@ -254,7 +254,8 @@ npm run build
 ```
 
 ```sh copy
-npm install husky --omit=dev --omit=optional
+npm ci --omit=dev --omit=optional
+npm i husky
 ```
 
 ```sh copy
@@ -296,6 +297,14 @@ $SU chown -R thunderhub:thunderhub /var/lib/thunderhub
 ```sh copy
 $SU ln -s /var/lib/thunderhub /usr/lib/node_modules/thunderhub
 $SU ln -s ../lib/node_modules/thunderhub/bin/cli.sh /usr/bin/thunderhub
+```
+
+### Cleanup
+
+```sh copy
+cd
+rm -rf /tmp/thunderhub
+$SU apk del .build-deps
 ```
 </Steps>
 

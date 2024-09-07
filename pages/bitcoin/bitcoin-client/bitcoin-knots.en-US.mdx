@@ -13,6 +13,21 @@ separate user `bitcoin` for security reasons. This user does not have admin
 rights and cannot change the system configuration.
 
 <Steps>
+### Install dependencies
+
+These are build dependencies (safe to remove after installation, if you want)
+
+```sh copy
+$SU apk add --virtual .build-deps autoconf automake boost-dev clang chrpath \
+    file gnupg libevent-dev libtool make pkgconf zeromq-dev
+```
+
+These are runtime dependencies
+
+```sh copy
+$SU apk add libevent libsodium libstdc++ libzmq
+```
+
 ### Create the `bitcoin` user/group
 
 ```sh copy
@@ -107,12 +122,6 @@ Bitcoin releases are signed by several individuals, each using its own key. To
 verify the validity of these signatures, you must first import the corresponding
 public keys into your GPG key database.
 
-* Install `gnupg`
-
-```sh copy
-$SU apk add gnupg
-```
-
 * The next command downloads and imports automatically all signatures from the
 Bitcoin Core release attestations (Guix)
 [repository](https://github.com/bitcoin-core/guix.sigs)
@@ -150,20 +159,6 @@ source code
 
 ```sh copy
 tar xzf bitcoin-$VERSION.tar.gz && cd bitcoin-$VERSION
-```
-
-### Install dependencies
-
-These are make dependencies (safe to remove after installation, if you want)
-
-```sh copy
-$SU apk add autoconf automake boost-dev clang chrpath file libevent-dev libtool make pkgconf zeromq-dev
-```
-
-These are runtime dependencies
-
-```sh copy
-$SU apk add libevent libsodium libstdc++ libzmq
 ```
 
 ### Configure, compile and install
@@ -226,6 +221,14 @@ $SU install -D -m 0660 -o bitcoin -g bitcoin ./share/examples/bitcoin.conf /etc/
 
 ```sh copy
 $SU strip -v /usr/bin/bitcoin*
+```
+
+### Cleanup
+
+```sh copy
+cd
+rm -rf /tmp/bitcoin-${VERSION}* /tmp/SHA256SUMS /tmp/SHA256SUMS.asc
+$SU apk del .build-deps
 ```
 </Steps>
 

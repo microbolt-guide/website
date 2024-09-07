@@ -12,10 +12,11 @@ support for the entire relay protocol and data persistence using SQLite.
 <Steps>
 ### Install dependencies
 
-These are make dependencies (safe to remove after installation, if you want)
+These are build dependencies (safe to remove after installation, if you want)
 
 ```sh copy
-$SU apk add cargo cargo-auditable clang-dev cmake git make pkgconf protobuf-c-compiler sqlite-dev
+$SU apk add --virtual .build-deps cargo cargo-auditable clang-dev cmake git \
+    make pkgconf protobuf-c-compiler sqlite-dev
 ```
 
 These are runtime dependencies
@@ -98,6 +99,14 @@ $SU install -D -m 0660 -o nostr -g nostr ./config.toml /etc/nostr-rs-relay/confi
 
 ```sh copy
 $SU strip /usr/bin/nostr-rs-relay
+```
+
+### Cleanup
+
+```sh copy
+cd
+rm -rf /tmp/nostr-rs-relay
+$SU apk del .build-deps
 ```
 </Steps>
 

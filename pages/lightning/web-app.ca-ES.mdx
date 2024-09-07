@@ -17,11 +17,11 @@ simple i intuitiva i la tecnologia més puntera.
 
 * Instal·leu Node.js mitjançant el gestor de paquets apk.
 
-Aquestes són dependències de creació (es pot eliminar després de la
+Aquestes són dependències de construcció (es pot eliminar després de la
 instal·lació, si voleu)
 
 ```sh copy
-$SU apk add git gnupg npm
+$SU apk add --virtual .build-deps git gnupg npm
 ```
 
 Aquestes són dependències en temps d'execució
@@ -214,7 +214,7 @@ git verify-commit v$VERSION
 * Instal·leu totes les dependències mitjançant el Node Package Manager (NPM).
 
 ```sh copy
-npm install
+npm ci
 ```
 
 La instal·lació pot trigar un temps. Pot ser que hi hagi moltes sortides
@@ -259,7 +259,8 @@ npm run build
 ```
 
 ```sh copy
-npm install husky --omit=dev --omit=optional
+npm ci --omit=dev --omit=optional
+npm i husky
 ```
 
 ```sh copy
@@ -301,6 +302,14 @@ $SU chown -R thunderhub:thunderhub /var/lib/thunderhub
 ```sh copy
 $SU ln -s /var/lib/thunderhub /usr/lib/node_modules/thunderhub
 $SU ln -s ../lib/node_modules/thunderhub/bin/cli.sh /usr/bin/thunderhub
+```
+
+### Neteja
+
+```sh copy
+cd
+rm -rf /tmp/thunderhub
+$SU apk del .build-deps
 ```
 </Steps>
 

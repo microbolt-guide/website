@@ -27,11 +27,11 @@ velocitat de hash a una piscina minera de tercers.
 
 * Instal·leu Node.js mitjançant el gestor de paquets apk.
 
-Aquestes són dependències de creació (es pot eliminar després de la
+Aquestes són dependències de construcció (es pot eliminar després de la
 instal·lació, si voleu)
 
 ```sh copy
-$SU apk add git npm
+$SU apk add --virtual .build-deps git npm
 ```
 
 Aquestes són dependències en temps d'execució
@@ -247,7 +247,7 @@ git checkout 8ce057b3b51c33bf915f57f3a30822b449613276
 * Instal·leu totes les dependències mitjançant el Node Package Manager (NPM).
 
 ```sh copy
-npm install
+npm ci
 ```
 
 La instal·lació pot trigar un temps. Pot ser que hi hagi moltes sortides
@@ -342,7 +342,7 @@ git checkout 80081e337d3af829b0edf3990ad97ea430bd73d4
 * Instal·leu totes les dependències mitjançant el Node Package Manager (NPM).
 
 ```sh copy
-npm install
+npm ci
 ```
 
 <Callout type="warning">
@@ -393,6 +393,14 @@ npm run build
 
 ```sh copy
 $SU mv -f ./dist/public-pool-ui /var/www/
+```
+
+### Neteja
+
+```sh copy
+cd
+rm -rf /tmp/public-pool*
+$SU apk del .build-deps
 ```
 </Steps>
 

@@ -16,10 +16,11 @@ of servers.
 <Steps>
 ### Install dependencies
 
-These are make dependencies (safe to remove after installation, if you want)
+These are build dependencies (safe to remove after installation, if you want)
 
 ```sh copy
-$SU apk add autoconf g++ git gnupg jemalloc-dev lz4-dev make pkgconf qt6-qtbase-dev rocksdb-dev zeromq-dev
+$SU apk add --virtual .build-deps autoconf g++ git gnupg jemalloc-dev lz4-dev \
+    make pkgconf qt6-qtbase-dev rocksdb-dev zeromq-dev
 ```
 
 These are runtime dependencies
@@ -251,6 +252,14 @@ banner.txt \
 
 ```sh copy
 $SU strip -v /usr/bin/Fulcrum
+```
+
+### Cleanup
+
+```sh copy
+cd
+rm -rf /tmp/Fulcrum
+$SU apk del .build-deps
 ```
 </Steps>
 

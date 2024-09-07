@@ -16,6 +16,22 @@ l'usuari separat `bitcoin` per motius de seguretat. Aquest usuari no té drets
 d'administrador i no pot canviar la configuració del sistema.
 
 <Steps>
+### Instal·leu dependències
+
+Aquestes són dependències de construcció (es pot eliminar després de la
+instal·lació, si voleu)
+
+```sh copy
+$SU apk add --virtual .build-deps autoconf automake boost-dev clang chrpath \
+    file gnupg libevent-dev libtool make pkgconf zeromq-dev
+```
+
+Aquestes són dependències en temps d'execució
+
+```sh copy
+$SU apk add libevent libsodium libstdc++ libzmq
+```
+
 ### Creeu l'usuari/grup `bitcoin`
 
 ```sh copy
@@ -115,12 +131,6 @@ utilitzant la seva pròpia clau. Per verificar la validesa d'aquestes signatures
 primer heu d'importar les claus públiques corresponents a la vostra base de
 dades de claus GPG.
 
-* Instal·leu `gnupg`
-
-```sh copy
-$SU apk add gnupg
-```
-
 * La següent comanda baixa i importa automàticament totes les signatures de les
 certificacions de llançament de Bitcoin Core (Guix)
 [repositori](https://github.com/bitcoin-core/guix.sigs)
@@ -195,21 +205,6 @@ i la marca de temps, extreu el codi font de Bitcoin Core
 
 ```sh copy
 tar xzf bitcoin-$VERSION.tar.gz && cd bitcoin-$VERSION
-```
-
-### Instal·leu dependències
-
-Aquestes són dependències de creació (es pot eliminar després de la
-instal·lació, si voleu)
-
-```sh copy
-$SU apk add autoconf automake boost-dev clang chrpath file libevent-dev libtool make pkgconf zeromq-dev
-```
-
-Aquestes són dependències en temps d'execució
-
-```sh copy
-$SU apk add libevent libsodium libstdc++ libzmq
 ```
 
 ### Aplicar pegats
@@ -290,6 +285,14 @@ $SU install -D -m 0660 -o bitcoin -g bitcoin ./share/examples/bitcoin.conf /etc/
 
 ```sh copy
 $SU strip -v /usr/bin/bitcoin*
+```
+
+### Neteja
+
+```sh copy
+cd
+rm -rf /tmp/bitcoin-${VERSION}* /tmp/SHA256SUMS /tmp/SHA256SUMS.asc
+$SU apk del .build-deps
 ```
 </Steps>
 

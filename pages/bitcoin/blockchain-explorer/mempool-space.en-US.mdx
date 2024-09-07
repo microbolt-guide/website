@@ -40,10 +40,10 @@ tail -f /var/log/bitcoind/debug.log
 
 * Install Node.js using the apk package manager.
 
-These are make dependencies (safe to remove after installation, if you want)
+These are build dependencies (safe to remove after installation, if you want)
 
 ```sh copy
-$SU apk add cargo git gnupg npm rsync
+$SU apk add --virtual .build-deps cargo git gnupg npm rsync
 ```
 
 These are runtime dependencies
@@ -454,7 +454,7 @@ cd /tmp/mempool/backend
 ```
     
 ```sh copy
-npm install --omit=dev --omit=optional
+npm ci --omit=dev --omit=optional
 ```
 
 Installation can take some time. There might be a lot of confusing output, but
@@ -519,7 +519,7 @@ $SU ln -s ../lib/node_modules/mempool/bin/cli.sh /usr/bin/mempool
 
 ```sh copy
 cd /tmp/mempool/frontend
-npm install --omit=dev --omit=optional
+npm ci --omit=dev --omit=optional
 ```
 
 Installation can take some time. There might be a lot of confusing output, but
@@ -556,6 +556,13 @@ npm run build
 $SU mv -f ./dist/mempool /var/www/
 ```
 
+### Cleanup
+
+```sh copy
+cd
+rm -rf /tmp/mempool
+$SU apk del .build-deps
+```
 </Steps>
 
 ## Configuration

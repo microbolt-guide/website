@@ -41,11 +41,11 @@ tail -f /var/log/bitcoind/debug.log
 
 * Instal·leu Node.js mitjançant el gestor de paquets apk.
 
-Aquestes són dependències de creació (es pot eliminar després de la
+Aquestes són dependències de construcció (es pot eliminar després de la
 instal·lació, si voleu)
 
 ```sh copy
-$SU apk add cargo git gnupg npm rsync
+$SU apk add --virtual .build-deps cargo git gnupg npm rsync
 ```
 
 Aquestes són dependències en temps d'execució
@@ -458,7 +458,7 @@ cd /tmp/mempool/backend
 ```
     
 ```sh copy
-npm install --omit=dev --omit=optional
+npm ci --omit=dev --omit=optional
 ```
 
 La instal·lació pot trigar un temps. Pot ser que hi hagi moltes sortides
@@ -525,7 +525,7 @@ $SU ln -s ../lib/node_modules/mempool/bin/cli.sh /usr/bin/mempool
 
 ```sh copy
 cd /tmp/mempool/frontend
-npm install --omit=dev --omit=optional
+npm ci --omit=dev --omit=optional
 ```
 
 La instal·lació pot trigar un temps. Pot ser que hi hagi moltes sortides
@@ -564,6 +564,13 @@ npm run build
 $SU mv -f ./dist/mempool /var/www/
 ```
 
+### Neteja
+
+```sh copy
+cd
+rm -rf /tmp/mempool
+$SU apk del .build-deps
+```
 </Steps>
 
 ## Configuració

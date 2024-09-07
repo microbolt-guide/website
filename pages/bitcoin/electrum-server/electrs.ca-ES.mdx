@@ -14,11 +14,12 @@ signatura de Bitcoin.
 <Steps>
 ### Instal·leu dependències
 
-Aquestes són dependències de creació (es pot eliminar després de la
+Aquestes són dependències de construcció (es pot eliminar després de la
 instal·lació, si voleu)
 
 ```sh copy
-$SU apk add cargo cargo-auditable clang-dev cmake git gnupg rocksdb-dev
+$SU apk add --virtual .build-deps cargo cargo-auditable clang-dev cmake git \
+    gnupg rocksdb-dev
 ```
 
 Aquestes són dependències en temps d'execució
@@ -233,6 +234,14 @@ $SU install -D -m 0660 -o electrs -g electrs ./doc/config_example.toml /etc/elec
 
 ```sh copy
 $SU strip -v /usr/bin/electrs
+```
+
+### Neteja
+
+```sh copy
+cd
+$SU rm -rf /tmp/electrs
+$SU apk del .build-deps
 ```
 </Steps>
 

@@ -13,10 +13,11 @@ Electrum server for use with your Bitcoin software or hardware signing device.
 <Steps>
 ### Install dependencies
 
-These are make dependencies (safe to remove after installation, if you want)
+These are build dependencies (safe to remove after installation, if you want)
 
 ```sh copy
-$SU apk add cargo cargo-auditable clang-dev cmake git gnupg rocksdb-dev
+$SU apk add --virtual .build-deps cargo cargo-auditable clang-dev cmake git \
+    gnupg rocksdb-dev
 ```
 
 These are runtime dependencies
@@ -227,6 +228,14 @@ $SU install -D -m 0660 -o electrs -g electrs ./doc/config_example.toml /etc/elec
 
 ```sh copy
 $SU strip -v /usr/bin/electrs
+```
+
+### Cleanup
+
+```sh copy
+cd
+$SU rm -rf /tmp/electrs
+$SU apk del .build-deps
 ```
 </Steps>
 

@@ -40,10 +40,10 @@ tail -f /var/log/bitcoind/debug.log
 
 * Install Node.js using the apk package manager.
 
-These are make dependencies (safe to remove after installation, if you want)
+These are build dependencies (safe to remove after installation, if you want)
 
 ```sh copy
-$SU apk add git gnupg npm
+$SU apk add --virtual .build-deps git gnupg npm
 ```
 
 These are runtime dependencies
@@ -236,8 +236,9 @@ mv -f _ npm-shrinkwrap.json
 * Install all dependencies using the Node Package Manager (NPM).
 
 ```sh copy
-npm install zeromq@latest
-npm audit fix 
+npm ci
+npm i zeromq@latest
+npm audit fix
 ```
 
 Installation can take some time, up to 20 minutes. There might be a lot of
@@ -266,6 +267,14 @@ $SU mv -f /tmp/btc-rpc-explorer /var/lib/
 ```sh copy
 $SU ln -s /var/lib/btc-rpc-explorer /usr/lib/node_modules/btc-rpc-explorer
 $SU ln -s ../lib/node_modules/btc-rpc-explorer/bin/cli.js /usr/bin/btc-rpc-explorer
+```
+
+### Cleanup
+
+```sh copy
+cd
+rm -rf /tmp/btc-rpc-explorer
+$SU apk del .build-deps
 ```
 </Steps>
 

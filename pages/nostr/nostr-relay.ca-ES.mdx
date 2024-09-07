@@ -13,11 +13,12 @@ SQLite.
 <Steps>
 ### Instal·leu dependències
 
-Aquestes són dependències de creació (es pot eliminar després de la
+Aquestes són dependències de construcció (es pot eliminar després de la
 instal·lació, si voleu)
 
 ```sh copy
-$SU apk add cargo cargo-auditable clang-dev cmake git make pkgconf protobuf-c-compiler sqlite-dev
+$SU apk add --virtual .build-deps cargo cargo-auditable clang-dev cmake git \
+    make pkgconf protobuf-c-compiler sqlite-dev
 ```
 
 Aquestes són dependències en temps d'execució
@@ -101,6 +102,14 @@ $SU install -D -m 0660 -o nostr -g nostr ./config.toml /etc/nostr-rs-relay/confi
 
 ```sh copy
 $SU strip /usr/bin/nostr-rs-relay
+```
+
+### Neteja
+
+```sh copy
+cd
+rm -rf /tmp/nostr-rs-relay
+$SU apk del .build-deps
 ```
 </Steps>
 

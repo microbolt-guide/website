@@ -16,11 +16,12 @@ Craig Raw de servidors.
 <Steps>
 ### Instal·leu dependències
 
-Aquestes són dependències de creació (es pot eliminar després de la
+Aquestes són dependències de construcció (es pot eliminar després de la
 instal·lació, si voleu)
 
 ```sh copy
-$SU apk add autoconf g++ git gnupg jemalloc-dev lz4-dev make pkgconf qt6-qtbase-dev rocksdb-dev zeromq-dev
+$SU apk add --virtual .build-deps autoconf g++ git gnupg jemalloc-dev lz4-dev \
+    make pkgconf qt6-qtbase-dev rocksdb-dev zeromq-dev
 ```
 
 Aquestes són dependències en temps d'execució
@@ -257,6 +258,14 @@ banner.txt \
 
 ```sh copy
 $SU strip -v /usr/bin/Fulcrum
+```
+
+### Neteja
+
+```sh copy
+cd
+rm -rf /tmp/Fulcrum
+$SU apk del .build-deps
 ```
 </Steps>
 
