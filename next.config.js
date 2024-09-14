@@ -8,8 +8,8 @@ const path = require('path')
 
 module.exports = withNextra({
     i18n: {
-        locales: ['ca-ES', 'en-US'],
-        defaultLocale: 'ca-ES'
+        locales: ['ca', 'en'],
+        defaultLocale: 'ca'
     },
     webpack: (config) => {
         config.resolve.alias['@components'] = path.join(__dirname, 'components');

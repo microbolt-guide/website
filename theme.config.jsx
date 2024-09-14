@@ -3,14 +3,14 @@ import { useConfig } from 'nextra-theme-docs'
 
 const BannerText = () => {
   const { locale } = useRouter();
-  if (locale === 'ca-ES') {
+  if (locale === 'ca') {
     return (
       <a href="https://t.me/microbolt_official" target="_blank">
         🎉 Claus PGP recuperades. Nou grup de Telegram. Descobreix-ho →
       </a>
     );
   }
-  if (locale === 'en-US') {
+  if (locale === 'en') {
     return (
       <a href="https://t.me/microbolt_official" target="_blank">
         🎉 Recovered pgp keys. New Telegram group. Find out →
@@ -23,10 +23,10 @@ export default {
   docsRepositoryBase: "https://github.com/microbolt-guide/microbolt/blob/main",
   useNextSeoProps() {
     const { asPath, locale } = useRouter()
-    if (locale === 'ca-ES') return {
+    if (locale === 'ca') return {
       titleTemplate: asPath !== '/' ? '%s – Microbolt' : 'Inici – Microbolt'
     }
-    if (locale === 'en-US') return {
+    if (locale === 'en') return {
       titleTemplate: asPath !== '/' ? '%s – Microbolt' : 'Home – Microbolt'
     }
   },
@@ -45,9 +45,9 @@ export default {
           content={
             title
               ? title === 'Microbolt'
-                ? locale === 'ca-ES'
+                ? locale === 'ca'
                   ? 'Inici – Microbolt'
-                  : locale === 'en-US'
+                  : locale === 'en'
                     ? 'Home – Microbolt'
                     : ''
                 : title + ' – Microbolt'
@@ -68,9 +68,9 @@ export default {
           content={
             title
               ? title === 'Microbolt'
-                ? locale === 'ca-ES'
+                ? locale === 'ca'
                   ? 'Inici – Microbolt'
-                  : locale === 'en-US'
+                  : locale === 'en'
                     ? 'Home – Microbolt'
                     : ''
                 : title + ' – Microbolt'
@@ -142,8 +142,8 @@ export default {
   search: {
     placeholder() {
       const { locale } = useRouter()
-      if (locale === 'ca-ES') return 'Cerca a la documentació…'
-      if (locale === 'en-US') return 'Search documentation…'
+      if (locale === 'ca') return 'Cerca a la documentació…'
+      if (locale === 'en') return 'Search documentation…'
     }
   },
   banner: {
@@ -159,16 +159,16 @@ export default {
   toc: {
     title() {
       const { locale } = useRouter()
-      if (locale === 'ca-ES') return 'En aquesta pàgina'
-      if (locale === 'en-US') return 'On This Page'
+      if (locale === 'ca') return 'En aquesta pàgina'
+      if (locale === 'en') return 'On This Page'
     },
     backToTop: true
   },
   editLink: {
     text() {
       const { locale } = useRouter()
-      if (locale === 'ca-ES') return 'Edita aquesta pàgina'
-      if (locale === 'en-US') return 'Edit this page'
+      if (locale === 'ca') return 'Edita aquesta pàgina'
+      if (locale === 'en') return 'Edit this page'
     }
   },
   feedback: {
@@ -180,7 +180,7 @@ export default {
   },
   gitTimestamp: function useGitTimestamp({ timestamp }) {
     const { locale } = useRouter()
-    if (locale === 'ca-ES') return (
+    if (locale === 'ca') return (
       <>
         Última actualització el{' '}
         <time dateTime={timestamp.toISOString()}>
@@ -192,7 +192,7 @@ export default {
         </time>
       </>
     )
-    if (locale === 'en-US') return (
+    if (locale === 'en') return (
       <>
         Last updated on{' '}
         <time dateTime={timestamp.toISOString()}>
@@ -209,7 +209,7 @@ export default {
     component: null,
   },
   i18n: [
-    { locale: 'ca-ES', text: 'Català' },
-    { locale: 'en-US', text: 'English' },
+    { locale: 'ca', text: 'Català' },
+    { locale: 'en', text: 'English' },
   ]
 }
