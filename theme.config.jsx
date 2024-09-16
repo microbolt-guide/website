@@ -206,7 +206,15 @@ export default {
     )
   },
   footer: {
-    component: null,
+    text: (
+      <span style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+        <img src="/assets/buttons/notepad.png" alt="Made with Notepad" />
+        <img src="/assets/buttons/freeware-guide.png" alt="Freeware Guide" />
+        <img src="/assets/buttons/firefox.png" alt="Get Firefox" />
+        <img src="/assets/buttons/linux.png" alt="Linux powered" />
+        <img src="/assets/buttons/netscape.png" alt="Netscape NOW" />
+      </span>
+    )
   },
   i18n: [
     { locale: 'ca', text: 'Català' },
