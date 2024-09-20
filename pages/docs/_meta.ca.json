@@ -2,10 +2,10 @@
     "index": "Introducció",
     "system": "Sistema",
     "bitcoin": "Bitcoin",
-    "lightning": "Lightning",
     "-- More": {
         "title": "Més",
         "type": "separator"
     },
+    "lightning": "Lightning",
     "nostr": "Nostr"
 }
