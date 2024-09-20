@@ -37,3 +37,17 @@ you can contribute to in various ways:
 - https://sr.ht/~gheartsfield/nostr-rs-relay
 - https://github.com/getumbrel/umbrel
 - and many more
+
+## Donations
+
+If you like Microbolt and want to support the project, consider making a
+donation via Lightning. Donations help us maintain and improve the project.
+
+You can send donations to the following Lightning address:
+
+![Lightning Donation QR Code](/assets/ln-donations.svg)
+
+<br/>
+<a href="lightning:doitwithnotepad@getalby.com">doitwithnotepad@getalby.com</a>
+
+Thank you for your support! 🎉
