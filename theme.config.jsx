@@ -207,7 +207,7 @@ export default {
   },
   footer: {
     text: (
-      <span style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+      <span style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
         <img src="/assets/buttons/notepad.png" alt="Made with Notepad" />
         <img src="/assets/buttons/freeware-guide.png" alt="Freeware Guide" />
         <img src="/assets/buttons/firefox.png" alt="Get Firefox" />
