@@ -1,1 +1,253 @@
-# Ansible
+import { Callout, Steps, Tabs } from 'nextra/components'
+import { FAQBox } from '@components'
+
+# Microbolt ❤️ Cloud
+
+Ansible és una eina senzilla d'automatització informàtica que pot facilitar el
+desplegament de les teves aplicacions i sistemes. És una eina potent que es pot
+utilitzar per automatitzar el desplegament i la configuració del(s) vostre(s)
+node(s) Microbolt.
+
+Algú va dir una vegada:
+
+<Callout type="info">
+"Ain't nobody got time to sit through RaspiBolt more than once. Once you've
+learned how to build a Bitcoin node with your hands the next ones should just
+build themselves."
+
+— 1ma (Unhosted Marcellus)
+</Callout>
+
+i aquí estem.
+
+<Callout type="error">
+Aquesta guia assumeix que teniu un coneixement bàsic de Proxmox/Debian i que
+podeu llegir ordres o scripts bàsics de l'intèrpret d'ordres, identificar
+variables i modificar-les segons sigui necessari. Es proporcionen valors per
+defecte per a totes les variables, però podeu personalitzar-los perquè s'adaptin
+a les vostres necessitats. No cal que sigueu un expert Proxmox/Debian, però
+hauríeu de ser capaços de fer SSH al teu sistema. Instal·lar Proxmox/Debian està
+fora d'abast.
+</Callout>
+
+## Prerequisits
+
+<FAQBox title="Variables">
+| Variable         | Descripció          | Valor per defecte               |
+| ---------------- | ------------------- | ------------------------------- |
+| `blank`          | Blank template ID   | `9000`                          |
+| `alpine`         | Alpine template ID  | `9010`                          |
+| `storage`        | Storage ID          | `local-zfs`                     |
+| `ssd`            | SSD flag            | `1`                             |
+| `username`       | Cloud-init username | `satoshi`                       |
+| `ssh_keyfile`    | SSH key file        | `/etc/pve/priv/authorized_keys` |
+| `password`       | Cloud-init password | `changeme`                      |
+| `microbolt`      | Microbolt VM ID     | `2140`                          |
+| `name`           | Microbolt VM name   | `nakamoto01`                    |
+| `cores`          | Microbolt VM cores  | `4`                             |
+| `memory`         | Microbolt VM memory | `8192`                          |
+| `vlan`           | Microbolt VM VLAN   | `1`                             |
+| `second_storage` | Second storage ID   | `local-zfs`                     |
+| `second_ssd`     | Second SSD flag     | `1`                             |
+</FAQBox>
+
+<Steps>
+### Plantilla en blanc
+
+Es recomana molt crear una plantilla en blanc de Linux si estàs utilitzant
+Proxmox/Debian. M'ho agrairàs més tard.
+
+```sh copy
+qm create "${blank:-9000}" \
+    --name template \
+    --ostype l26 \
+    --agent enabled=1,fstrim_cloned_disks=1 \
+    --cpu host \
+    --balloon 0 \
+    --vga serial0 \
+    --scsihw virtio-scsi-pci \
+    --net0 virtio,bridge=vmbr0,firewall=1 \
+    --serial0 socket
+qm template "${blank:-9000}"
+```
+
+### Plantilla d'Alpine cloud
+
+Clona la plantilla en blanc
+
+```sh copy
+qm clone "${blank:-9000}" "${alpine:-9010}" \
+    --name alpine-3.20 \
+    --full
+```
+
+Descarrega la imatge de cloud d'Alpine
+
+```sh copy
+wget https://dl-cdn.alpinelinux.org/alpine/v3.20/releases/cloud/\
+nocloud_alpine-3.20.3-x86_64-bios-cloudinit-r0.qcow2
+```
+
+Crea la plantilla d'Alpine cloud
+
+<Callout type="info">
+Per utilitzar les teves pròpies claus SSH de GitHub, simplement substitueix
+`<username>` pel teu nom d'usuari real de GitHub.
+
+```sh
+wget -qO- https://github.com/<username>.keys > ./github_keys
+export ssh_keyfile=./github_keys
+```
+</Callout>
+
+```sh copy
+qm set "${alpine:-9010}" \
+    --scsi0 "${storage:-local-zfs}:0,import-from=$(pwd)/nocloud_alpine-3.20.3-x86_64-bios-cloudinit-r0.qcow2,iothread=1,discard=on,ssd=${ssd:-1}" \
+    --ide0 "${storage:-local-zfs}:cloudinit" \
+    --tags alpine \
+    --ciuser "${username:-satoshi}" \
+    --sshkeys "${ssh_keyfile:-/etc/pve/priv/authorized_keys}" \
+    --cipassword "${password:-changeme}" \
+    --ipconfig0 "ip6=auto,ip=dhcp" \
+    --boot order=scsi0 \
+    --ciupgrade 1 \
+    --scsihw virtio-scsi-single
+qm template "${alpine:-9010}"
+```
+
+Neteja
+
+```sh copy
+rm nocloud_alpine-3.20.3-x86_64-bios-cloudinit-r0.qcow2
+```
+
+### Microbolt VM
+
+Clona la plantilla d'Alpine cloud
+
+```sh copy
+qm clone "${alpine:-9010}" "${microbolt:-2140}" \
+    --name "${name:-nakamoto01}" \
+    --full
+```
+
+Configura la Microbolt VM
+
+```sh copy
+qm set "${microbolt:-2140}" \
+    --onboot 1 \
+    --cores "${cores:-2}" \
+    --memory "${memory:-8192}" \
+    --net0 "virtio,bridge=vmbr0,firewall=1,tag=${vlan:-1}" \
+    --tags "alpine,microbolt"
+```
+
+Redimensiona el(s) disc(s)
+
+<Tabs items={['one disk', 'two disks']}>
+    <Tabs.Tab>
+```sh copy
+qm disk resize "${microbolt:-2140}" scsi0 2048G
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+```sh copy
+qm set "${microbolt:-2140}" \
+    --scsi1 "${second_storage:-local-zfs}:2048,iothread=1,discard=on,ssd=${second_ssd:-1}"
+qm disk resize "${microbolt:-2140}" scsi0 32G
+```
+    </Tabs.Tab>
+</Tabs>
+
+Inicia la VM
+
+```sh copy
+qm start "${microbolt:-2140}"
+```
+</Steps>
+
+## Instal·lació
+
+<Steps>
+### Instal·la Ansible
+
+<Tabs items={['Alpine', 'Linux/*BSD/plan9', 'macOS', 'windows']}>
+    <Tabs.Tab>
+```sh copy
+apk add ansible
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+<Callout type="info">
+Per a algunes distribucions de Linux, consulta la [guia
+d'instal·lació](https://docs.ansible.com/ansible/latest/installation_guide/installation_distros.html).
+Altres sistemes Unix-like també poden consultar les [instruccions
+d'instal·lació](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html).
+</Callout>
+    </Tabs.Tab>
+    <Tabs.Tab>
+<Callout type="warning">
+Primer, instal·la [Homebrew](https://brew.sh).
+</Callout>
+
+```sh copy
+brew install ansible
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+<Callout type="error">
+Ansible no suporta Windows nativament. Per a més informació, consulta les [FAQ
+de Windows](https://docs.ansible.com/ansible/latest/os_guide/windows_faq.html#windows-faq-ansible).
+Per utilitzar Ansible a Windows, considera utilitzar WSL. Aprèn més sobre les
+raons
+[aquí](https://blog.rolpdog.com/2020/03/why-no-ansible-controller-for-windows.html).
+</Callout>
+    </Tabs.Tab>
+</Tabs>
+
+### Clona el repositori
+
+```sh copy
+git clone https://github.com/microbolt-guide/ansible.git && cd ansible
+```
+
+### Configura l'inventari
+
+```sh copy
+cp inventory/hosts.ini.example inventory/hosts.ini
+```
+
+Edita el fitxer `hosts.ini`
+
+```sh copy
+vi inventory/hosts.ini
+```
+
+### Configura les variables
+
+Edita les variables globals al fitxer `group_vars/all.yaml`
+
+```sh copy
+vi inventory/group_vars/all.yaml
+```
+
+I/o modifica per a un sol host, consulta exemples dins del directori `host_vars`
+
+```sh copy
+cat inventory/host_vars/nakamoto01.yaml.example
+```
+
+### Executa el playbook
+
+```sh copy
+./deploy.sh
+```
+
+### Inicia i habilita els serveis
+
+```sh copy
+./services.sh start enable
+```
+</Steps>
+
+{<h1>FET 🎉</h1>}
