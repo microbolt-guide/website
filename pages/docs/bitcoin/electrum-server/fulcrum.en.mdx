@@ -78,7 +78,7 @@ $SU $EDITOR /etc/caddy/streams/electrum.caddy
         route {
                 tls 
                 proxy {
-                        upstream localhost:50001
+                        upstream 127.0.0.1:50001
                 }
         }
 }

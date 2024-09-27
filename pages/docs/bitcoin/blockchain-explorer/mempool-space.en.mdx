@@ -418,8 +418,7 @@ git clone --branch v$VERSION https://github.com/mempool/mempool.git && cd mempoo
 signed at least by one of the main developer [wiz](https://github.com/wiz).
 
 ```sh copy
-url="https://gist.githubusercontent.com/wiz/8f585a0eb4e3886ba574e3072f6b1e2f/raw/7708491cfdfbbf0f7a17cbdfdb9d27cc80438caf/913C5FF1F579B66CA10378DBA394E332255A6173.asc"
-wget -qO- "$url" | gpg --import
+wget -qO- https://github.com/wiz.gpg | gpg --import
 ```
 
 ```sh copy
@@ -433,7 +432,7 @@ git verify-tag v$VERSION
 * First need to create initial databases and start the service
 
 ```sh copy
-$SU /etc/init.d/mariadb setup
+$SU rc-service mariadb setup
 $SU rc-service mariadb start
 ```
 
