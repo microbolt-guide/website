@@ -39,6 +39,11 @@ export const TGLogo = (props) => (
 	</svg>
 )
 
+const FEEDBACK = {
+	ca: 'APM? Dona\'ns feedback →',
+	en: 'Question? Give us feedback →'
+}
+
 const DESCRIPTION = {
 	ca: 'Construeix el teu propi node complet de Bitcoin. No cal confiar en ningú més.',
 	en: 'Build your own DIY Bitcoin full node. No need to trust anyone else.'
@@ -49,11 +54,11 @@ const SEARCH_PLACEHOLDER = {
 	en: 'Search documentation…'
 }
 
-const BANNER_KEY = 'new-tg-user'
+const BANNER_KEY = 'microbolt-2'
 const BANNER_LINK = 'https://t.me/microbolt_official'
 const BANNER_TEXT = {
-	ca: '🎉 Claus PGP recuperades. Nou grup de Telegram. Descobreix-ho →',
-	en: '🎉 Recovered pgp keys. New Telegram group. Find out →'
+	ca: '🎉 Microbolt 2.0 ja està disponible! Llegeix més →',
+	en: '🎉 Microbolt 2.0 is out! Read more →'
 }
 
 const TOC_TITLE = {
@@ -78,6 +83,13 @@ const GIT_TIMESTAMP = {
 
 export default {
 	docsRepositoryBase: "https://github.com/microbolt-guide/microbolt/blob/main",
+	feedback: {
+		content() {
+			const { locale } = useRouter()
+			return FEEDBACK[locale]
+		},
+		labels: 'feedback'
+	},
 	head: function useHead() {
 		const config = useConfig()
 		const { locale } = useRouter()
@@ -165,9 +177,6 @@ export default {
 			const { locale } = useRouter()
 			return EDIT_TEXT[locale]
 		}
-	},
-	feedback: {
-		content: null
 	},
 	navigation: {
 		prev: true,
