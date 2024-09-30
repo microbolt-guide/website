@@ -1,0 +1,467 @@
+import { Callout, Steps, Tabs } from 'nextra/components'
+
+# Operating system
+
+We configure the PC and install Alpine Linux operating system.
+
+<Callout type="info">
+Alpine Linux is a security-oriented, lightweight Linux distribution based on
+`musl` libc and `busybox`.
+</Callout>
+
+To make this guide as universal as possible, it uses only standard POSIX
+compliant commands. As a result, it should work smoothly with a personal
+computer while still being compatible with most other hardware platforms running
+a POSIX compliant shell.
+
+## Which operating system to use?
+
+We use Alpine Linux. This provides the best stability for the PC and makes the
+initial setup a breeze.
+
+[Alpine Linux](https://docs.alpinelinux.org/user-handbook/0.1a/index.html) is
+available for most hardware platforms. There is so little need for hardware that
+can run in a router.
+
+### Requirements
+
+|         | Alpine | Ubuntu |
+| :------ | :----: | :----: |
+| RAM     |  128MB |    1GB |
+| Storage |  700MB |  2.5GB |
+
+Source(s):
+* https://wiki.alpinelinux.org/wiki/Installation
+* https://ubuntu.com/server/docs/installation
+
+### Security
+
+Alpine Linux is small, it has a minimal attack surface. Less code leads to fewer
+bugs and vulnerabilities but does not make it more secure.
+
+Alpine Linux says it is more secure because of all user-land binaries:
+
+* Are compiled as Position Independent Executables (PIE)
+* Has Stack-Smashing Protection (SSP) enabled by default
+
+Thus, preventing the exploitation of zero-day and other vulnerabilities. PIE
+achieves this in an interesting way. It loads itself (and its dependencies) into
+random locations within virtual memory. Stack Smashing Protection helps detect
+stack buffer overruns. SSP makes return-oriented programming attacks much more
+difficult to execute.
+
+Ubuntu has also implemented PIE by default as of 17.10 for all architectures in
+the Ubuntu archive. Also, Ubuntu has stack protection enabled on the Kernel.
+
+Additionally, Ubuntu is bundled with a complete set of GNU C libraries and
+standard tools. And, since GNU Compiler Collection contains roughly 15 million
+code lines (as of 2019). You can thus understand that with a large library comes
+the overhead of maintaining.
+
+At the time of writing:
+
+CVE Details reported 6 CVEs for Alpine Linux and 90 for Ubuntu.
+Searching a CVE Mitre, “Alpine Linux” finds 10 CVE records, while “Ubuntu” finds
+7063 CVE records.
+
+Source(s):
+* https://www.cvedetails.com/vendor/16697/Alpinelinux.html
+* https://www.cvedetails.com/vendor/51/Ubuntu.html
+* https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=alpine+linux
+* https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=ubuntu
+* https://access.redhat.com/blogs/766093/posts/1975793
+* https://wiki.ubuntu.com/Security/Features#pie
+
+### Core components
+
+#### musl libc vs. GNU glibc
+
+musl libc is a complete rewrite of C and provides a clean, modern code-base. As
+a result, musl libc is lightweight and requires about 600 KB vs. GNU, which
+requires about 10 MB. Furthermore, musl libc is best-suited in corner cases,
+especially with threading. Low memory or other resource-exhaustion conditions
+are never fatal to musl libc. Finally, musl libc provides first-class support
+for UTF-8/multilingual text.
+
+Source(s):
+* https://musl.libc.org/about.html
+* https://www.etalabs.net/compare_libcs.html
+
+#### BusyBox vs. GNU Core Utils
+
+BusyBox combines small versions of common UNIX utilities into a single
+executable. And it provides a minimalist replacement for most utilities you use.
+It also contains tools from GNU Coreutils, util-linux, and others. The utilities
+in BusyBox generally have fewer options than GNU Core Utils. But the options
+provide the same expected functionality. And BusyBox should behave similarly to
+GNU Core Utils. BusyBox removes some GNU extensions, localization data, and
+more.
+
+GNU Utilities provides many more tools, and it is backward compatible. Of
+course, this makes it more extensive and complex than BusyBox. You can install
+GNU Core Utils on Alpine Linux if needed.
+
+Source(s):
+* https://www.busybox.net/downloads/BusyBox.html
+* https://en.wikipedia.org/wiki/Util-linux
+* https://pkgs.alpinelinux.org/package/edge/main/x86_64/coreutils
+
+#### APK vs. APT
+
+Ubuntu uses APT for package management. Hence, software installation and removal
+are handled via the `apt` utility. On the other hand, Alpine uses the APK
+for package management. Thus, software installation is handled by the `apk add`
+utility. Similarly, `apk del` can be used to remove a package. Thus, both the
+APK and APT utilities function similarly.
+
+Here are some of the differences when using these commands:
+
+|                   | APT (Ubuntu)                 | APK (Alpine)              |
+| :---------------- | :--------------------------- | :------------------------ |
+| Update            | `apt update`                 | `apk update`              |
+| Adding package    | `apt install pkg1 pkg2`      | `apk add pkg1 pkg2`       |
+| Reinstall package | `apt install --reinstall pkg`| `apk del pkg; apk add pkg`|
+| Search            | `apt-cache search keyword`   | `apk search keyword`      |
+| Remove package    | `apt remove pkg`             | `apk del pkg`             |
+
+APK is faster than APT. APT is resource-intensive as it takes three reads and
+two write operations. APK, almost always, completes before other package
+managers. The APK process requires only one read and one write.
+
+#### Ash vs. Dash
+
+Ubuntu uses Debian Almquist's shell (Dash). The Almquist shell (also known as
+ash or sh) is used on Alpine Linux. Ash is more lightweight than Dash. Dash and
+Ash are not 100% compatible, but you would rarely encounter inconsistencies.
+
+Source:
+* https://en.wikipedia.org/wiki/Comparison_of_command_shells
+
+## Flash Alpine Linux image to USB/SD
+
+<Callout type="info">
+Microbolt has currently been tested using **Alpine Linux \{latest version\}** on
+a `x86_64` architecture, it has not been tested on other distributions,
+architectures or older versions and there is no guarantee that it will work well
+on them
+</Callout>
+
+<Steps>
+### Download Alpine Linux by going to the official website
+
+https://alpinelinux.org/downloads/
+
+| Usually      | PC         | Raspberry Pi \{3,4,5\} |
+| :----------- | :--------: | :--------------------: |
+| version      | `standard` | `raspberry pi`         |
+| architecture | `x86_64`   | `aarch64`              |
+
+<Callout type="info">
+There's also official cloud images [here](https://alpinelinux.org/cloud/), use
+at your own risk
+</Callout>
+
+### Connect the USB/SD to your host computer
+
+### Flash it
+
+<Tabs items={['Unix/Linux', 'windows']}>
+		<Tabs.Tab>
+```sh
+dd if=<iso-file> of=<target-device> bs=4M; eject <target-device>
+```
+		</Tabs.Tab>
+		<Tabs.Tab>
+For example, there is the [Rufus](https://rufus.ie/) program.
+
+Use it with the following settings:
+
+| Setting          | Value                  |
+| :--------------- | :--------------------: |
+| Partition scheme | `MBR`                  |
+| Target system    | `BIOS or UEFI`         |
+| File system      | `FAT32`                |
+| Cluster size     | `4096 bytes (default)` |
+
+<Callout type="info">
+Remember to eject the `<target-device>`
+</Callout>
+		</Tabs.Tab>
+</Tabs>
+</Steps>
+
+## Start your computer
+
+* Plug in the `USB/SD` to your computer
+* Attach a screen, a keyboard, and an ethernet cable
+* Enter to the BIOS setup or boot menu and select the `USB/SD` you flashed
+
+<Callout type="info">
+Some computers have an option to start automatically after a power loss, it is
+interesting to enable it if you want to make sure your node is available as soon
+as possible in your absence
+</Callout>
+
+## Alpine Linux installation
+
+<Callout type="info">
+Alpine Linux can be used in any of the following three modes
+
+**Diskless mode**
+
+You'll boot from read-only medium such as the installation CD, a USB drive, or a
+Compact Flash card.
+
+When you use Alpine in this mode, you need to use
+[Alpine Local Backup](https://wiki.alpinelinux.org/wiki/Alpine_local_backup)
+(lbu) to save your modifications between reboots. That requires some writable
+medium, usually removable. (If your boot medium is, for example, a USB drive,
+you can save modifications there; you don't need a separate partition or drive.)
+See also [Local APK cache](https://wiki.alpinelinux.org/wiki/Local_APK_cache).
+
+**Data mode**
+
+As in diskless mode, your OS is run from a read-only medium. However, here a
+writable partition (usually on a hard disk) is used to store the data in /var.
+That partition is accessed directly, rather than copied into a tmpfs; so this is
+better-suited to uses where large amounts of data need to be preserved between
+reboots.
+
+**Sys mode**
+
+This is a traditional hard-disk install. Both the boot system and your
+modifications are written to the hard disk, in a standard Linux hierarchy.
+</Callout>
+
+* Login with `root` user (no password needed)
+
+* Setup environment variables, defaults are:
+
+<Callout type="info">
+Defaults are not needed to setup, this block of code are for references if you
+want to customize your installation
+</Callout>
+
+```sh
+export BOOT_SIZE=100 #Size of the boot partition in MB; defaults to 100
+export SWAP_SIZE= #Size of the swap volume in MB; set to 0 to disable swap
+export ROOTFS=ext4 #Filesystem for / volume; supported: ext{2,3,4} btrfs xfs
+export BOOTFS=ext4 #Filesystem for /boot volume; supported: ext{2,3,4} btrfs xfs
+export VARFS=ext4 #Filesystem for /var volume; supported: ext{2,3,4} btrfs xfs
+export BOOTLOADER=syslinux #Bootloader to use; supported: grub syslinux zipl
+export DISKLABEL=dos #Disklabel to use; supported: dos gpt eckd
+```
+
+* Execute `setup-alpine`
+
+Enter the following into the prompt of the installer:
+
+<Steps>
+### Keymap
+Select keyboard layout: `none` (or whatever suits your preference)
+
+### Hostname
+Enter system hostname `nakamoto01`
+
+### Interface
+Which one do you want to initialize? `eth0`
+
+Ip address for eth0? `dhcp` (or whatever suits your preference)
+
+Do you want to do any manual network configuration? `n`
+
+### Root Password
+New password: `changeme`
+
+Retype password: `changeme`
+
+### Timezone
+Which timezone are you in? `UTC` (or whatever suits your preference)
+
+### Proxy
+HTTP/FTP proxy URL? `none` (or whatever suits your preference)
+
+### Network Time Protocol
+Which NTP client to run? `busybox` (or whatever suits your preference)
+
+### APK Mirror
+Enter mirror number or URL: `c`
+
+Enter mirror number or URL: `f` (or whatever suits your preference)
+
+### User
+Setup a user? `no`
+
+Which ssh server? `dropbear` (or whatever suits your preference)
+
+### Disk and install
+Which disk(s) would you like to use: `none`
+
+Enter where to store configs `none`
+
+Enter apk cache directory `none`
+</Steps>
+
+<Tabs items={['sys', 'data']}>
+		<Tabs.Tab>
+* Setup installation disk
+
+```sh copy
+DEFAULT_DISK=none setup-disk -q
+```
+
+Which disk would you like to use: `sdX` (choose your hard disk, usually sda)
+
+How would you like to use it? `sys`
+
+WARNING: Erase the above disk(s) and continue? `y`
+
+<Callout type="info">
+Your installation is done when you see this:
+`Installation is complete. Please reboot.`
+</Callout>
+		</Tabs.Tab>
+		<Tabs.Tab>
+* Copy modloop and umount `USB/SD`
+
+```sh copy
+DO_UMOUNT=1 copy-modloop
+```
+
+* Set environment variable to the device file
+
+```sh
+mydev=/dev/sdY #Usually /dev/sdb
+```
+
+* Partition the disk
+
+```sh copy
+fdisk "$mydev" <<EOF
+o
+n
+p
+1
+
+
+t
+0c
+a
+1
+w
+EOF
+```
+
+* Populate new created partitions
+
+```sh copy
+mdev -s
+```
+
+* Format partition
+
+```sh copy
+mkfs.vfat -F32 "${mydev}1"
+```
+
+* Create permanent bootable disk for diskless/data mode
+
+```sh copy
+url="https://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/x86_64/\
+alpine-standard-3.19.1-x86_64.iso"
+
+setup-bootable -v "$url" "${mydev}1"
+```
+
+* Mount it
+
+```sh copy
+mount "${mydev}1" /media/usb
+```
+
+* Setup data disk
+
+```sh copy
+DEFAULT_DISK=none setup-disk -q
+```
+
+Which disk(s) would you like to use: `sdX` (choose your hard disk, usually sda)
+
+How would you like to use it? `data`
+
+WARNING: Erase the above disk(s) and continue? `y`
+
+* Setup Alpine Local Backup
+
+```sh copy
+setup-lbu
+```
+
+Enter where to store configs `usb`
+
+* Setup Alpine Local APK cache
+
+```sh copy
+setup-apkcache
+```
+
+Enter apk cache directory `/media/usb/cache`
+
+* Update apk repository to match new bootable media
+
+```sh copy
+sed "s/${mydev##\/dev\/}/usb/" /etc/apk/repositories > _
+mv -f _ /etc/apk/repositories
+```
+
+* Update, delete and download local cache
+
+```sh copy
+apk update
+apk cache -v sync
+```
+
+* View and save modifications
+
+```sh copy
+lbu status
+```
+
+```sh copy
+lbu commit
+```
+		</Tabs.Tab>
+</Tabs>
+
+* Reboot
+
+```sh copy
+reboot
+```
+
+<Callout>
+If you exported `SWAP_SIZE=0` you can create a `swapfile` on next boot
+
+* Allocate swapfile
+
+```sh copy
+dd if=/dev/zero of=/var/swapfile bs=1K count=4M
+mkswap /var/swapfile
+chmod 600 /var/swapfile
+```
+
+* Put swapfile on fstab
+
+```sh copy
+printf "%s\n" \
+		"/var/swapfile none swap sw 0 0" \
+		>> /etc/fstab
+```
+
+* Start and enable swapfile on boot
+
+```sh copy
+rc-service swap start
+rc-update add swap default
+```
+</Callout>

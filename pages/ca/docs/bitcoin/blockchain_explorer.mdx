@@ -1,0 +1,31 @@
+import { Cards } from 'nextra/components'
+
+import { FaSwimmingPool } from "react-icons/fa"
+import { SiGooglemaps } from "react-icons/si"
+
+# Explorador de cadena de blocs
+
+Després que Microbolt executi el vostre propi node totalment validat, i fins i
+tot actuï com a backend per al vostre dispositiu de signatura de maquinari amb
+el servidor Electrum, una peça important del trencaclosques per millorar la
+privadesa i la sobirania financera és el vostre propi explorador de cadena de
+blocs.
+Us permet consultar transaccions, adreces i blocs que trieu. Ja no necessiteu
+filtrar informació consultant un explorador de cadena de blocs de tercers que es
+pot utilitzar per obtenir la vostra ubicació i adreces de clúster.
+
+Trieu el vostre explorador, quan hàgiu acabat, aneu a la secció de Pool de
+Mineria
+
+<Cards>
+    <Cards.Card
+        icon={<FaSwimmingPool />}
+        title="Mempool Space"
+        href="blockchain-explorer/mempool-space"
+    />
+    <Cards.Card
+        icon={<SiGooglemaps />}
+        title="BTC RPC Explorer"
+        href="blockchain-explorer/btc-rpc-explorer"
+    />
+</Cards>
