@@ -52,6 +52,6 @@ Pots enviar donacions a la següent adreça Lightning:
 ![Lightning Donation QR Code](/assets/ln-donations.svg)
 
 <br/>
-<a href="lightning:doitwithnotepad@getalby.com">doitwithnotepad@getalby.com</a>
+<a href="lightning:notepad@microbolt.guide">notepad@microbolt.guide</a>
 
 Gràcies pel teu suport! 🎉
