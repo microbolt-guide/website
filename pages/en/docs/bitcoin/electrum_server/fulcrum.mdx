@@ -186,7 +186,7 @@ cd /tmp
 ```
 
 ```sh copy
-VERSION=1.11.0
+VERSION=1.11.1
 ```
 
 ```sh copy
@@ -212,8 +212,6 @@ git verify-commit v$VERSION
 * Now compile the source code into an executable binary and install it.
 
 ```sh copy
-CC=gcc \
-CXX=g++ \
 qmake6 \
     Fulcrum.pro \
     -o build/
