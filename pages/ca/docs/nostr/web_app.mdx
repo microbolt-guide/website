@@ -52,12 +52,6 @@ $SU adduser \
 $SU adduser satoshi umbrel
 ```
 
-### Afegeix l'usuari `umbrel` al grup `tor`
-
-```sh copy
-$SU adduser umbrel tor
-```
-
 ### Servidor intermediari invers
 
 A la secció [Seguretat](/system/security#servidor-intermediari-invers), ja hem
@@ -403,7 +397,7 @@ $SU $EDITOR /etc/tor/torrc
 
 ```sh copy filename="/etc/tor/torrc"
 # Hidden Service Umbrel Nostr Relay
-HiddenServiceDir /var/lib/tor/mempool/
+HiddenServiceDir /var/lib/tor/umbrel-nostr-relay/
 HiddenServiceVersion 3
 HiddenServicePoWDefensesEnabled 1
 HiddenServicePort 443 127.0.0.1:8881
@@ -414,7 +408,7 @@ connexió.
 
 ```sh copy
 $SU rc-service tor reload
-$SU cat /var/lib/tor/mempool/hostname
+$SU cat /var/lib/tor/umbrel-nostr-relay/hostname
 ```
 
 ```output filename="output"
