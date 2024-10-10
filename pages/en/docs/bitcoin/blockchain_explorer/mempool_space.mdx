@@ -82,12 +82,6 @@ $SU adduser mempool bitcoin
 $SU adduser satoshi mempool
 ```
 
-### Add the user `mempool` to the group `tor`
-    
-```sh copy
-$SU adduser mempool tor
-```
-
 ### Reverse proxy
 
 In the [Security section](/system/security#reverse-proxy), we set up a reverse
@@ -295,10 +289,9 @@ map $cookie_lang $lang {
     ~*^zh zh;
     ~*^hi hi;
 }
-  
+
 server {
-    listen 4081 ssl;  
-    include /etc/nginx/snippets/nginx-mempool.conf;
+    listen 4081 ssl;
 
     sendfile on;
     tcp_nopush on;
@@ -328,6 +321,71 @@ server {
 
     proxy_cache off;
     types_hash_max_size 2048;
+
+    root /var/www/mempool/browser;
+    index index.html;
+
+    add_header Cache-Control "public, no-transform";
+    add_header Vary Accept-Language;
+    add_header Vary Cookie;
+
+    location / {
+        try_files /$lang/$uri /$lang/$uri/ $uri $uri/ /en-US/$uri @index-redirect;
+        expires 10m;
+    }
+
+    location /resources {
+        try_files $uri @index-redirect;
+        expires 1h;
+    }
+
+    location /resources/config.* {
+        try_files $uri =404;
+        expires 5m;
+    }
+
+    location /resources/customize.* {
+        try_files $uri =404;
+        expires 5m;
+    }
+
+    location @index-redirect {
+        rewrite (.*) /$lang/index.html;
+    }
+
+    location ~ ^/(ar|bg|bs|cs|da|de|et|el|es|eo|eu|fa|fr|gl|ko|hr|id|it|he|ka|lv|lt|hu|mk|ms|nl|ja|nb|nn|pl|pt|pt-BR|ro|ru|sk|sl|sr|sh|fi|sv|th|tr|uk|vi|zh|hi)/ {
+        try_files $uri $uri/ /$1/index.html =404;
+    }
+
+    location = /api {
+        try_files $uri $uri/ /en-US/index.html =404;
+    }
+
+    location = /api/ {
+        try_files $uri $uri/ /en-US/index.html =404;
+    }
+
+    location /api/v1/ws {
+        proxy_pass http://127.0.0.1:8999/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+    }
+
+    location /api/v1 {
+        proxy_pass http://127.0.0.1:8999/api/v1;
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:8999/api/v1/;
+    }
+
+    location /ws {
+        proxy_pass http://127.0.0.1:8999/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+    }
 }
 ```
 
@@ -500,7 +558,6 @@ chmod +x ./package/bin/cli.sh
 
 ```sh copy
 $SU install -D -m 0660 -o mempool -g mempool ./mempool-config.sample.json /etc/mempool/mempool-config.json
-$SU install -D -m 0644 -o root -g root ../nginx-mempool.conf /etc/nginx/snippets/nginx-mempool.conf
 ```
 
 ```sh copy
@@ -604,6 +661,23 @@ $SU $EDITOR /etc/mempool/mempool-config.json
 [...]
 ```
 
+<FAQBox title="Redis">
+To use Redis caching, you need to install the `redis` package and configure the
+Mempool Space configuration file.
+
+```sh copy
+$SU apk add redis
+```
+
+```json filename="/etc/mempool/mempool-config.json" {3-4}
+[...]
+  "REDIS": {
+    "ENABLED": true,
+    "UNIX_SOCKET_PATH": "/var/run/redis/redis.sock",
+[...]
+```
+</FAQBox>
+
 <FAQBox title="Remote access over Tor">
 To use your blockchain explorer when you're on the go, you can easily create a
 Tor hidden service on the Microbolt and accessing the Mempool Space with the
@@ -685,6 +759,7 @@ start_stop_daemon_args="--env MEMPOOL_CONFIG_FILE=${MEMPOOL_CONFIGFILE}
 depend() {
     need bitcoind
     need mariadb
+    checkdepend REDIS redis
 
     if service_started fulcrum; then
         need fulcrum
@@ -699,6 +774,12 @@ depend() {
             eerror "Neither fulcrum nor electrs is installed or started"
             return 1
         fi
+    fi
+}
+
+checkdepend() {
+    if sed -n '/^[[:space:]]*"'${1}'": {/,/^[[:space:]]*}/p' "${MEMPOOL_CONFIGFILE}" | grep -qs '"ENABLED": true'; then
+        need "${2:-$1}"
     fi
 }
 
