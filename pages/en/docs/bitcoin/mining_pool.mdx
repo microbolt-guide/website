@@ -1,0 +1,611 @@
+import { Callout, Steps, Tabs } from 'nextra/components'
+import { FAQBox } from '@components'
+
+# Mining Pool
+
+Run your own private solo mining pool with [Public
+Pool](https://github.com/benjamin-wilson/public-pool).
+
+![Public Pool home screen](/img/bitcoin/mining-pool/publicpool-homepage.webp)
+
+## Run your own mining pool
+
+After the Microbolt runs your own fully validated node, acts as a backend for
+your hardware signing device with Electrum server, can explore the blockchain
+on a web browser, the last important puzzle piece to improve privacy and
+financial sovereignty is your own mining pool.
+It lets you connect your own [nerdminer](https://bitronics.store) and/or
+[bitaxe](https://bitaxe.org) to your Microbolt and try to "find" a block in
+Solo Bitcoin Mining Pool. You no longer need to leak information by querying
+your hashrate to a third-party Mining Pool.
+
+## Preparations
+
+<Steps>
+### Install dependencies
+
+* Install Node.js using the apk package manager.
+
+These are build dependencies (safe to remove after installation, if you want)
+
+```sh copy
+$SU apk add --virtual .build-deps git npm
+```
+
+These are runtime dependencies
+
+```sh copy
+$SU apk add nodejs-current
+```
+
+### Create the `public-pool` user/group
+
+```sh copy
+$SU addgroup -S public-pool
+```
+
+```sh copy
+$SU adduser \
+    -S \
+    -D \
+    -H \
+    -h /dev/null \
+    -s /sbin/nologin \
+    -G public-pool \
+    -g public-pool \
+    public-pool
+```
+
+### Add `public-pool` user to the `bitcoin` group
+
+```sh copy
+$SU adduser public-pool bitcoin
+```
+
+### Add `satoshi` user to the `public-pool` group
+
+```sh copy
+$SU adduser satoshi public-pool
+```
+
+### Reverse proxy
+
+In the [Security section](/system/security#reverse-proxy), we set up a reverse
+proxy. Now we can add the Public Pool configuration.
+
+* Enable the reverse proxy to route external encrypted HTTPS traffic internally
+to the Public Pool
+
+<Tabs items={['caddy', 'nginx']}>
+    <Tabs.Tab>
+```sh copy
+$SU $EDITOR /etc/caddy/sites/public-pool.caddy
+```
+
+```nginx copy filename="/etc/caddy/sites/public-pool.caddy"
+:4040 {
+    import tls
+    root /var/www/public-pool-ui
+
+    handle /api/* {
+        reverse_proxy 127.0.0.1:23334
+    }
+
+    handle {
+        try_files {path} {path}/ =404
+        file_server
+    }
+}
+```
+
+* Reload Caddy
+
+```sh copy
+$SU rc-service caddy restart
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+```sh copy
+$SU $EDITOR /etc/nginx/sites-available/public-pool-reverse-proxy.conf
+```
+
+```nginx copy filename="/etc/nginx/sites-available/public-pool-reverse-proxy.conf"
+server {
+    listen 4040 ssl;
+
+    root /var/www/public-pool-ui;
+
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location ~* ^/api/ {
+        proxy_pass http://127.0.0.1:23334;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+```sh copy
+$SU ln \
+    -s \
+    ../sites-available/public-pool-reverse-proxy.conf \
+    /etc/nginx/sites-enabled/public-pool-reverse-proxy.conf
+```
+
+* Test and reload NGINX configuration
+
+```sh copy
+$SU nginx -t
+$SU rc-service nginx restart
+```
+    </Tabs.Tab>
+</Tabs>
+
+### Firewall
+
+* Configure the firewall to allow incoming HTTPS requests
+
+<Tabs items={['awall', 'ufw']}>
+    <Tabs.Tab>
+```sh copy
+$SU $EDITOR /etc/awall/optional/pool-ui.json
+```
+
+```json copy filename="/etc/awall/optional/pool-ui.json"
+{
+  "description": "Allow Public Pool UI SSL",
+
+  "filter": [
+    {
+      "in": "internet",
+      "out": "_fw",
+      "service": { "proto": "tcp", "port": 4040 },
+      "action": "accept",
+      "conn-limit": { "count": 10, "interval": 60 }
+    }
+  ]
+}
+```
+
+```sh copy
+$SU $EDITOR /etc/awall/optional/pool-stratum.json
+```
+
+```json copy filename="/etc/awall/optional/pool-stratum.json"
+{
+  "description": "Allow Public Pool Stratum",
+
+  "filter": [
+    {
+      "in": "internet",
+      "out": "_fw",
+      "service": { "proto": "tcp", "port": 23333 },
+      "action": "accept",
+      "conn-limit": { "count": 10, "interval": 60 }
+    }
+  ]
+}
+```
+
+* Enable it
+
+```sh copy
+$SU awall enable pool-ui pool-stratum
+$SU awall activate
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+```sh copy
+$SU ufw limit 4040/tcp comment 'Allow Public Pool UI SSL'
+$SU ufw limit 23333/tcp comment 'Allow Public Pool Stratum'
+```
+    </Tabs.Tab>
+</Tabs>
+</Steps>
+
+## Installation
+
+[Public Pool](https://github.com/benjamin-wilson/public-pool) provides a
+lightweight and easy to use web interface to accomplish just that, a solo mining
+pool.
+
+<Steps>
+### Backend
+
+We get the latest commit of the Public Pool server source code and install it.
+
+* Download the source code for the latest Public Pool server commit. You can
+check the [release
+page](https://github.com/benjamin-wilson/public-pool/releases) to see if a newer
+release is available. Other releases might not have been properly tested with
+the rest of the Microbolt configuration, though.
+
+```sh copy
+cd /tmp
+```
+
+```sh copy
+git clone https://github.com/benjamin-wilson/public-pool.git && cd public-pool
+```
+
+```sh copy
+git checkout 8ce057b3b51c33bf915f57f3a30822b449613276
+```
+
+* Install all dependencies using the Node Package Manager (NPM).
+
+```sh copy
+npm ci
+```
+
+Installation can take some time. There might be a lot of confusing output, but
+if you see something similar to the following, the installation was successful:
+
+<Callout type="warning">
+At `2024-09-01` there is at least **23 vulnerabilities** not addressable
+without breaking changes
+
+```sh copy
+npm audit fix
+```
+</Callout>
+
+```output filename="output"
+23 vulnerabilities (2 low, 14 moderate, 6 high, 1 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
+
+Run `npm audit` for details.
+```
+
+* Make it a global permanent installation
+
+```sh copy
+npm run build
+```
+
+```sh copy
+mkdir ./dist/bin
+```
+
+```sh copy
+printf "%s\n" \
+    "#!/bin/sh" \
+    "node \$@ /var/lib/public-pool/main" \
+    > ./dist/bin/cli.sh
+```
+
+```sh copy
+chmod +x ./dist/bin/cli.sh
+```
+
+```sh copy
+$SU install -D -m 0660 -o public-pool -g public-pool ./.env.example /etc/public-pool/public-pool.env
+```
+
+```sh copy
+$SU mv -f /tmp/public-pool/dist /var/lib/public-pool
+$SU cp -R node_modules /var/lib/public-pool
+```
+
+```sh copy
+$SU ln -s /var/lib/public-pool /usr/lib/node_modules/public-pool
+$SU ln -s ../lib/node_modules/public-pool/bin/cli.sh /usr/bin/public-pool
+```
+
+### Frontend
+
+We get the latest commit of the Public Pool source code and install it.
+
+* Download the source code for the latest Public Pool commit. You can
+check the [release
+page](https://github.com/benjamin-wilson/public-pool-ui/releases) to see if a
+newer release is available. Other releases might not have been properly tested
+with the rest of the Microbolt configuration, though.
+
+```sh copy
+cd /tmp
+```
+
+```sh copy
+git clone https://github.com/benjamin-wilson/public-pool-ui.git && cd public-pool-ui
+```
+
+```sh copy
+git checkout 80081e337d3af829b0edf3990ad97ea430bd73d4
+```
+
+* Install all dependencies using the Node Package Manager (NPM).
+
+```sh copy
+npm ci
+```
+
+<Callout type="warning">
+At `2024-09-01` there is at least **3 moderate vulnerabilities** not addressable
+without breaking changes
+
+```sh copy
+npm audit fix
+```
+</Callout>
+
+Installation can take some time. There might be a lot of confusing output, but
+if you see something similar to the following, the installation was successful:
+
+```output filename="output"
+3 moderate severity vulnerabilities
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues, run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+```
+
+* Make it a global permanent installation
+
+```sh copy
+printf "%s\n" \
+    "let path = window.location.origin + window.location.pathname;" \
+    "path = path.endsWith('/') ? path.slice(0, -1) : path;" \
+    "let stratumUrl = path.replace(/(^\\w+:|^)\\/\\//, '').replace(/:\\d+/, '');" \
+    "" \
+    "export const environment = {" \
+    "    production: true," \
+    "    API_URL: path," \
+    "    STRATUM_URL: stratumUrl + ':23333'" \
+    "};" \
+    > ./src/environments/environment.prod.ts
+```
+
+```sh copy
+npm run build
+```
+
+```sh copy
+$SU mv -f ./dist/public-pool-ui /var/www/
+```
+
+### Cleanup
+
+```sh copy
+cd
+rm -rf /tmp/public-pool*
+$SU apk del .build-deps
+```
+</Steps>
+
+## Configuration
+
+* Activate any setting by removing the `#` at the beginning of the line.
+
+```sh copy
+$SU $EDITOR /etc/public-pool/public-pool.env
+```
+
+```sh filename="/etc/public-pool/public-pool.env" {2,4,6,8-9,11}
+[...]
+BITCOIN_RPC_URL=http://127.0.0.1
+[...]
+BITCOIN_RPC_COOKIEFILE="/var/lib/bitcoind/.cookie"
+[...]
+BITCOIN_ZMQ_HOST="tcp://127.0.0.1:28332"
+[...]
+API_PORT=23334
+STRATUM_PORT=23333
+[...]
+POOL_IDENTIFIER="microbolt"
+[...]
+```
+
+<FAQBox title="Remote access UI over Tor">
+* Add the following three lines in the "location-hidden services" section in the
+`torrc` file.
+
+```sh copy
+$SU $EDITOR /etc/tor/torrc
+```
+
+```sh copy filename="/etc/tor/torrc"
+# Hidden Service Public Pool
+HiddenServiceDir /var/lib/tor/public-pool/
+HiddenServiceVersion 3
+HiddenServicePoWDefensesEnabled 1
+HiddenServicePort 443 127.0.0.1:4040
+```
+
+* Reload Tor configuration and get your connection address.
+
+```sh copy
+$SU rc-service tor reload
+$SU cat /var/lib/tor/public-pool/hostname
+```
+
+```output filename="output"
+abcdefg..............xyz.onion
+```
+
+* You should now be able to connect to your Public Pool remotely via Tor using
+your hostname
+</FAQBox>
+
+### Autostart on boot
+
+Now we'll make sure our mining pool starts as a service on the computer so that
+it's always running.
+
+* Create the Public Pool init.d unit and copy/paste the following
+configuration. Save and exit.
+
+```sh copy
+$SU $EDITOR /etc/init.d/public-pool
+```
+
+```sh copy filename="/etc/init.d/public-pool"
+#!/sbin/openrc-run
+
+: ${PUBLICPOOL_ENVFILE:=/etc/public-pool/public-pool.env}
+: ${PUBLICPOOL_WEBUI:=/var/www/public-pool-ui}
+: ${PUBLICPOOL_DATADIR:=/var/lib/public-pool}
+: ${PUBLICPOOL_LOGDIR:=/var/log/public-pool}
+: ${PUBLICPOOL_USER:=public-pool}
+: ${PUBLICPOOL_GROUP:=public-pool}
+: ${PUBLICPOOL_BIN:=/usr/bin/public-pool}
+: ${PUBLICPOOL_OPTS=${PUBLICPOOL_OPTS}}
+: ${PUBLICPOOL_SIGTERM_TIMEOUT:=600}
+
+PUBLICPOOL_PIDDIR="/run/public-pool"
+
+directory="${PUBLICPOOL_DATADIR}"
+required_files="${PUBLICPOOL_ENVFILE}"
+pidfile="${PUBLICPOOL_PIDDIR}/${SVCNAME}.pid"
+
+name="Public Pool"
+description="Fully Open Source Solo Bitcoin Mining Pool"
+
+command="${PUBLICPOOL_BIN}"
+command_args="--env-file=${PUBLICPOOL_ENVFILE}
+              ${PUBLICPOOL_OPTS}"
+command_user="${PUBLICPOOL_USER}:${PUBLICPOOL_GROUP}"
+command_background="true"
+
+start_stop_daemon_args="--stdout ${PUBLICPOOL_LOGDIR}/debug.log
+                        --stderr ${PUBLICPOOL_LOGDIR}/debug.log"
+
+depend() {
+    need bitcoind
+}
+
+start_pre() {
+    checkpath --file      --mode 0660 --owner "${command_user}" "${PUBLICPOOL_ENVFILE}"
+    checkpath --directory --mode 0750 --owner "${command_user}" "${PUBLICPOOL_DATADIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${PUBLICPOOL_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${PUBLICPOOL_PIDDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${PUBLICPOOL_WEBUI}"
+    checkconfig
+}
+
+checkconfig() {
+    if ! grep -qs '^BITCOIN_RPC_COOKIEFILE=' "${PUBLICPOOL_ENVFILE}"
+    then
+        eerror ""
+        eerror "ERROR: You must set a BITCOIN_RPC_COOKIEFILE path"
+        eerror "to run Public pool."
+        eerror "The setting must appear in ${PUBLICPOOL_ENVFILE}"
+        eerror ""
+        return 1
+    fi
+}
+
+stop() {
+    ebegin "Stopping ${SVCNAME}"
+    pkill -TERM -P "$(cat ${pidfile})"
+    start-stop-daemon \
+        --stop \
+        --pidfile="${pidfile}" \
+        --retry="${PUBLICPOOL_SIGTERM_TIMEOUT}" \
+        --exec="${PUBLICPOOL_BIN}"
+    eend $?
+}
+```
+
+* Enable execution permission
+
+```sh copy
+$SU chmod +x /etc/init.d/public-pool
+```
+
+### Enable logrotate
+
+* Enter the complete next configuration. Save and exit
+
+```sh copy
+$SU $EDITOR /etc/logrotate.d/public-pool
+```
+
+```sh copy filename="/etc/logrotate.d/public-pool"
+/var/log/public-pool/*.log {
+    weekly
+    missingok
+    rotate 104
+    compress
+    delaycompress
+    notifempty
+    create 0640 public-pool public-pool
+    sharedscripts
+    postrotate
+        killall -HUP `cat /run/public-pool/public-pool.pid`
+    endscript
+}
+```
+
+* Test
+
+```sh copy
+$SU logrotate /etc/logrotate.d/public-pool --debug
+```
+
+## Enable and start Public Pool
+
+```sh copy
+$SU rc-update add public-pool
+```
+
+```sh copy
+$SU rc-service public-pool start
+```
+
+<Callout emoji="🎉">
+**Congratulations!** You now have Public Pool up and running
+</Callout>
+
+* Check the log to see Public Pool output. Exit with `Ctrl-C`
+
+```sh copy
+tail -f /var/log/public-pool/debug.log
+```
+
+* You can now access your own Public Pool from within your local network by
+browsing to https://nakamoto01:4040, https://nakamoto01.local:4040 (or your
+equivalent IP address).
+
+## For the future: Public Pool update
+
+<Callout type="warning">
+There is no existing version in the public-pool yet, so please update it when
+enough time has passed or follow the project to see if there is anything
+interesting
+</Callout>
+
+Follow again [Mining Pool](./mining-pool) page replacing the environment
+variable `VERSION=x.xx` value for the latest if it has not been already changed
+in this guide.
+
+* Update the Public Pool configuration if necessary (see [release
+notes](https://github.com/benjamin-wilson/public-pool/releases))
+
+```sh copy
+$SU $EDITOR /etc/public-pool/.env
+```
+
+* Restart the service to apply the changes
+
+```sh copy
+$SU rc-service public-pool restart
+```

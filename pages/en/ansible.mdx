@@ -1,0 +1,254 @@
+import { Callout, Steps, Tabs } from 'nextra/components'
+import { FAQBox } from '@components'
+
+# Microbolt ❤️ Cloud
+
+Ansible is a simple IT automation tool that can make your applications and
+systems easier to deploy. It is a powerful tool that can be used to automate the
+deployment and configuration of your Microbolt node(s).
+
+Someone once said,
+
+<Callout type="info">
+"Ain't nobody got time to sit through RaspiBolt more than once. Once you've
+learned how to build a Bitcoin node with your hands the next ones should just
+build themselves."
+
+— 1ma (Unhosted Marcellus)
+</Callout>
+
+and here we are.
+
+<Callout type="error">
+This guide assumes you have a basic understanding of Proxmox/Debian and can read
+basic shell commands or scripts, identify variables, and modify them as needed.
+Default values are provided for all variables, but you can customize them to
+suit your requirements. You don't need to be a Proxmox/Debian expert, but you
+should be able to SSH into your system. Installing Proxmox/Debian is out of
+scope.
+</Callout>
+
+## Prerequisites
+
+<FAQBox title="Variables">
+| Variable         | Description         | Default                         |
+| ---------------- | ------------------- | ------------------------------- |
+| `blank`          | Blank template ID   | `9000`                          |
+| `alpine`         | Alpine template ID  | `9010`                          |
+| `storage`        | Storage ID          | `local-zfs`                     |
+| `ssd`            | SSD flag            | `1`                             |
+| `username`       | Cloud-init username | `satoshi`                       |
+| `ssh_keyfile`    | SSH key file        | `/etc/pve/priv/authorized_keys` |
+| `password`       | Cloud-init password | `changeme`                      |
+| `microbolt`      | Microbolt VM ID     | `2140`                          |
+| `name`           | Microbolt VM name   | `nakamoto01`                    |
+| `cores`          | Microbolt VM cores  | `4`                             |
+| `memory`         | Microbolt VM memory | `8192`                          |
+| `vlan`           | Microbolt VM VLAN   | `1`                             |
+| `second_storage` | Second storage ID   | `local-zfs`                     |
+| `second_ssd`     | Second SSD flag     | `1`                             |
+</FAQBox>
+
+SSH into your Proxmox/Debian server and run the following commands.
+
+<Steps>
+### Blank template
+
+It is highly recommended to create a blank Linux template if you are using
+Proxmox/Debian. You'll thank me later.
+
+```sh copy
+qm create "${blank:-9000}" \
+		--name template \
+		--ostype l26 \
+		--agent enabled=1,fstrim_cloned_disks=1 \
+		--cpu host \
+		--balloon 0 \
+		--vga serial0 \
+		--scsihw virtio-scsi-pci \
+		--net0 virtio,bridge=vmbr0,firewall=1 \
+		--serial0 socket
+qm template "${blank:-9000}"
+```
+
+### Alpine cloud template
+
+Clone the blank template
+
+```sh copy
+qm clone "${blank:-9000}" "${alpine:-9010}" \
+		--name alpine-3.20 \
+		--full
+```
+
+Download the cloud image
+
+```sh copy
+wget https://dl-cdn.alpinelinux.org/alpine/v3.20/releases/cloud/\
+nocloud_alpine-3.20.3-x86_64-bios-cloudinit-r0.qcow2
+```
+
+Create the Alpine cloud template
+
+<Callout type="info">
+To use your own SSH keys from GitHub, simply replace `<username>` with your
+actual GitHub username.
+
+```sh
+wget -qO- https://github.com/<username>.keys > ./github_keys
+export ssh_keyfile=./github_keys
+```
+</Callout>
+
+```sh copy
+qm set "${alpine:-9010}" \
+		--scsi0 "${storage:-local-zfs}:0,import-from=$(pwd)/nocloud_alpine-3.20.3-x86_64-bios-cloudinit-r0.qcow2,iothread=1,discard=on,ssd=${ssd:-1}" \
+		--ide0 "${storage:-local-zfs}:cloudinit" \
+		--tags alpine \
+		--ciuser "${username:-satoshi}" \
+		--sshkeys "${ssh_keyfile:-/etc/pve/priv/authorized_keys}" \
+		--cipassword "${password:-changeme}" \
+		--ipconfig0 "ip6=auto,ip=dhcp" \
+		--boot order=scsi0 \
+		--ciupgrade 1 \
+		--scsihw virtio-scsi-single
+qm template "${alpine:-9010}"
+```
+
+Clean up
+
+```sh copy
+rm nocloud_alpine-3.20.3-x86_64-bios-cloudinit-r0.qcow2
+```
+
+### Microbolt VM
+
+Clone the Alpine cloud template
+
+```sh copy
+qm clone "${alpine:-9010}" "${microbolt:-2140}" \
+		--name "${name:-nakamoto01}" \
+		--full
+```
+
+Set the Microbolt VM
+
+```sh copy
+qm set "${microbolt:-2140}" \
+		--onboot 1 \
+		--cores "${cores:-2}" \
+		--memory "${memory:-8192}" \
+		--net0 "virtio,bridge=vmbr0,firewall=1,tag=${vlan:-1}" \
+		--tags "alpine,microbolt"
+```
+
+Rezise the disk(s)
+
+<Tabs items={['one disk', 'two disks']}>
+		<Tabs.Tab>
+```sh copy
+qm disk resize "${microbolt:-2140}" scsi0 2048G
+```
+		</Tabs.Tab>
+		<Tabs.Tab>
+```sh copy
+qm set "${microbolt:-2140}" \
+		--scsi1 "${second_storage:-local-zfs}:2048,iothread=1,discard=on,ssd=${second_ssd:-1}"
+qm disk resize "${microbolt:-2140}" scsi0 32G
+```
+		</Tabs.Tab>
+</Tabs>
+
+Start the VM
+
+```sh copy
+qm start "${microbolt:-2140}"
+```
+</Steps>
+
+## Installation
+
+Run the following commands on your main machine.
+
+<Steps>
+### Install Ansible
+
+<Tabs items={['Alpine', 'Linux/*BSD/plan9', 'macOS', 'windows']}>
+		<Tabs.Tab>
+```sh copy
+apk add ansible
+```
+		</Tabs.Tab>
+		<Tabs.Tab>
+<Callout type="info">
+For some Linux distributions, refer to the [installation
+guide](https://docs.ansible.com/ansible/latest/installation_guide/installation_distros.html).
+Other Unix-like systems can also check the [installation
+instructions](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html).
+</Callout>
+		</Tabs.Tab>
+		<Tabs.Tab>
+<Callout type="warning">
+First, install [Homebrew](https://brew.sh).
+</Callout>
+
+```sh copy
+brew install ansible
+```
+		</Tabs.Tab>
+		<Tabs.Tab>
+<Callout type="error">
+Ansible does not support Windows natively. For more information, refer to the
+[Windows FAQ](https://docs.ansible.com/ansible/latest/os_guide/windows_faq.html#windows-faq-ansible).
+To use Ansible on Windows, consider using WSL. Learn more about the reasons
+[here](https://blog.rolpdog.com/2020/03/why-no-ansible-controller-for-windows.html).
+</Callout>
+		</Tabs.Tab>
+</Tabs>
+
+### Clone the repository
+
+```sh copy
+git clone https://github.com/microbolt-guide/ansible.git && cd ansible
+```
+
+### Configure the inventory
+
+```sh copy
+cp inventory/hosts.ini.example inventory/hosts.ini
+```
+
+Edit the `hosts.ini` file
+
+```sh copy
+vi inventory/hosts.ini
+```
+
+### Configure the variables
+
+Edit the global variables in `group_vars/all.yaml` file
+
+```sh copy
+vi inventory/group_vars/all.yaml
+```
+
+And/or modify for a single host, view examples inside the `host_vars` directory
+
+```sh copy
+cat inventory/host_vars/nakamoto01.yaml.example
+```
+
+### Run the playbook
+
+```sh copy
+./deploy.sh
+```
+
+### Start and enable the services
+
+```sh copy
+./services.sh start enable
+```
+</Steps>
+
+{<h1>DONE 🎉</h1>}

@@ -1,0 +1,276 @@
+import { Steps } from 'nextra/components'
+
+# Nostr Relay
+
+A [nostr relay written in Rust](https://sr.ht/~gheartsfield/nostr-rs-relay) with
+support for the entire relay protocol and data persistence using SQLite.
+
+![Nostr Relay](/img/nostr/nostr-relay.webp)
+
+## Preparations
+
+<Steps>
+### Install dependencies
+
+These are build dependencies (safe to remove after installation, if you want)
+
+```sh copy
+$SU apk add --virtual .build-deps cargo cargo-auditable clang-dev cmake git \
+    make pkgconf protobuf-c-compiler sqlite-dev
+```
+
+These are runtime dependencies
+  
+```sh copy
+$SU apk add sqlite
+```
+
+### Create the `nostr` user/group
+
+```sh copy
+$SU addgroup -S nostr
+```
+
+```sh copy
+$SU adduser \
+    -S \
+    -D \
+    -H \
+    -h /dev/null \
+    -s /sbin/nologin \
+    -G nostr \
+    -g nostr \
+    nostr
+```
+
+### Add the user `satoshi` to the group `nostr` as well
+  
+```sh copy
+$SU adduser satoshi nostr
+```
+</Steps>
+
+## Installation
+
+<Steps>
+### Clone the source code
+
+We get the latest release of the nostr-rs-relay source code, compile it to an
+executable binary and install it.
+
+* Download the source code for the latest nostr-rs-relay release. You can check
+the [release page](https://git.sr.ht/~gheartsfield/nostr-rs-relay/refs) to see
+if a newer release is available. Other releases might not have been properly
+tested with the rest of the Microbolt configuration, though.
+
+```sh copy
+cd /tmp
+```
+
+```sh copy
+VERSION=0.9.0
+```
+
+```sh copy
+git clone --branch $VERSION https://git.sr.ht/~gheartsfield/nostr-rs-relay && cd nostr-rs-relay
+```
+
+### Configure, compile and install
+
+* Now compile the source code into an executable binary and install it.
+
+```sh copy
+cargo auditable build \
+    --bin nostr-rs-relay \
+    --release \
+    --locked \
+    --jobs "$(nproc)"
+```
+
+```sh copy
+$SU install -m 0755 -o root -g root -t /usr/bin ./target/release/nostr-rs-relay
+```
+
+```sh copy
+$SU install -D -m 0660 -o nostr -g nostr ./config.toml /etc/nostr-rs-relay/config.toml
+```
+
+### Strip installed binaries
+
+```sh copy
+$SU strip /usr/bin/nostr-rs-relay
+```
+
+### Cleanup
+
+```sh copy
+cd
+rm -rf /tmp/nostr-rs-relay
+$SU apk del .build-deps
+```
+</Steps>
+
+## Configuration
+
+* Modify the config file with the following content
+
+```sh copy
+$SU $EDITOR /etc/nostr-rs-relay/config.toml
+```
+
+```toml filename="/etc/nostr-rs-relay/config.toml" {2,4,6,8,10}
+[...]
+#relay_url = "wss://nostr.example.com/"
+[...]
+name = "Microbolt Nostr Relay"
+[...]
+description = "A Nostr Relay running on Microbolt"
+[...]
+address = "127.0.0.1"
+[...]
+port = 8880
+[...]
+```
+
+### Autostart on boot
+
+Nostr Relay needs to start automatically on system boot.
+
+* Create the nostr-rs-relay init.d unit and copy/paste the following configuration
+
+```sh copy
+$SU $EDITOR /etc/init.d/nostr-rs-relay
+```
+
+```sh copy filename="/etc/init.d/nostr-rs-relay"
+#!/sbin/openrc-run
+
+: ${NOSTR_RELAY_CONFIGFILE:=/etc/nostr-rs-relay/config.toml}
+: ${NOSTR_RELAY_DATADIR:=/var/lib/nostr-rs-relay}
+: ${NOSTR_RELAY_LOGDIR:=/var/log/nostr-rs-relay}
+: ${NOSTR_RELAY_USER:=nostr}
+: ${NOSTR_RELAY_GROUP:=nostr}
+: ${NOSTR_RELAY_BIN:=/usr/bin/nostr-rs-relay}
+: ${NOSTR_RELAY_RUST_LOG:=info,nostr_rs_relay=info}
+: ${NOSTR_RELAY_OPTS=${NOSTR_RELAY_OPTS}}
+: ${NOSTR_RELAY_SIGTERM_TIMEOUT:=600}
+
+NOSTR_RELAY_PIDDIR="/run/nostr-rs-relay"
+
+required_files="${NOSTR_RELAY_CONFIGFILE}"
+pidfile="${NOSTR_RELAY_PIDDIR}/${SVCNAME}.pid"
+retry="${NOSTR_RELAY_SIGTERM_TIMEOUT}"
+
+name="Nostr Relay"
+description="A Rust implementation of Nostr relay"
+
+command="${NOSTR_RELAY_BIN}"
+command_args="--db ${NOSTR_RELAY_DATADIR}
+              --config ${NOSTR_RELAY_CONFIGFILE}
+              ${NOSTR_RELAY_OPTS}"
+command_user="${NOSTR_RELAY_USER}:${NOSTR_RELAY_GROUP}"
+command_background="true"
+
+start_stop_daemon_args="--env RUST_LOG=${NOSTR_RELAY_RUST_LOG}
+                        --stdout ${NOSTR_RELAY_LOGDIR}/debug.log
+                        --stderr ${NOSTR_RELAY_LOGDIR}/debug.log"
+
+depend() {
+    need net
+    after logger firewall
+}
+
+start_pre() {
+    checkpath --file      --mode 0660 --owner "${command_user}" "${NOSTR_RELAY_CONFIGFILE}"
+    checkpath --directory --mode 0750 --owner "${command_user}" "${NOSTR_RELAY_DATADIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${NOSTR_RELAY_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${NOSTR_RELAY_PIDDIR}"
+}
+
+stop() {
+    ebegin "Stopping ${SVCNAME}"
+    pkill -TERM -P "$(cat ${pidfile})" > /dev/null 2>&1
+    start-stop-daemon \
+        --stop \
+        --pidfile="${pidfile}" \
+        --retry="${NOSTR_RELAY_SIGTERM_TIMEOUT}" \
+        --exec="${NOSTR_RELAY_BIN}"
+    eend $?
+}
+```
+
+* Enable execution permission
+
+```sh copy
+$SU chmod +x /etc/init.d/nostr-rs-relay
+```
+
+### Enable logrotate
+
+* Enter the complete next configuration. Save and exit
+
+```sh copy filename="/etc/logrotate.d/nostr-rs-relay"
+/var/log/nostr-rs-relay/*.log {
+    weekly
+    missingok
+    rotate 104
+    compress
+    delaycompress
+    notifempty
+    create 0640 nostr nostr
+    sharedscripts
+    postrotate
+        killall -HUP `cat /run/nostr-rs-relay/nostr-rs-relay.pid`
+    endscript
+}
+```
+
+* Test
+
+```sh copy
+$SU logrotate /etc/logrotate.d/nostr-rs-relay --debug
+```
+
+## Enable and start Nostr relay
+
+```sh copy
+$SU rc-update add nostr-rs-relay
+```
+
+```sh copy
+$SU rc-service nostr-rs-relay start
+```
+
+* Check the log to see Nostr relay output. Exit with Ctrl-C
+
+```sh copy
+tail -f /var/log/nostr-rs-relay/debug.log
+```
+
+* Ensure the service is working and listening at the default `8880` port
+
+```sh copy
+$SU netstat -lntup | grep LISTEN | grep nostr
+```
+
+```output filename="output"
+tcp        0      0 0.0.0.0:8880            0.0.0.0:*               LISTEN      7030/nostr-rs-relay
+```
+
+## For the future: Nostr relay update
+
+Follow again [Nostr relay](./nostr-relay) page replacing the environment
+variable `VERSION=x.xx` value for the latest if it has not been already changed
+in this guide.
+
+* Update the Nostr relay configuration if necessary (see release notes)
+
+```sh copy
+$SU $EDITOR /etc/nostr-rs-relay/config.toml
+```
+
+* Restart the service to apply the changes
+
+```sh copy
+$SU rc-service nostr-rs-relay restart
+```

@@ -1,0 +1,59 @@
+import { Callout, Steps } from 'nextra/components'
+
+# Accés remot
+
+Ens connectem al nostre ordinador personal mitjançant `ssh` (Secure Shell).
+
+## Habiliteu l'ús del nom d'amfitrió per connectar-vos al node
+
+Per poder utilitzar el nom d'amfitrió `nakamoto01` en comptes de l'adreça IP,
+és necessari instal·lar aquest paquet de programari
+
+<Steps>
+### Instal·leu `avahi`
+ 
+```sh copy
+apk add avahi
+```
+ 
+### Afegeix el servei al nivell d'execució
+
+```sh copy
+rc-update add avahi-daemon
+```
+
+### Inicia el servei
+
+```sh copy
+rc-service avahi-daemon start
+```
+
+### Tancar sessió
+
+```sh copy
+exit
+```
+</Steps>
+
+## Accés with Secure Shell
+
+Ara és el moment de connectar-se al Microbolt mitjançant `ssh` i posar-se a
+treballar.
+
+<Callout type="info">
+Des de windows 10 1809 i posterior, windows té
+[`openSSH`](https://github.com/PowerShell/openssh-portable) instal·lat per
+defecte.
+
+macOS també té `openSSH` instal·lat per defecte.
+
+Si esteu en un sistema Linux/*BSD/plan9, ja sabeu què fer ;)
+</Callout>
+
+```sh copy
+ssh root@nakamoto01
+```
+
+<Callout type="info">
+Se us demanarà la contrasenya que heu escollit anteriorment
+</Callout>

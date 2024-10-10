@@ -1,7 +1,0 @@
-{
-    "bitcoin-client": "Client Bitcoin",
-    "electrum-server": "Servidor Electrum",
-    "desktop-signing-app": "Aplicació de signatura d'escriptori",
-    "blockchain-explorer": "Explorador de cadena de blocs",
-    "mining-pool": "Pool de Mineria"
-}

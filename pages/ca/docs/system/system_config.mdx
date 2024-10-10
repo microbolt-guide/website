@@ -1,0 +1,188 @@
+import { Callout, Steps, Tabs } from 'nextra/components'
+
+# Configuració del sistema
+
+Ara esteu a la línia d'ordres del vostre propi node Bitcoin. Comencem amb la
+configuració.
+
+## Valors per defecte
+
+Aquesta guia no té cap valor predeterminat en ment, podeu triar les eines que
+vulgueu
+
+<Callout type="info">
+Tot i aixi, desde Microbolt recomanem `EDITOR=vim` i `SU=doas`
+</Callout>
+
+<Steps>
+### Definiu quin **editor de text**, **eina d'escalada de privilegis** i **indicadors del compilador** que voleu
+
+```sh
+vi /etc/profile.d/defaults.sh
+```
+
+```sh copy filename="/etc/profile.d/defaults.sh"
+# Text editor
+export EDITOR=vim # or notepad,vi,neovim,emacs,nano,micro...
+# Root privileges tool
+export SU=doas # or sudo...
+# Compile flags
+export CC="clang"
+export CXX="${CC}++"
+export CFLAGS="-O3 -pipe -march=native -fPIE"
+export CXXFLAGS="$CFLAGS"
+export LDFLAGS="-pie -Wl,--as-needed"
+export MAKEFLAGS="-j$(nproc)"
+# Environment variables
+export CARGO_HOME="./.cargo"
+export npm_config_cache="./npm-cache"
+export npm_config_devdir="./.gyp"
+export ROCKSDB_INCLUDE_DIR=/usr/include
+export ROCKSDB_LIB_DIR=/usr/lib
+export PROTOC=protoc-c
+```
+
+### Aplica els canvis
+
+```sh copy
+. /etc/profile.d/defaults.sh
+```
+
+### Instal·leu
+
+<Callout type="warning">
+La vostra elecció pot necessitar passos addicionals, és la vostra
+responsabilitat
+</Callout>
+
+```sh copy
+apk add $EDITOR $SU
+```
+</Steps>
+
+## Afegeix l'usuari administrador
+
+Utilitzarem l'usuari principal `satoshi` en comptes de `root` per fer que
+aquesta guia sigui més universal.
+
+<Steps>
+### Creeu un usuari nou anomenat `satoshi` amb la vostra `contrasenya [A]`
+
+```sh copy
+adduser satoshi
+```
+
+### Fes d'aquest nou usuari un superusuari afegint-lo al grup d'usuaris `wheel`
+
+```sh copy
+adduser satoshi wheel
+```
+
+### Permet als membres del grup **wheel** utilitzar privilegis de root amb `$SU`
+
+<Tabs items={['doas', 'sudo']}>
+    <Tabs.Tab>
+```sh copy
+sed 's/# permit persist :wheel/permit persist keepenv :wheel/' /etc/doas.conf > _
+mv -f _ /etc/doas.conf
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+```sh copy
+printf "%s\n" \
+    "%wheel ALL=(ALL) ALL" \
+    "Defaults env_keep += \"*\"" \
+    > /etc/sudoers.d/wheel
+```
+    </Tabs.Tab>
+</Tabs>
+
+### Tancar sessió
+
+```sh copy
+exit
+```
+
+### Inicieu sessió amb l'usuari administrador `satoshi`
+
+```sh copy
+ssh satoshi@nakamoto01
+```
+</Steps>
+
+## Actualització del sistema
+
+<Callout type="info">
+Feu-ho regularment cada poques setmanes/mesos per obtenir actualitzacions
+relacionades amb la seguretat.
+</Callout>
+
+<Steps>
+### Actualitzeu el sistema operatiu i tots els paquets de programari instal·lats
+
+```sh copy
+$SU apk update
+```
+
+### Actualitzeu el Alpine Package Manager
+
+```sh copy
+$SU apk add --upgrade apk-tools
+```
+
+### Actualitza tots els paquets instal·lats
+
+```sh copy
+$SU apk upgrade --available
+```
+</Steps>
+
+<Callout type="info">
+Tots els serveis que s'han actualitzat s'han de reiniciar per començar a
+utilitzar la versió actualitzada
+
+```sh copy
+$SU rc-service <service> restart
+```
+
+Si s'actualitza el nucli, cal que es reiniciï per començar a utilitzar la versió
+actualitzada
+
+```sh copy
+sync && reboot
+```
+</Callout>
+
+## Comproveu el rendiment de la unitat de disc
+
+És essencial per al node un emmagatzematge amb un cert rendiment.
+
+Comprovem si la vostra unitat funciona bé tal com està.
+
+* El vostre disc s'hauria de detectar com a `/dev/<drive>`. Comproveu si aquest
+és el cas enumerant els noms dels dispositius de bloc connectats
+
+```sh copy
+blkid
+```
+
+* Instal·leu el programari per mesurar el rendiment del vostre \<drive\>
+
+```sh copy
+$SU apk add hdparm
+```
+
+* Mesureu la velocitat de la vostra unitat
+
+```sh copy
+$SU hdparm -t --direct /dev/<drive>
+```
+
+```output filename="output"
+/dev/sda:
+ Timing O_DIRECT disk reads: 690 MB in  3.00 seconds = 229.82 MB/sec
+```
+
+<Callout type="info">
+Si les velocitats mesurades són superiors a 150 MB/s, està bé
+</Callout>

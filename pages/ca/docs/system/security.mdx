@@ -1,0 +1,630 @@
+import { Callout, Steps, Tabs } from 'nextra/components'
+import { FAQBox } from '@components'
+
+# Seguretat
+
+Ens assegurem que el vostre Microbolt estigui protegit contra l'accés remot no
+autoritzat.
+
+El Microbolt serà visible des d'Internet i, per tant, s'ha de protegir contra
+atacs en línia mitjançant diversos mètodes.
+
+## Inicieu sessió amb claus SSH
+
+Una de les millors opcions per assegurar l'inici de sessió SSH sensible és
+desactivar completament les contrasenyes i requerir un certificat de clau SSH.
+Només algú amb possessió física de la clau de certificat privada pot iniciar
+sessió.
+
+### Preparacions sobre el sistema `amfitrió`
+
+<Steps>
+### Creeu un nou parell de claus público/privada
+
+<Callout type="warning">
+Omet si ja en tens un
+</Callout>
+
+```sh copy
+ssh-keygen -t rsa -b 4096
+```
+
+Seguiu les instruccions i, opcionalment, introduïu una frase de contrasenya per
+protegir la vostra clau, podeu utilitzar la `contrasenya [A]`
+
+### Ara s'ha de copiar la clau pública a l'ordinador
+
+```sh copy
+cat ./.ssh/id_rsa.pub |
+    ssh satoshi@nakamoto01 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+
+```
+</Steps>
+
+### Preparatius al sistema `servidor`
+
+<Callout type="info">
+També es recomana canviar el port `ssh` predeterminat `22`, a una altra cosa com
+`2222`
+</Callout>
+
+<Steps>
+### Desactiveu la contrasenya i els inicis de sessió root
+<Tabs items={['dropbear', 'openssh']}>
+    <Tabs.Tab>
+```sh copy
+sed 's/DROPBEAR_OPTS=""/DROPBEAR_OPTS="-w -s -p 2222"/' /etc/conf.d/dropbear > _
+$SU mv -f _ /etc/conf.d/dropbear
+
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+```sh copy
+printf "%s\n" \
+    "Port 2222" \
+    "PermitRootLogin no" \
+    "PasswordAuthentication no" \
+    | $SU tee -a /etc/ssh/sshd_config.d/defaults.conf
+
+```
+    </Tabs.Tab>
+</Tabs>
+### Reinicieu el servei per aplicar els canvis
+```sh copy
+if $SU rc-service dropbear status | grep -q "started"; then
+    $SU rc-service dropbear restart
+elif $SU rc-service sshd status | grep -q "started"; then
+    $SU rc-service sshd restart
+fi
+```
+</Steps>
+
+## Desactiva el compte `root`
+
+```sh copy
+$SU passwd -l root
+```
+
+## Tallafoc
+
+Un tallafoc controla quin tipus de trànsit extern accepta la vostra màquina i
+quines aplicacions poden enviar dades. Per defecte, molts ports de xarxa estan
+oberts i escolten les connexions entrants. Tancar ports innecessaris pot mitigar
+moltes vulnerabilitats potencials del sistema.
+
+De moment, només SSH hauria de ser accessible des de l'exterior. Bitcoin i
+Lightning utilitzen Tor i no necessiten ports d'entrada.
+
+<Tabs items={['awall', 'ufw']}>
+    <Tabs.Tab>
+      <Steps>
+{<h3>Instal·leu awall</h3>}
+
+```sh copy
+$SU apk add awall iptables ip6tables
+```
+
+{<h3>Carrega els mòduls necessaris del nucli i carrega'ls a l'arrencada</h3>}
+
+```sh copy
+$SU modprobe -av ip_tables ip6_tables
+```
+    
+```sh copy
+printf "%s\n" \
+    "ip_tables" \
+    "ip6_tables" \
+    | $SU tee /etc/modules-load.d/awall.conf
+```
+
+{<h3>Configura i habilita les regles del tallafoc</h3>}
+
+<Callout type="info">
+Reemplaça `eth0` per la interfície de xarxa
+</Callout>
+
+```sh copy
+$SU $EDITOR /etc/awall/optional/base-config.json
+```
+
+```json copy filename="/etc/awall/optional/base-config.json" {5}
+{
+  "description": "Base zones and policies",
+
+  "zone": {
+    "internet": { "iface": "eth0" }
+  },
+
+  "policy": [
+     { "in": "internet", "action": "drop" },
+     { "out": "internet", "action": "accept" }
+  ]
+}
+```
+
+<Callout>
+Si heu canviat el port SSH, reemplaceu `"service": "ssh"` amb el vostre nou port
+`"service": { "proto": "tcp", "port": 2222 },` o el que tu triïs
+</Callout>
+
+```sh copy
+$SU $EDITOR /etc/awall/optional/ssh.json
+```
+
+```json copy filename="/etc/awall/optional/ssh.json" {8}
+{
+  "description": "Allow incoming SSH access (TCP/22)",
+
+  "filter": [
+    {
+      "in": "internet",
+      "out": "_fw",
+      "service": "ssh",
+      "action": "accept",
+      "conn-limit": { "count": 3, "interval": 60 }
+    }
+  ]
+}
+```
+
+{<h3>Activa el tallafoc en arrencar</h3>}
+
+```sh copy
+$SU rc-update add iptables
+$SU rc-update add ip6tables
+```
+
+{<h3>Inicia el tallafoc</h3>}
+
+```sh copy
+$SU awall list
+```
+
+```output filename="output"
+base-config  disabled  Base zones and policies
+ssh          disabled  Allow incoming SSH access (TCP/22)
+```
+
+```sh copy
+$SU awall enable base-config ssh
+$SU awall activate
+```
+
+{<h3>Comproveu si el firewall esta adequadament configurat i actiu</h3>}
+
+```sh copy
+$SU iptables -S | grep 22
+```
+
+```output filename="output"
+-A INPUT -i eth0 -p tcp -m tcp --dport 22 -j limit-ssh-0
+```
+
+<Callout>
+Més: [Alpine Wall User’s Guide](https://git.alpinelinux.org/awall/about)
+
+Com: [How-To Alpine Wall](https://wiki.alpinelinux.org/wiki/How-To_Alpine_Wall)
+</Callout>
+      </Steps>
+    </Tabs.Tab>
+    <Tabs.Tab>
+      <Steps>
+{<h3>Instal·leu ufw</h3>}
+
+```sh copy
+$SU apk add ip6tables ufw
+```
+
+{<h3>Amb l'usuari `satoshi`, configureu i activeu les regles del tallafoc</h3>}
+
+<Callout type="info">
+Substituïu `22` pel port escollit
+</Callout>
+
+```sh copy
+$SU ufw default deny incoming
+$SU ufw default allow outgoing
+$SU ufw limit 22/tcp comment 'Allow SSH'
+```
+
+```sh copy
+$SU ufw logging off
+$SU ufw enable
+```
+
+{<h3>Assegureu-vos que l'UFW s'inicia automàticament a l'arrencada</h3>}
+
+```sh copy
+$SU rc-update add ufw default
+```
+
+{<h3>Comproveu si l'UFW està correctament configurat i actiu</h3>}
+
+```sh copy
+$SU ufw status verbose
+```
+
+```output filename="output"
+Status: active
+Logging: off
+Default: deny (incoming), allow (outgoing), disabled (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+22/tcp                     LIMIT IN    Anywhere                   # Allow SSH
+22/tcp (v6)                LIMIT IN    Anywhere (v6)              # Allow SSH
+```
+
+<Callout>
+Més: [UFW Essentials](https://wiki.alpinelinux.org/wiki/Uncomplicated_Firewall)
+</Callout>
+      </Steps>
+    </Tabs.Tab>
+</Tabs>
+
+<Callout type="info">
+Si us trobeu bloquejat per error, podeu connectar un teclat i una pantalla al
+vostre PC per iniciar sessió localment i corregir aquesta configuració
+(especialment per al port SSH).
+</Callout>
+
+## Servidor intermediari invers
+
+Diversos components d'aquesta guia exposaran un port de comunicació, per
+exemple, l'explorador de blocs o la interfície web ThunderHub per al vostre node
+Lightning.
+Fins i tot si utilitzeu aquests serveis només a la vostra pròpia xarxa
+domèstica, la comunicació s'hauria de xifrar sempre. En cas contrari, qualsevol
+dispositiu de la mateixa xarxa pot escoltar les dades intercanviades, incloses
+les contrasenyes.
+
+Utilitzem Caddy per xifrar la comunicació amb SSL/TLS (Transport Layer
+Security). Aquesta configuració s'anomena "servidor intermediari invers": Caddy
+proporciona una comunicació segura a l'exterior i encamina el trànsit de tornada
+al servei intern sense xifratge. Alternativament, podeu utilitzar Nginx per fer
+la mateixa funcionalitat.
+
+<Tabs items={['caddy', 'nginx']}>
+    <Tabs.Tab>
+
+<Callout type="warning">
+No recomanem utilitzar el Caddy disponible a Alpine perquè entrarà en conflicte
+quan Caddy s'actualitzi a la versió més recent i afegeixi mòduls. A més,
+l'"init script" proporcionat no és tan complet com el proposat en aquesta guia.
+</Callout>
+
+      <Steps>
+{<h3>Creeu l'usuari/grup caddy</h3>}
+
+```sh copy
+$SU addgroup -S caddy
+```
+  
+```sh copy
+$SU adduser \
+    -S \
+    -D \
+    -H \
+    -h /dev/null \
+    -s /sbin/nologin \
+    -G caddy \
+    -g caddy \
+    caddy
+```
+
+* Afegiu també l'usuari satoshi al grup caddy
+
+```sh copy
+$SU adduser satoshi caddy
+```
+
+{<h3>Baixa l'última versió</h3>}
+
+```sh copy
+cd /tmp
+LATEST=$(wget -qO- https://api.github.com/repos/caddyserver/caddy/releases/latest | grep "tag_name" | cut -d '"' -f 4 | sed 's/^v//')
+wget https://github.com/caddyserver/caddy/releases/download/v$LATEST/caddy_${LATEST}_linux_amd64.tar.gz \
+    https://github.com/caddyserver/caddy/releases/download/v$LATEST/caddy_${LATEST}_checksums.txt
+```
+
+* Comprovació de la suma de comprovació
+
+```sh copy
+grep caddy_${LATEST}_linux_amd64.tar.gz caddy_${LATEST}_checksums.txt | sha512sum -c
+```
+  
+```output filename="output"
+caddy_${LATEST}_linux_amd64.tar.gz: OK
+```
+
+{<h3>Extreu i instal·la el binari</h3>}
+
+```sh copy
+$SU tar xzf caddy_${LATEST}_linux_amd64.tar.gz caddy -C /usr/bin/
+```
+
+* Afegeix els mòduls necessaris
+
+```sh copy
+$SU caddy add-package github.com/mholt/caddy-l4
+```
+
+{<h3>Configuració</h3>}
+
+* En primer lloc, creeu directoris per als fitxers de configuració
+
+```sh copy
+$SU mkdir -p \
+    /etc/caddy/sites \
+    /etc/caddy/streams
+```
+
+```sh copy
+$SU $EDITOR /etc/caddy/Caddyfile
+```
+
+```nginx copy filename="/etc/caddy/Caddyfile"
+{
+        local_certs
+        ocsp_stapling off
+        log {
+                format console
+        }
+        layer4 {
+                import /etc/caddy/streams/*.caddy
+        }
+}
+(tls) {
+        tls internal {
+                on_demand
+        }
+}
+https:// {
+        import tls
+}
+import /etc/caddy/sites/*.caddy
+```
+
+<FAQBox title="Utilitza els teus propis certificats autosignats">
+```sh
+$SU openssl req \
+    -x509 \
+    -nodes \
+    -newkey rsa:4096 \
+    -keyout /path/to/your-key.pem \
+    -out /path/to/your-cert.pem \
+    -subj "/CN=localhost" \
+    -days 3650
+
+$SU chown \
+    caddy:caddy \
+    /path/to/your-key.pem \
+    /path/to/your-cert.pem
+```
+
+```diff filename="/etc/caddy/Caddyfile"
+ [...]
+ (tls) {
+-        tls internal {
++        tls /path/to/your-cert.pem /path/to/your-key.pem {
+                 on_demand
+         }
+ }
+ [...]
+```
+</FAQBox>
+
+{<h4>Crea el servei Caddy</h4>}
+
+```sh copy
+$SU $EDITOR /etc/init.d/caddy
+```
+
+```sh copy filename="/etc/init.d/caddy"
+#!/sbin/openrc-run
+
+: ${CADDY_CONFIGFILE:=/etc/caddy/Caddyfile}
+: ${CADDY_DATADIR:=/var/lib/caddy}
+: ${CADDY_LOGDIR:=/var/log/caddy}
+: ${CADDY_USER:=caddy}
+: ${CADDY_GROUP:=caddy}
+: ${CADDY_BIN:=/usr/bin/caddy}
+: ${CADDY_OPTS=${CADDY_OPTS}}
+: ${CADDY_SIGTERM_TIMEOUT:=600}
+
+CADDY_PIDDIR="/run/caddy"
+
+name="Caddy web server"
+description="Fast, multi-platform web server with automatic HTTPS"
+
+required_files="${CADDY_CONFIGFILE}"
+pidfile="${CADDY_PIDDIR}/${SVCNAME}.pid"
+retry="${CADDY_SIGTERM_TIMEOUT}"
+capabilities="^cap_net_bind_service"
+
+command="${CADDY_BIN}"
+command_args="run
+              --config ${CADDY_CONFIGFILE}
+              ${CADDY_OPTS}"
+command_user="${CADDY_USER}:${CADDY_GROUP}"
+command_background="true"
+
+start_stop_daemon_args="--env XDG_CONFIG_HOME=${CADDY_DATADIR%/caddy}
+                        --env XDG_DATA_HOME=${CADDY_DATADIR%/caddy}
+                        --stdout ${CADDY_LOGDIR}/debug.log
+                        --stderr ${CADDY_LOGDIR}/debug.log"
+
+extra_commands="checkconfig"
+description_checkconfig="Check configuration"
+
+extra_started_commands="reload"
+description_reload="Reload configuration without downtime"
+
+depend() {
+  need net localmount
+  after firewall
+}
+
+start_pre() {
+    checkpath --file      --mode 0660 --owner "${command_user}" "${CADDY_CONFIGFILE}"
+    checkpath --directory --mode 0750 --owner "${command_user}" "${CADDY_DATADIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${CADDY_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${CADDY_PIDDIR}"
+    checkconfig
+}
+
+checkconfig() {
+  if [ ! -f "${CADDY_CONFIGFILE}" ] ; then
+    ewarn "${CADDY_CONFIGFILE} does not exist." && return 1
+  fi
+  $command validate ${command_args#run} > /dev/null 2>&1
+  eend $?
+}
+
+reload() {
+  if ! service_started "${SVCNAME}" ; then
+      eerror "${SVCNAME} isn't running" && return 1
+  fi
+  checkconfig || { eerror "Invalid configuration file !" && return 1; }
+
+  ebegin "Reloading ${SVCNAME}"
+  $command reload --force ${command_args#run} > /dev/null 2>&1
+  eend $?
+}
+```
+
+* Habilita el permís d'execució
+
+```sh copy
+$SU chmod +x /etc/init.d/caddy
+```
+
+{<h3>Habiliteu i inicieu el servei de Caddy</h3>}
+
+```sh copy
+$SU rc-update add caddy
+$SU rc-service caddy start
+```
+      </Steps>
+
+* Podeu controlar els registres de Caddy introduint aquesta ordre. Sortiu amb
+`Ctrl + C`
+
+```sh copy
+tail -f /var/log/caddy/debug.log
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+      <Steps>
+{<h3>Instal·leu ngnix</h3>}
+
+```sh copy
+$SU apk add nginx nginx-mod-stream
+```
+
+{<h3>Creeu un certificat SSL/TLS autofirmat (vàlid durant 10 anys)</h3>}
+
+```sh copy
+$SU openssl req \
+    -x509 \
+    -nodes \
+    -newkey rsa:4096 \
+    -keyout /etc/ssl/private/nginx-selfsigned.key \
+    -out /etc/ssl/certs/nginx-selfsigned.crt \
+    -subj "/CN=localhost" \
+    -days 3650
+```
+
+{<h3>Fes una còpia de seguretat i crea una nova configuració</h3>}
+
+NGINX també és un servidor web complet. Per utilitzar-lo només com a servidor
+intermediari invers, feu una còpia de seguretat de la configuració
+predeterminada i enganxeu la configuració següent al fitxer `nginx.conf`
+
+```sh copy
+$SU mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.orig
+$SU $EDITOR /etc/nginx/nginx.conf
+
+```
+
+```nginx copy filename="/etc/nginx/nginx.conf"
+user nginx;
+worker_processes auto;
+
+load_module /usr/lib/nginx/modules/ngx_stream_module.so;
+
+error_log /var/log/nginx/error.log warn;
+pid /run/nginx/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
+
+events {
+  worker_connections 768;
+}
+
+http {
+  ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
+  ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+  ssl_session_cache shared:HTTP-TLS:1m;
+  ssl_session_timeout 4h;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_prefer_server_ciphers on;
+  include /etc/nginx/mime.types;
+  include /etc/nginx/sites-enabled/*.conf;
+}
+
+stream {
+  ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
+  ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+  ssl_session_cache shared:STREAM-TLS:1m;
+  ssl_session_timeout 4h;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_prefer_server_ciphers on;
+  include /etc/nginx/streams-enabled/*.conf;
+}
+```
+
+{<h3>Creeu directoris per a fitxers de configuració futurs</h3>}
+
+```sh copy
+$SU mkdir -p \
+    /etc/nginx/sites-available \
+    /etc/nginx/sites-enabled \
+    /etc/nginx/streams-available \
+    /etc/nginx/streams-enabled
+```
+
+{<h3>Proveu aquesta senzilla configuració de Nginx</h3>}
+
+```sh copy
+$SU nginx -t
+```
+
+```output filename="output"
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+```
+
+{<h3>Habiliteu i inicieu el servei d'Nginx</h3>}
+
+```sh copy
+$SU rc-update add nginx default
+$SU rc-service nginx start
+```
+</Steps>
+
+* Podeu controlar els registres de Nginx introduint aquesta ordre. Sortiu amb
+`Ctrl + C`
+
+```sh copy
+tail -f /var/log/messages | grep nginx
+```
+
+* Podeu controlar els registres d'errors de Nginx introduint aquesta ordre. Sortiu
+amb `Ctrl + C`
+
+```sh copy
+$SU tail -f /var/log/nginx/error.log
+```
+  </Tabs.Tab>
+</Tabs>

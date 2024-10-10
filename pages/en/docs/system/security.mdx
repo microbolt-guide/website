@@ -1,0 +1,623 @@
+import { Callout, Steps, Tabs } from 'nextra/components'
+import { FAQBox } from '@components'
+
+# Security
+
+We make sure that your Microbolt is secured against unauthorized remote access.
+
+The Microbolt will be visible from the internet and therefore needs to be
+secured against online attacks using various methods.
+
+## Login with SSH keys
+
+One of the best options to secure the sensitive SSH login is to disable
+passwords altogether and require an SSH key certificate. Only someone with
+physical possession of the private certificate key can log in.
+
+### Preparations on `host` system
+
+<Steps>
+### Create a new public/private key pair
+
+<Callout type="warning">
+Skip if you already have one
+</Callout>
+
+```sh copy
+ssh-keygen -t rsa -b 4096
+```
+
+Follow instructions, optionally enter a key passphrase to protect your key, you
+can use `password [A]`
+
+### The public key now needs to be copied to the PC
+
+```sh copy
+cat ./.ssh/id_rsa.pub |
+		ssh satoshi@nakamoto01 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+
+```
+</Steps>
+
+### Preparations on `server` system
+
+<Callout type="info">
+It's also recommended to change default `ssh` port `22`, to something else like
+`2222`
+</Callout>
+
+<Steps>
+### Disable password and root logins
+<Tabs items={['dropbear', 'openssh']}>
+		<Tabs.Tab>
+```sh copy
+sed 's/DROPBEAR_OPTS=""/DROPBEAR_OPTS="-w -s -p 2222"/' /etc/conf.d/dropbear > _
+$SU mv -f _ /etc/conf.d/dropbear
+
+```
+		</Tabs.Tab>
+		<Tabs.Tab>
+```sh copy
+printf "%s\n" \
+		"Port 2222" \
+		"PermitRootLogin no" \
+		"PasswordAuthentication no" \
+		| $SU tee -a /etc/ssh/sshd_config.d/defaults.conf
+
+```
+		</Tabs.Tab>
+</Tabs>
+### Restart service to apply changes
+```sh copy
+if $SU rc-service dropbear status | grep -q "started"; then
+		$SU rc-service dropbear restart
+elif $SU rc-service sshd status | grep -q "started"; then
+		$SU rc-service sshd restart
+fi
+```
+</Steps>
+
+## Disable `root` account
+
+```sh copy
+$SU passwd -l root
+```
+
+## Firewall
+
+A firewall controls what kind of outside traffic your machine accepts and which
+applications can send data out. By default, many network ports are open and
+listening for incoming connections. Closing unnecessary ports can mitigate many
+potential system vulnerabilities.
+
+For now, only SSH should be reachable from the outside. Bitcoin Core and LND are
+using Tor and don't need incoming ports.
+
+<Tabs items={['awall', 'ufw']}>
+		<Tabs.Tab>
+			<Steps>
+{<h3>Install awall</h3>}
+
+```sh copy
+$SU apk add awall iptables ip6tables
+```
+
+{<h3>Load the necessary kernel modules and load them at boot</h3>}
+
+```sh copy
+$SU modprobe -av ip_tables ip6_tables
+```
+		
+```sh copy
+printf "%s\n" \
+		"ip_tables" \
+		"ip6_tables" \
+		| $SU tee /etc/modules-load.d/awall.conf
+```
+
+{<h3>Configure and enable the firewall rules</h3>}
+
+<Callout type="info">
+Replace `eth0` with your network interface
+</Callout>
+
+```sh copy
+$SU $EDITOR /etc/awall/optional/base-config.json
+```
+
+```json copy filename="/etc/awall/optional/base-config.json" {5}
+{
+	"description": "Base zones and policies",
+
+	"zone": {
+		"internet": { "iface": "eth0" }
+	},
+
+	"policy": [
+		 { "in": "internet", "action": "drop" },
+		 { "out": "internet", "action": "accept" }
+	]
+}
+```
+
+<Callout>
+If you changed the SSH port, replace `"service": "ssh"` with your new port
+`"service": { "proto": "tcp", "port": 2222 },` or whatever you chose
+</Callout>
+
+```sh copy
+$SU $EDITOR /etc/awall/optional/ssh.json
+```
+
+```json copy filename="/etc/awall/optional/ssh.json" {8}
+{
+	"description": "Allow incoming SSH access (TCP/22)",
+
+	"filter": [
+		{
+			"in": "internet",
+			"out": "_fw",
+			"service": "ssh",
+			"action": "accept",
+			"conn-limit": { "count": 3, "interval": 60 }
+		}
+	]
+}
+```
+
+{<h3>Enable the firewall on boot</h3>}
+
+```sh copy
+$SU rc-update add iptables
+$SU rc-update add ip6tables
+```
+
+{<h3>Start the firewall</h3>}
+
+```sh copy
+$SU awall list
+```
+
+```output filename="output"
+base-config  disabled  Base zones and policies
+ssh          disabled  Allow incoming SSH access (TCP/22)
+```
+
+```sh copy
+$SU awall enable base-config ssh
+$SU awall activate
+```
+
+{<h3>Check if the firewall is properly configured and active</h3>}
+
+```sh copy
+$SU iptables -S | grep 22
+```
+
+```output filename="output"
+-A INPUT -i eth0 -p tcp -m tcp --dport 22 -j limit-ssh-0
+```
+
+<Callout>
+More: [Alpine Wall User’s Guide](https://git.alpinelinux.org/awall/about)
+
+How-To: [How-To Alpine Wall](https://wiki.alpinelinux.org/wiki/How-To_Alpine_Wall)
+</Callout>
+			</Steps>
+		</Tabs.Tab>
+		<Tabs.Tab>
+			<Steps>
+{<h3>Install ufw</h3>}
+
+```sh copy
+$SU apk add ip6tables ufw
+```
+
+{<h3>Configure and enable the firewall rules</h3>}
+
+<Callout type="info">
+Replace `22` with your choosen port
+</Callout>
+
+```sh copy
+$SU ufw default deny incoming
+$SU ufw default allow outgoing
+$SU ufw limit 22/tcp comment 'Allow SSH'
+```
+
+```sh copy
+$SU ufw logging off
+$SU ufw enable
+```
+
+{<h3>Make sure that the UFW is started automatically on boot</h3>}
+
+```sh copy
+$SU rc-update add ufw default
+```
+
+{<h3>Check if the UFW is properly configured and active</h3>}
+
+```sh copy
+$SU ufw status verbose
+```
+
+```output filename="output"
+Status: active
+Logging: off
+Default: deny (incoming), allow (outgoing), disabled (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+22/tcp                     LIMIT IN    Anywhere                   # Allow SSH
+22/tcp (v6)                LIMIT IN    Anywhere (v6)              # Allow SSH
+```
+
+<Callout>
+More: [UFW Essentials](https://wiki.alpinelinux.org/wiki/Uncomplicated_Firewall)
+</Callout>
+			</Steps>
+		</Tabs.Tab>
+</Tabs>
+
+<Callout type="info">
+If you find yourself locked out by mistake, you can connect a keyboard and
+screen to your PC to log in locally and fix these settings (especially for the
+SSH port). 
+</Callout>
+
+## Reverse proxy
+
+Several components of this guide will expose a communication port, for example,
+the Block Explorer, or the ThunderHub web interface for your Lightning node.
+Even if you use these services only within your own home network, communication
+should always be encrypted. Otherwise, any device in the same network can listen
+to the exchanged data, including passwords.
+
+We use Caddy to encrypt the communication with SSL/TLS (Transport Layer
+Security). This setup is called a "reverse proxy": Caddy provides secure
+communication to the outside and routes the traffic back to the internal service
+without encryption. Alternatively you can also install nginx to perform the same
+functions.
+
+<Tabs items={['caddy', 'nginx']}>
+		<Tabs.Tab>
+
+<Callout type="warning">
+We do not recommend using the Caddy available in Alpine because it will conflict
+when Caddy updates itself to the latest version and adds modules. Also, the
+provided init script is not as complete as the one proposed in this guide.
+</Callout>
+
+			<Steps>
+{<h3>Create the caddy user/group</h3>}
+
+```sh copy
+$SU addgroup -S caddy
+```
+	
+```sh copy
+$SU adduser \
+		-S \
+		-D \
+		-H \
+		-h /dev/null \
+		-s /sbin/nologin \
+		-G caddy \
+		-g caddy \
+		caddy
+```
+
+* Add the user satoshi to the group caddy
+
+```sh copy
+$SU adduser satoshi caddy
+```
+
+{<h3>Download latest release</h3>}
+
+```sh copy
+cd /tmp
+LATEST=$(wget -qO- https://api.github.com/repos/caddyserver/caddy/releases/latest | grep "tag_name" | cut -d '"' -f 4 | sed 's/^v//')
+wget https://github.com/caddyserver/caddy/releases/download/v$LATEST/caddy_${LATEST}_linux_amd64.tar.gz \
+		https://github.com/caddyserver/caddy/releases/download/v$LATEST/caddy_${LATEST}_checksums.txt
+```
+
+* Checksum check
+
+```sh copy
+grep caddy_${LATEST}_linux_amd64.tar.gz caddy_${LATEST}_checksums.txt | sha512sum -c
+```
+	
+```output filename="output"
+caddy_${LATEST}_linux_amd64.tar.gz: OK
+```
+
+{<h3>Extract and install binary</h3>}
+
+```sh copy
+$SU tar xzf caddy_${LATEST}_linux_amd64.tar.gz caddy -C /usr/bin/
+```
+
+* Add necessary modules
+
+```sh copy
+$SU caddy add-package github.com/mholt/caddy-l4
+```
+
+{<h3>Configuration</h3>}
+
+* First of all, create directories for configuration files
+
+```sh copy
+$SU mkdir -p \
+		/etc/caddy/sites \
+		/etc/caddy/streams
+```
+
+```sh copy
+$SU $EDITOR /etc/caddy/Caddyfile
+```
+
+```nginx copy filename="/etc/caddy/Caddyfile"
+{
+				local_certs
+				ocsp_stapling off
+				log {
+								format console
+				}
+				layer4 {
+								import /etc/caddy/streams/*.caddy
+				}
+}
+(tls) {
+				tls internal {
+								on_demand
+				}
+}
+https:// {
+				import tls
+}
+import /etc/caddy/sites/*.caddy
+```
+
+<FAQBox title="Use your own self-signed certificates">
+```sh
+$SU openssl req \
+		-x509 \
+		-nodes \
+		-newkey rsa:4096 \
+		-keyout /path/to/your-key.pem \
+		-out /path/to/your-cert.pem \
+		-subj "/CN=localhost" \
+		-days 3650
+
+$SU chown \
+		caddy:caddy \
+		/path/to/your-key.pem \
+		/path/to/your-cert.pem
+```
+
+```diff filename="/etc/caddy/Caddyfile"
+ [...]
+ (tls) {
+-        tls internal {
++        tls /path/to/your-cert.pem /path/to/your-key.pem {
+								 on_demand
+				 }
+ }
+ [...]
+```
+</FAQBox>
+
+{<h4>Create the Caddy service</h4>}
+
+```sh copy
+$SU $EDITOR /etc/init.d/caddy
+```
+
+```sh copy filename="/etc/init.d/caddy"
+#!/sbin/openrc-run
+
+: ${CADDY_CONFIGFILE:=/etc/caddy/Caddyfile}
+: ${CADDY_DATADIR:=/var/lib/caddy}
+: ${CADDY_LOGDIR:=/var/log/caddy}
+: ${CADDY_USER:=caddy}
+: ${CADDY_GROUP:=caddy}
+: ${CADDY_BIN:=/usr/bin/caddy}
+: ${CADDY_OPTS=${CADDY_OPTS}}
+: ${CADDY_SIGTERM_TIMEOUT:=600}
+
+CADDY_PIDDIR="/run/caddy"
+
+name="Caddy web server"
+description="Fast, multi-platform web server with automatic HTTPS"
+
+required_files="${CADDY_CONFIGFILE}"
+pidfile="${CADDY_PIDDIR}/${SVCNAME}.pid"
+retry="${CADDY_SIGTERM_TIMEOUT}"
+capabilities="^cap_net_bind_service"
+
+command="${CADDY_BIN}"
+command_args="run
+							--config ${CADDY_CONFIGFILE}
+							${CADDY_OPTS}"
+command_user="${CADDY_USER}:${CADDY_GROUP}"
+command_background="true"
+
+start_stop_daemon_args="--env XDG_CONFIG_HOME=${CADDY_DATADIR%/caddy}
+												--env XDG_DATA_HOME=${CADDY_DATADIR%/caddy}
+												--stdout ${CADDY_LOGDIR}/debug.log
+												--stderr ${CADDY_LOGDIR}/debug.log"
+
+extra_commands="checkconfig"
+description_checkconfig="Check configuration"
+
+extra_started_commands="reload"
+description_reload="Reload configuration without downtime"
+
+depend() {
+	need net localmount
+	after firewall
+}
+
+start_pre() {
+		checkpath --file      --mode 0660 --owner "${command_user}" "${CADDY_CONFIGFILE}"
+		checkpath --directory --mode 0750 --owner "${command_user}" "${CADDY_DATADIR}"
+		checkpath --directory --mode 0755 --owner "${command_user}" "${CADDY_LOGDIR}"
+		checkpath --directory --mode 0755 --owner "${command_user}" "${CADDY_PIDDIR}"
+		checkconfig
+}
+
+checkconfig() {
+	if [ ! -f "${CADDY_CONFIGFILE}" ] ; then
+		ewarn "${CADDY_CONFIGFILE} does not exist." && return 1
+	fi
+	$command validate ${command_args#run} > /dev/null 2>&1
+	eend $?
+}
+
+reload() {
+	if ! service_started "${SVCNAME}" ; then
+			eerror "${SVCNAME} isn't running" && return 1
+	fi
+	checkconfig || { eerror "Invalid configuration file !" && return 1; }
+
+	ebegin "Reloading ${SVCNAME}"
+	$command reload --force ${command_args#run} > /dev/null 2>&1
+	eend $?
+}
+```
+
+* Enable execution permission
+
+```sh copy
+$SU chmod +x /etc/init.d/caddy
+```
+
+{<h3>Enable and start the Caddy service</h3>}
+
+```sh copy
+$SU rc-service caddy start
+$SU rc-update add caddy
+```
+			</Steps>
+
+* You can monitor the Caddy logs by entering this command. Exit with `Ctrl + C`
+
+```sh copy
+tail -f /var/log/caddy/debug.log
+```
+		</Tabs.Tab>
+		<Tabs.Tab>
+<Steps>
+{<h3>Install ngnix</h3>}
+
+```sh copy
+$SU apk add nginx nginx-mod-stream
+```
+
+{<h3>Create a self-signed SSL/TLS certificate (valid for 10 years)</h3>}
+
+```sh copy
+$SU openssl req \
+		-x509 \
+		-nodes \
+		-newkey rsa:4096 \
+		-keyout /etc/ssl/private/nginx-selfsigned.key \
+		-out /etc/ssl/certs/nginx-selfsigned.crt \
+		-subj "/CN=localhost" \
+		-days 3650
+```
+
+{<h3>Backup and create new configuration</h3>}
+
+NGINX is also a full web server. To use it only as a reverse proxy, backup the
+default configuration and paste the following configuration into the
+`nginx.conf` file
+
+```sh copy
+$SU mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.orig
+$SU $EDITOR /etc/nginx/nginx.conf
+
+```
+
+```nginx copy filename="/etc/nginx/nginx.conf"
+user nginx;
+worker_processes auto;
+
+load_module /usr/lib/nginx/modules/ngx_stream_module.so;
+
+error_log /var/log/nginx/error.log warn;
+pid /run/nginx/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
+
+events {
+	worker_connections 768;
+}
+
+http {
+	ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
+	ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+	ssl_session_cache shared:HTTP-TLS:1m;
+	ssl_session_timeout 4h;
+	ssl_protocols TLSv1.2 TLSv1.3;
+	ssl_prefer_server_ciphers on;
+	include /etc/nginx/mime.types;
+	include /etc/nginx/sites-enabled/*.conf;
+}
+
+stream {
+	ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
+	ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+	ssl_session_cache shared:STREAM-TLS:1m;
+	ssl_session_timeout 4h;
+	ssl_protocols TLSv1.2 TLSv1.3;
+	ssl_prefer_server_ciphers on;
+	include /etc/nginx/streams-enabled/*.conf;
+}
+```
+
+{<h3>Create directories for future configuration files</h3>}
+
+```sh copy
+$SU mkdir -p \
+		/etc/nginx/sites-available \
+		/etc/nginx/sites-enabled \
+		/etc/nginx/streams-available \
+		/etc/nginx/streams-enabled
+```
+
+{<h3>Test this barebone Nginx configuration</h3>}
+
+```sh copy
+$SU nginx -t
+```
+
+```output filename="output"
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+```
+
+{<h3>Enable and start the Nginx service</h3>}
+
+```sh copy
+$SU rc-update add nginx default
+$SU rc-service nginx start
+```
+</Steps>
+
+* You can monitor the Nginx logs by entering this command. Exit with `Ctrl + C`
+
+```sh copy
+tail -f /var/log/messages | grep nginx
+```
+
+* You can monitor Nginx error logs by entering this command. Exit with `Ctrl + C`
+
+```sh copy
+$SU tail -f /var/log/nginx/error.log
+```
+		</Tabs.Tab>
+</Tabs>
