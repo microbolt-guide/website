@@ -84,11 +84,14 @@ Si voleu aprendre sobre Linux, Bitcoin i Lightning, aquesta guia és per tu.
 El nostre objectiu és mantenir el nucli d'aquesta guia ben mantingut i
 actualitzat:
 
-1. [Sistema](system.md): prepareu el maquinari i configureu el sistema operatiu
-2. [Bitcoin](bitcoin.md): sincronitza el vostre propi node complet de Bitcoin,
-el servidor Electrum i l'explorador de cadena de blocs
-3. [Lightning](lightning.md): executeu el vostre propi client Lightning amb la
-gestió de nodes web
+1. [Sistema](./docs/system.md): prepareu el maquinari i configureu el sistema
+operatiu
+1. [Bitcoin](./docs/bitcoin.md): sincronitza el vostre propi node complet de
+Bitcoin, el servidor Electrum i l'explorador de cadena de blocs
+1. [Lightning](./docs/lightning.md): executeu el vostre propi client Lightning
+amb la gestió de nodes web
+1. [Nostr](./docs/nostr.md): utilitzeu xarxes socials descentralitzades i
+resistents a la censura
 
 ## Comunitat
 

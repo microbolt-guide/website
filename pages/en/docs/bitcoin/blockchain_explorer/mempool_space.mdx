@@ -21,7 +21,7 @@ transactions.
 (`txindex=1`), and you can skip to the next section.
 * If this is not the case, you need to set the `txindex=1` parameter in your
 Bitcoin client configuration file (`bitcoin.conf`): [Bitcoin node
-configuration](../bitcoin-client).
+configuration](../bitcoin_client).
 * After adding the parameter, restart Bitcoin client, which will now index the
 whole blockchain
 
@@ -84,8 +84,8 @@ $SU adduser satoshi mempool
 
 ### Reverse proxy
 
-In the [Security section](/system/security#reverse-proxy), we set up a reverse
-proxy. Now we can add the Mempool Space configuration.
+In the [Security section](../../system/security#reverse-proxy), we set up a
+reverse proxy. Now we can add the Mempool Space configuration.
 
 * Enable the reverse proxy to route external encrypted HTTPS traffic internally
 to the Mempool Space
@@ -863,7 +863,7 @@ browsing to https://nakamoto01:4081 (or your equivalent IP address).
 
 ## For the future: Mempool Space update
 
-Follow again [Mempool Space](./mempool-space) page replacing the
+Follow again [Mempool Space](./mempool_space) page replacing the
 environment variable `VERSION=x.xx` value for the latest if it has not been
 already changed in this guide.
 

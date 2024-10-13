@@ -21,7 +21,7 @@ transactions.
 (`txindex=1`), and you can skip to the next section.
 * If this is not the case, you need to set the `txindex=1` parameter in your
 Bitcoin client configuration file (`bitcoin.conf`): [Bitcoin node
-configuration](../bitcoin-client).
+configuration](../bitcoin_client).
 * After adding the parameter, restart Bitcoin client, which will now index the
 whole blockchain
 
@@ -84,8 +84,8 @@ $SU adduser satoshi btc-rpc-explorer
 
 ### Reverse proxy
 
-In the [Security section](/system/security#reverse-proxy), we set up a reverse
-proxy. Now we can add the BTC RPC Explorer configuration.
+In the [Security section](../../system/security#reverse-proxy), we set up a
+reverse proxy. Now we can add the BTC RPC Explorer configuration.
 
 * Enable the reverse proxy to route external encrypted HTTPS traffic internally
 to the BTC RPC Explorer
@@ -528,7 +528,7 @@ browsing to https://nakamoto01:4000 (or your equivalent IP address).
 
 ## For the future: BTC RPC Explorer update
 
-Follow again [BTC RPC Explorer](./btc-rpc-explorer) page replacing the
+Follow again [BTC RPC Explorer](./btc_rpc_explorer) page replacing the
 environment variable `VERSION=x.xx` value for the latest if it has not been
 already changed in this guide.
 
