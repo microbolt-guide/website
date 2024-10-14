@@ -13,9 +13,6 @@ files: [
   },
   {
     source: "/pages/en/**/*",
-    translation: "/pages/%two_letters_code%/**/%original_file_name%",
-    ignore: [
-      "/pages/en/index.mdx.html"
-    ]
+    translation: "/pages/%two_letters_code%/**/%original_file_name%"
   }
 ]

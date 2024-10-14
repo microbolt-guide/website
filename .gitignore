@@ -1,4 +1,5 @@
 **/*.mdx.html
 .crowdin.yml
 .next
+index.mdx.bk
 node_modules
