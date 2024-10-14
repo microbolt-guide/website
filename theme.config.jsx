@@ -31,12 +31,14 @@ const DESCRIPTION = l10n('DESCRIPTION')
 const SEARCH_PLACEHOLDER = l10n('SEARCH_PLACEHOLDER')
 const BANNER_TEXT = l10n('BANNER_TEXT')
 const TOC_TITLE = l10n('TOC_TITLE')
+const TOC_L10N_TEXT = l10n('TOC_L10N_TEXT')
 const BACK_TO_TOP = l10n('BACK_TO_TOP')
 const EDIT_TEXT = l10n('EDIT_TEXT')
 const GIT_TIMESTAMP = l10n('GIT_TIMESTAMP')
 
-const BANNER_KEY = 'microbolt-2';
-const BANNER_LINK = 'https://t.me/microbolt_official';
+const BANNER_KEY = 'microbolt-2'
+const BANNER_LINK = 'https://t.me/microbolt_official'
+const TOC_L10N_LINK = 'https://crowdin.com/project/microbolt'
 // End of l10n strings
 
 export const MOBLogo = (props) => (
@@ -163,6 +165,18 @@ export default {
     backToTop: function BackToTop() {
       const { locale } = useRouter()
       return BACK_TO_TOP[locale]
+    },
+    extraContent() {
+      const { locale } = useRouter()
+      return (
+        <a
+          className="nextra-focus _text-xs _font-medium _text-gray-600 dark:_text-gray-400 hover:_text-gray-800 dark:hover:_text-gray-200 contrast-more:_text-gray-700 contrast-more:dark:_text-gray-100"
+          href={TOC_L10N_LINK}
+          target="_blank"
+        >
+          {TOC_L10N_TEXT[locale]}
+        </a>
+      )
     }
   },
   editLink: {
