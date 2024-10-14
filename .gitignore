@@ -1,3 +1,4 @@
+**/*.mdx.html
+.crowdin.yml
 .next
 node_modules
-.crowdin.yml

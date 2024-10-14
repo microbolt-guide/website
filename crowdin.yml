@@ -1,5 +1,5 @@
 # Put the commented values in your .crowdin.yml file
-project_id: "727293"
+# project_id: "CROWDIN_PROJECT_ID"
 # api_token: "CROWDIN_PERSONAL_TOKEN"
 base_path: "."
 base_url: "https://api.crowdin.com"

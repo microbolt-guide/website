@@ -4,7 +4,7 @@
     "build": "next build",
     "start": "next start",
     "push": "crowdin upload sources --identity ./.crowdin.yml && crowdin upload translations --identity ./.crowdin.yml",
-    "pull": "crowdin download sources --identity ./.crowdin.yml && crowdin download --identity ./.crowdin.yml"
+    "pull": "crowdin download --identity ./.crowdin.yml"
   },
   "dependencies": {
     "next": "^14.2.15",
