@@ -2,173 +2,173 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap');
 
 .homeContent {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	min-height: calc(100vh - 236px);
-	padding: 3rem 1rem;
-	width: 100%;
-	max-width: 90rem;
-	margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 236px);
+  padding: 3rem 1rem;
+  width: 100%;
+  max-width: 90rem;
+  margin: 0 auto;
 }
 
 /* hero */
 .hero {
-	display: flex;
-	flex-direction: column;
-	align-items: flex-start;
-	gap: 1rem;
-	margin-bottom: 5rem;
-	width: 100%;
-	max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 5rem;
+  width: 100%;
+  max-width: 500px;
 }
 
 .title {
-	font-size: 3.125rem;
-	font-size: min(4.375rem, max(8vw, 2.5rem));
-	font-weight: 700;
-	font-feature-settings: initial;
-	letter-spacing: -.12rem;
-	margin-left: -0.2rem;
-	line-height: 1.1;
-	background-image: linear-gradient(146deg, #181818, #757a7d 85%, #eee);
-	color: transparent;
-	background-clip: text;
+  font-size: 3.125rem;
+  font-size: min(4.375rem, max(8vw, 2.5rem));
+  font-weight: 700;
+  font-feature-settings: initial;
+  letter-spacing: -.12rem;
+  margin-left: -0.2rem;
+  line-height: 1.1;
+  background-image: linear-gradient(146deg, #181818, #757a7d 85%, #eee);
+  color: transparent;
+  background-clip: text;
 }
 
 :is(html[class~="dark"] .title) {
-	background-image: linear-gradient(146deg, #eee, #757a7d 85%, #181818);
+  background-image: linear-gradient(146deg, #eee, #757a7d 85%, #181818);
 }
 
 .subtitle {
-	font-size: 1.3rem;
-	font-size: min(1.3rem, max(3.5vw, 1.2rem));
-	font-feature-settings: initial;
-	line-height: 1.6;
+  font-size: 1.3rem;
+  font-size: min(1.3rem, max(3.5vw, 1.2rem));
+  font-feature-settings: initial;
+  line-height: 1.6;
 }
 
 .button {
-	display: inline-block;
-	padding: 0.75rem 1.5rem;
-	margin-top: 1rem;
-	font-size: 1rem;
-	font-weight: bold;
-	color: #fff;
-	background-color: hsl(var(--nextra-primary-hue), var(--nextra-primary-saturation), 25%);
-	border: none;
-	border-radius: 0.5rem;
-	text-align: center;
-	text-decoration: none;
-	transition: background-color 0.3s ease;
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  margin-top: 1rem;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #fff;
+  background-color: hsl(var(--nextra-primary-hue), var(--nextra-primary-saturation), 25%);
+  border: none;
+  border-radius: 0.5rem;
+  text-align: center;
+  text-decoration: none;
+  transition: background-color 0.3s ease;
 }
 
 .button:hover {
-	background-color: hsl(var(--nextra-primary-hue), var(--nextra-primary-saturation), 40%);
+  background-color: hsl(var(--nextra-primary-hue), var(--nextra-primary-saturation), 40%);
 }
 
 /* testimonials */
 .endorsements {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 1rem;
-	margin-top: 2rem;
-	width: 100%;
-	max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  width: 100%;
+  max-width: 500px;
 }
 
 .endorsements h1 {
-	font-family: 'Open Sans', sans-serif;
-	font-size: 3em;
-	font-size: min(3rem, max(5vw, 1.5rem));
-	font-weight: 800;
-	margin: 0;
-	align-self: flex-start;
+  font-family: 'Open Sans', sans-serif;
+  font-size: 3em;
+  font-size: min(3rem, max(5vw, 1.5rem));
+  font-weight: 800;
+  margin: 0;
+  align-self: flex-start;
 }
 
 .endorsement {
-	background: #f9f9f9;
-	color: #333;
-	padding: 1rem;
-	border-radius: 0.5rem;
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-	position: relative;
-	width: 100%;
-	text-align: center;
+  background: #f9f9f9;
+  color: #333;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  width: 100%;
+  text-align: center;
 }
 
 .endorsement::before {
-	content: '“';
-	font-size: 3rem;
-	color: #ccc;
-	position: absolute;
-	top: -1.5rem;
-	left: 0rem;
+  content: '“';
+  font-size: 3rem;
+  color: #ccc;
+  position: absolute;
+  top: -1.5rem;
+  left: 0rem;
 }
 
 :is(html[class~="dark"] .endorsement) {
-	background: #333;
-	color: #f9f9f9;
-	box-shadow: 0 2px 4px rgba(61, 61, 61, 0.1);
+  background: #333;
+  color: #f9f9f9;
+  box-shadow: 0 2px 4px rgba(61, 61, 61, 0.1);
 }
 
 .endorsement p {
-	font-family: 'Open Sans', sans-serif;
-	font-size: 1.3rem;
-	font-size: min(1.3rem, max(3.5vw, 1.2rem));
-	line-height: 1.5;
+  font-family: 'Open Sans', sans-serif;
+  font-size: 1.3rem;
+  font-size: min(1.3rem, max(3.5vw, 1.2rem));
+  line-height: 1.5;
 }
 
 /* bento */
 .grid {
-	display: grid;
-	grid-gap: 0.5rem;
+  display: grid;
+  grid-gap: 0.5rem;
 
-	align-self: center;
+  align-self: center;
 
-	width: 100%;
-	max-width: 500px;
+  width: 100%;
+  max-width: 500px;
 
-	grid-template-columns: repeat(4, 1fr);
-	grid-template-rows: repeat(12, 2fr);
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(12, 2fr);
 
-	grid-template-areas:
-		"com com com com"
-		"com com com com"
-		"btc btc btc btc"
-		"ord ord ord ord"
-		"exp exp exp exp"
-		"prx prx prx prx"
-		"lnd lnd lnd lnd"
-		"nos nos nos nos"
-		"cld cld cld cld"
-		"fwd fwd fwd fwd"
-		"elc elc elc elc"
-		"bil bil alp alp";
+  grid-template-areas:
+    "com com com com"
+    "com com com com"
+    "btc btc btc btc"
+    "ord ord ord ord"
+    "exp exp exp exp"
+    "prx prx prx prx"
+    "lnd lnd lnd lnd"
+    "nos nos nos nos"
+    "cld cld cld cld"
+    "fwd fwd fwd fwd"
+    "elc elc elc elc"
+    "bil bil alp alp";
 }
 
 .item {
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	align-items: center;
-	background: #eeeeee;
-	color: #181818;
-	border-radius: 1.5rem;
-	outline: 1px solid #dddddd10;
-	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #eeeeee;
+  color: #181818;
+  border-radius: 1.5rem;
+  outline: 1px solid #dddddd10;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 :is(html[class~="dark"] .item) {
-	background: #181818;
-	color: #eeeeee;
-	box-shadow: 0 4px 8px rgba(61, 61, 61, 0.1);
+  background: #181818;
+  color: #eeeeee;
+  box-shadow: 0 4px 8px rgba(61, 61, 61, 0.1);
 }
 
 .item img {
-	width: 80%;
-	height: auto;
+  width: 80%;
+  height: auto;
 }
 
 .item h1,
@@ -176,324 +176,324 @@
 .item h3,
 .item h4,
 .item .btcrpc {
-	font-family: 'Open Sans', sans-serif;
-	font-weight: bold;
-	align-self: center;
-	text-align: center;
-	margin: 0;
+  font-family: 'Open Sans', sans-serif;
+  font-weight: bold;
+  align-self: center;
+  text-align: center;
+  margin: 0;
 }
 
 .item h1 {
-	font-size: clamp(3rem, 10vw, 3rem);
+  font-size: clamp(3rem, 10vw, 3rem);
 }
 
 .item h2 {
-	font-size: 5rem;
+  font-size: 5rem;
 }
 
 .item h3 {
-	font-size: 1rem;
+  font-size: 1rem;
 }
 
 .item h4 {
-	font-size: 1.5rem;
+  font-size: 1.5rem;
 }
 
 /* i18n */
 .grid .item:nth-child(1) {
-	grid-area: bil;
-	background: linear-gradient(75deg, #428ecc 50%, #cfd8dc 50%);
-	display: flex;
-	flex-direction: row;
-	justify-content: space-around;
+  grid-area: bil;
+  background: linear-gradient(75deg, #428ecc 50%, #cfd8dc 50%);
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
 }
 
 .grid .item:nth-child(1) h1 {
-	font-size: clamp(5.5rem, 10vw, 7.5rem);
-	color: #eeeeee;
+  font-size: clamp(5.5rem, 10vw, 7.5rem);
+  color: #eeeeee;
 }
 
 .grid .item:nth-child(1) .jp {
-	font-family: 'Noto Sans JP', sans-serif;
-	font-weight: 800;
-	font-size: 4rem;
-	color: #556f7b;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-weight: 800;
+  font-size: 4rem;
+  color: #556f7b;
 }
 
 /* Bitcoin */
 .grid .item:nth-child(2) {
-	grid-area: btc;
-	background-image:
-		url("/assets/logos/bitcoin.svg"),
-		url("/assets/logos/knots.png");
-	background-size: 200px;
-	background-repeat: no-repeat;
-	background-position:
-		bottom -5em left -5em,
-		top -5em right -5em;
+  grid-area: btc;
+  background-image:
+    url("/assets/logos/bitcoin.svg"),
+    url("/assets/logos/knots.png");
+  background-size: 200px;
+  background-repeat: no-repeat;
+  background-position:
+    bottom -5em left -5em,
+    top -5em right -5em;
 }
 
 /* ordinals */
 .grid .item:nth-child(3) {
-	grid-area: ord;
+  grid-area: ord;
 }
 
 /* explorers */
 .grid .item:nth-child(4) {
-	grid-area: exp;
-	background: linear-gradient(to top, #3cc9e2 25%, #9857ff 50%, #181818 50%);
-	color: #eeeeee;
-	position: relative;
-	background-size: 100% 200%;
-	background-position: center;
+  grid-area: exp;
+  background: linear-gradient(to top, #3cc9e2 25%, #9857ff 50%, #181818 50%);
+  color: #eeeeee;
+  position: relative;
+  background-size: 100% 200%;
+  background-position: center;
 }
 
 .grid .item:nth-child(4) h1,
 .grid .item:nth-child(4) .btcrpc {
-	margin: auto;
+  margin: auto;
 }
 
 @keyframes moveBackground {
-	0% {
-		background-position: top;
-	}
+  0% {
+    background-position: top;
+  }
 
-	100% {
-		background-position: center;
-	}
+  100% {
+    background-position: center;
+  }
 }
 
 .grid .item:nth-child(4):hover {
-	animation: moveBackground 1s ease-in-out both;
+  animation: moveBackground 1s ease-in-out both;
 }
 
 .grid .item:nth-child(4)::after {
-	content: '';
-	position: absolute;
-	top: 10%;
-	right: 1.5rem;
-	width: 2rem;
-	height: 80%;
-	background-color: white;
-	border-radius: 0.4rem;
-	opacity: 0.4;
+  content: '';
+  position: absolute;
+  top: 10%;
+  right: 1.5rem;
+  width: 2rem;
+  height: 80%;
+  background-color: white;
+  border-radius: 0.4rem;
+  opacity: 0.4;
 }
 
 .grid .item:nth-child(4) .btcrpc img {
-	width: 3rem;
-	margin-right: 0.5rem;
+  width: 3rem;
+  margin-right: 0.5rem;
 }
 
 .grid .item:nth-child(4) .btcrpc {
-	display: flex;
+  display: flex;
 }
 
 .grid .item:nth-child(4) .mem {
-	color: #181818;
+  color: #181818;
 }
 
 /* reverse proxy */
 .grid .item:nth-child(5) {
-	grid-area: prx;
+  grid-area: prx;
 }
 
 .grid .item:nth-child(5) img {
-	flex-grow: 1;
+  flex-grow: 1;
 }
 
 :is(html[class~="dark"] .item img[src*="caddy-light.svg"]) {
-	content: url("/assets/logos/caddy-dark.svg");
+  content: url("/assets/logos/caddy-dark.svg");
 }
 
 /* comparision */
 .grid .item:nth-child(6) {
-	grid-area: com;
-	line-height: 1;
+  grid-area: com;
+  line-height: 1;
 }
 
 .grid .item:nth-child(6) h1 {
-	font-size: 12rem;
-	background: linear-gradient(15deg, #ffb61a, #f7931a, #aa6511);
-	background-clip: text;
-	color: transparent;
+  font-size: 12rem;
+  background: linear-gradient(15deg, #ffb61a, #f7931a, #aa6511);
+  background-clip: text;
+  color: transparent;
 }
 
 /* lightning */
 .grid .item:nth-child(7) {
-	grid-area: lnd;
+  grid-area: lnd;
 }
 
 /* nostr */
 .grid .item:nth-child(8) {
-	grid-area: nos;
+  grid-area: nos;
 }
 
 /* ansible */
 .grid .item:nth-child(9) {
-	grid-area: cld;
+  grid-area: cld;
 }
 
 :is(html[class~="dark"] .item img[src*="ansible-light.png"]) {
-	content: url("/assets/logos/ansible-dark.png");
+  content: url("/assets/logos/ansible-dark.png");
 }
 
 /* firewall */
 .grid .item:nth-child(10) {
-	grid-area: fwd;
-	background-image: url("/assets/logos/wall.jpg");
-	background-size: 840px;
-	background-repeat: no-repeat;
-	background-position: center;
+  grid-area: fwd;
+  background-image: url("/assets/logos/wall.jpg");
+  background-size: 840px;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
 .grid .item:nth-child(10) h1 {
-	font-size: clamp(5em, 10vw, 6rem);
-	color: #eeeeee;
+  font-size: clamp(5em, 10vw, 6rem);
+  color: #eeeeee;
 }
 
 :is(html[class~="dark"] .grid .item:nth-child(10) h1) {
-	color: #181818;
+  color: #181818;
 }
 
 /* electrum */
 .grid .item:nth-child(11) {
-	grid-area: elc;
-	background-image:
-		url("/assets/logos/electrs.svg"),
-		url("/assets/logos/fulcrum.png");
-	background-size: 200px;
-	background-repeat: no-repeat;
-	background-position:
-		bottom -5em right -5em,
-		top -5em left -5em;
+  grid-area: elc;
+  background-image:
+    url("/assets/logos/electrs.svg"),
+    url("/assets/logos/fulcrum.png");
+  background-size: 200px;
+  background-repeat: no-repeat;
+  background-position:
+    bottom -5em right -5em,
+    top -5em left -5em;
 }
 
 .grid .item:nth-child(11) h1 {
-	width: 90%;
+  width: 90%;
 }
 
 /* alpine */
 .grid .item:nth-child(12) {
-	grid-area: alp;
+  grid-area: alp;
 }
 
 .grid .item:nth-child(12) h1 {
-	background: linear-gradient(15deg, #078ecc, #055980, #022333);
-	background-clip: text;
-	color: transparent;
-	width: 90%;
+  background: linear-gradient(15deg, #078ecc, #055980, #022333);
+  background-clip: text;
+  color: transparent;
+  width: 90%;
 }
 
 /* responsive */
 @media (width >=800px) {
 
-	/* testimonials */
-	.hero,
-	.endorsements {
-		max-width: 800px;
-	}
+  /* testimonials */
+  .hero,
+  .endorsements {
+    max-width: 800px;
+  }
 
-	/* bento */
-	.grid {
-		grid-template-columns: repeat(5, 1fr);
-		grid-template-rows: repeat(8, 1fr);
+  /* bento */
+  .grid {
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(8, 1fr);
 
-		grid-template-areas:
-			"com com com com com"
-			"com com com com com"
-			"bil bil btc btc btc"
-			"exp exp exp fwd fwd"
-			"nos nos nos fwd fwd"
-			"lnd lnd cld cld cld"
-			"elc elc elc prx prx"
-			"alp alp ord ord ord";
+    grid-template-areas:
+      "com com com com com"
+      "com com com com com"
+      "bil bil btc btc btc"
+      "exp exp exp fwd fwd"
+      "nos nos nos fwd fwd"
+      "lnd lnd cld cld cld"
+      "elc elc elc prx prx"
+      "alp alp ord ord ord";
 
-		max-width: 800px;
-	}
+    max-width: 800px;
+  }
 
-	/* i18n */
-	.grid .item:nth-child(1) h1 {
-		font-size: 7.5rem;
-	}
+  /* i18n */
+  .grid .item:nth-child(1) h1 {
+    font-size: 7.5rem;
+  }
 
-	.grid .item:nth-child(1) .jp {
-		font-size: 5.5rem;
-	}
+  .grid .item:nth-child(1) .jp {
+    font-size: 5.5rem;
+  }
 
-	/* comparision */
-	.grid .item:nth-child(6) h1 {
-		font-size: 17rem;
-	}
+  /* comparision */
+  .grid .item:nth-child(6) h1 {
+    font-size: 17rem;
+  }
 
-	/* lightning & nostr */
-	.grid .item:nth-child(7) img,
-	.grid .item:nth-child(8) img {
-		width: 100%;
-		height: auto;
-	}
+  /* lightning & nostr */
+  .grid .item:nth-child(7) img,
+  .grid .item:nth-child(8) img {
+    width: 100%;
+    height: auto;
+  }
 }
 
 @media (width >=1400px) {
 
-	/* testimonials */
-	.hero,
-	.endorsements {
-		max-width: 1400px;
-	}
+  /* testimonials */
+  .hero,
+  .endorsements {
+    max-width: 1400px;
+  }
 
-	.endorsement {
-		max-width: 800px;
-	}
+  .endorsement {
+    max-width: 800px;
+  }
 
-	/* bento */
-	.grid {
-		grid-template-columns: repeat(7, 1fr);
-		grid-template-rows: repeat(9, 1fr);
+  /* bento */
+  .grid {
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: repeat(9, 1fr);
 
-		grid-template-areas:
-			"bil btc btc ord ord exp exp"
-			"bil btc btc ord ord exp exp"
-			"prx prx com com com lnd lnd"
-			"prx prx com com com lnd lnd"
-			"prx prx com com com nos nos"
-			"cld cld com com com nos nos"
-			"cld cld com com com fwd fwd"
-			"elc elc com com com fwd fwd"
-			"elc elc alp alp alp fwd fwd";
+    grid-template-areas:
+      "bil btc btc ord ord exp exp"
+      "bil btc btc ord ord exp exp"
+      "prx prx com com com lnd lnd"
+      "prx prx com com com lnd lnd"
+      "prx prx com com com nos nos"
+      "cld cld com com com nos nos"
+      "cld cld com com com fwd fwd"
+      "elc elc com com com fwd fwd"
+      "elc elc alp alp alp fwd fwd";
 
-		max-height: 900px;
-		max-width: 1400px;
-	}
+    max-height: 900px;
+    max-width: 1400px;
+  }
 
-	/* i18n */
-	.grid .item:nth-child(1) h1 {
-		font-size: 4.5rem;
-	}
+  /* i18n */
+  .grid .item:nth-child(1) h1 {
+    font-size: 4.5rem;
+  }
 
-	.grid .item:nth-child(1) .jp {
-		font-size: 3.5rem;
-	}
+  .grid .item:nth-child(1) .jp {
+    font-size: 3.5rem;
+  }
 
-	/* ordinals */
-	.grid .item:nth-child(3) img {
-		width: 65%;
-		height: auto;
-	}
+  /* ordinals */
+  .grid .item:nth-child(3) img {
+    width: 65%;
+    height: auto;
+  }
 
-	/* explorers */
-	.grid .item:nth-child(4)::after {
-		width: 1.5rem;
-	}
+  /* explorers */
+  .grid .item:nth-child(4)::after {
+    width: 1.5rem;
+  }
 
-	/* comparision */
-	.grid .item:nth-child(6) h1 {
-		font-size: 17rem;
-	}
+  /* comparision */
+  .grid .item:nth-child(6) h1 {
+    font-size: 17rem;
+  }
 
-	/* lightning & nostr */
-	.grid .item:nth-child(7) img,
-	.grid .item:nth-child(8) img {
-		width: 90%;
-		height: auto;
-	}
+  /* lightning & nostr */
+  .grid .item:nth-child(7) img,
+  .grid .item:nth-child(8) img {
+    width: 90%;
+    height: auto;
+  }
 }
