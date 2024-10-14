@@ -1,31 +1,31 @@
 #!/bin/sh
 set -e
 
+# rename ./pages/*/index.mdx to ./pages/*/index.mdx.html or vice versa
+# if argument is .mdx, the script will rename .mdx to .mdx.html
+# if no argument is passed, the script will rename .mdx.html to .mdx
+process_file() {
+    find ./pages/* \
+        -maxdepth 1 \
+        -name "index${1:-.mdx.html}" \
+        -exec sh \
+            -c 'mv "$1" "${1%.html}${2}"' _ {} "${1:+.html}" \;
+}
+
+trap process_file INT EXIT
+
 case "$1" in
     push)
-        cp ./pages/en/index.mdx ./index.mdx.bk
-        mv ./pages/en/index.mdx ./pages/en/index.mdx.html
-
-        if crowdin upload sources --identity ./.crowdin.yml && crowdin upload translations --identity ./.crowdin.yml; then
-            mv ./index.mdx.bk ./pages/en/index.mdx
-        else
-            mv ./index.mdx.bk ./pages/en/index.mdx
-            echo "Upload failed, restored the backup."
-            exit 1
-        fi
+        process_file .mdx
+        crowdin "$1"              --identity ./.crowdin.yml
+        crowdin "$1" translations --identity ./.crowdin.yml
     ;;
     pull)
-        if crowdin download --identity ./.crowdin.yml; then
-            find ./pages -name "index.mdx.html" | while read -r file; do
-                mv "$file" "${file%.html}"
-            done
-        else
-            echo "Download failed."
-            exit 1
-        fi
+        crowdin "$1" sources      --identity ./.crowdin.yml
+        crowdin "$1"              --identity ./.crowdin.yml
     ;;
     *)
-        echo "Usage: $0 {push|pull}"
-        exit 1
+        printf "%s\n" "Usage: ${0##*/} {push|pull}"
+        trap - INT EXIT; exit 1
     ;;
 esac
