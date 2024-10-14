@@ -1,0 +1,18 @@
+# Put the commented values in your .crowdin.yml file
+project_id: "727293"
+# api_token: "CROWDIN_PERSONAL_TOKEN"
+base_path: "."
+base_url: "https://api.crowdin.com"
+
+preserve_hierarchy: true
+
+files: [
+  {
+    source: "/locales/en.js",
+    translation: "/locales/%two_letters_code%.js"
+  },
+  {
+    source: "/pages/en/**/*",
+    translation: "/pages/%two_letters_code%/**/%original_file_name%"
+  }
+]

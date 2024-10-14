@@ -1,15 +1,17 @@
 {
-	"scripts": {
-		"dev": "next",
-		"build": "next build",
-		"start": "next start"
-	},
-	"dependencies": {
-		"next": "^14.2.15",
-		"nextra": "^3.0.11",
-		"nextra-theme-docs": "^3.0.11",
-		"react": "^18.3.1",
-		"react-dom": "^18.3.1",
-		"react-icons": "^5.3.0"
-	}
+  "scripts": {
+    "dev": "next",
+    "build": "next build",
+    "start": "next start",
+    "push": "crowdin upload sources --identity ./.crowdin.yml && crowdin upload translations --identity ./.crowdin.yml",
+    "pull": "crowdin download sources --identity ./.crowdin.yml && crowdin download --identity ./.crowdin.yml"
+  },
+  "dependencies": {
+    "next": "^14.2.15",
+    "nextra": "^3.0.11",
+    "nextra-theme-docs": "^3.0.11",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-icons": "^5.3.0"
+  }
 }
