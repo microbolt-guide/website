@@ -208,6 +208,9 @@ $SU $EDITOR /etc/init.d/lightningd
 : ${CLN_OPTS=${CLN_OPTS}}
 : ${CLN_SIGTERM_TIMEOUT:=600}
 
+: ${CLN_STOP_BIN:=/usr/bin/lightning-cli}
+: ${CLN_STOP_OPTS:=${CLN_STOP_OPTS}}
+
 : ${BITCOIND_DATADIR:=/var/lib/bitcoind}
 
 CLN_PIDDIR="/run/lightningd"
@@ -229,7 +232,6 @@ command_args="--conf=${CLN_CONFIGFILE}
               --daemon
               ${CLN_OPTS}"
 command_user="${CLN_USER}:${CLN_GROUP}"
-command_background="true"
 
 depend() {
     need bitcoind
@@ -251,6 +253,16 @@ start_pre() {
 
 start_post() {
     chmod -R u=rwX,g=rX,o= "${CLN_DATADIR}" "${CLN_LOGDIR}"
+}
+
+stop() {
+    ebegin "Stopping ${name}"
+    "${CLN_STOP_BIN}" \
+        --lightning-dir="${CLN_DATADIR}" \
+        "${CLN_STOP_OPTS}" \
+        stop \
+        > /dev/null 2>&1
+    eend $?
 }
 ```
 
