@@ -25,7 +25,7 @@ case "$1" in
         crowdin "$1"              --identity ./.crowdin.yml
     ;;
     *)
-        printf "%s\n" "Usage: ${0##*/} {push|pull}"
+        printf "%s\n\n" "Usage: ${0##*/} {push|pull}"
         trap - INT EXIT; exit 1
     ;;
 esac
