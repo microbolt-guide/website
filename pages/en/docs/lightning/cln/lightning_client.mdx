@@ -224,6 +224,7 @@ command_args="--conf=${CLN_CONFIGFILE}
               --lightning-dir=${CLN_DATADIR}
               --log-file=${CLN_LOGDIR}/debug.log
               --bitcoin-datadir=${BITCOIND_DATADIR}
+              --rpc-file-mode=0660
               --pid-file=${pidfile}
               --daemon
               ${CLN_OPTS}"
