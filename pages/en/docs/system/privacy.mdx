@@ -92,7 +92,7 @@ CookieAuthentication 1
 CookieAuthFile /var/run/tor/control.authcookie
 CookieAuthFileGroupReadable 1
 DataDirectoryGroupReadable 1
- 
+
 ############### This section is just for location-hidden services ###
 [...]
 ```
@@ -363,12 +363,35 @@ full-featured C++ implementation of the I2P client, as a Tor network complement.
 $SU apk add i2pd
 ```
 
+### I2P configuration
+
+* Add the following lines to the I2P `conf.d` file in order to disable the
+services that we don't need
+
+```sh copy
+printf "%s\n" \
+    "I2PD_OPTIONS=\"\${I2PD_OPTIONS}" \
+    "--ntcp2.enabled=true" \
+    "--ssu2.enabled=true" \
+    "--http.enabled=false" \
+    "--httpproxy.enabled=false" \
+    "--socksproxy.enabled=false" \
+    "--sam.enabled=true" \
+    "--bob.enabled=false" \
+    "--i2cp.enabled=false" \
+    "--i2pcontrol.enabled=false" \
+    "--upnp.enabled=false" \
+    "\"" \
+    | $SU tee -a /etc/conf.d/i2pd
+```
+
 * Start the i2p service and add to runlevel
 
 ```sh copy
 $SU rc-service i2pd start
 $SU rc-update add i2pd default
 ```
+
 * Ensure that the i2pd service is working and listening at the default ports
 
 ```sh copy
@@ -376,12 +399,9 @@ $SU netstat -lntup | grep LISTEN | grep i2pd
 ```
 
 ```output filename="output"
-tcp      0     0 127.0.0.1:4447       0.0.0.0:*             LISTEN     3571/i2pd
-tcp      0     0 127.0.0.1:4444       0.0.0.0:*             LISTEN     3571/i2pd
-tcp      0     0 127.0.0.1:7656       0.0.0.0:*             LISTEN     3571/i2pd
-tcp      0     0 0.0.0.0:26697        0.0.0.0:*             LISTEN     3571/i2pd
-tcp      0     0 127.0.0.1:6668       0.0.0.0:*             LISTEN     3571/i2pd
-tcp      0     0 127.0.0.1:7070       0.0.0.0:*             LISTEN     3571/i2pd
+tcp        0      0 127.0.0.1:6668          0.0.0.0:*               LISTEN      11060/i2pd
+tcp        0      0 127.0.0.1:7656          0.0.0.0:*               LISTEN      11060/i2pd
+tcp        0      0 0.0.0.0:23178           0.0.0.0:*               LISTEN      11060/i2pd
 ```
 
 * See `i2p` in action by monitoring its log file. Exit with `Ctrl-C`
@@ -765,7 +785,7 @@ nslookup microbolt.guide
 ```output filename="output" {1-2}
 Server:         127.0.0.1
 Address:        127.0.0.1#53
- 
+
 Non-authoritative answer:
 Name:   microbolt.guide
 Address: 76.76.21.21
