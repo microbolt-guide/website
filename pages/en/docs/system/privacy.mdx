@@ -352,7 +352,7 @@ $SU tail -f /var/log/i2pd/i2pd.log
 
 ## DNSCrypt proxy
 
-[DNSCrypt](https://dnscrypt.info) is a protocol that authenticates
+[DNSCrypt](https://www.dnscrypt.info) is a protocol that authenticates
 communications between a DNS client and a DNS resolver. It prevents DNS
 spoofing. It uses cryptographic signatures to verify that responses originate
 from the chosen DNS resolver and haven't been tampered with.
@@ -367,7 +367,7 @@ with caution.
 ### Preparations
 
 <Steps>
-#### Install build dependencies
+#### Install dependencies
 
 ```sh copy
 $SU apk add --virtual .build-dep minisign
@@ -430,7 +430,7 @@ Signature and comment signature verified
 #### Extract and install binary
 
 ```sh copy
-$SU tar xzf dnscrypt-proxy-linux_x86_64-${LATEST}.tar.gz
+tar xzf dnscrypt-proxy-linux_x86_64-${LATEST}.tar.gz
 ```
 
 * Create the necessary directories and copy the binary and configuration file
@@ -438,7 +438,7 @@ $SU tar xzf dnscrypt-proxy-linux_x86_64-${LATEST}.tar.gz
 ```sh copy
 $SU mkdir -p /etc/dnscrypt-proxy
 ```
-  
+
 ```sh copy
 $SU cp linux-x86_64/dnscrypt-proxy /usr/bin/
 $SU cp linux-x86_64/example-dnscrypt-proxy.toml /etc/dnscrypt-proxy/dnscrypt-proxy.toml
@@ -589,18 +589,83 @@ $SU setup-dns 127.0.0.1
 ```sh copy
 printf "%s\n" "options edns0" | $SU tee -a /etc/resolv.conf
 ```
+
+#### Block/redirect unencrypted external DNS queries
+
+<Callout type="warning">
+This is highly discouraged if you have a firewall/router that can block DNS
+queries. This is a last resort if you can't block DNS queries at the router
+level.
+</Callout>
+
+* Load the necessary kernel modules and load them at boot
+
+```sh copy
+$SU modprobe -v iptable_nat
+```
+
+```sh copy
+printf "%s\n" \
+        "iptable_nat" \
+        | $SU tee -a /etc/modules-load.d/awall.conf
+```
+
+<Tabs items={['awall', 'ufw']}>
+    <Tabs.Tab>
+* Create the following `block-dns.json` file
+
+```sh copy
+$SU $EDITOR /etc/awall/optional/block-dns.json
+```
+
+```json copy filename="/etc/awall/optional/block-dns.json"
+{
+    "description": "Block external DNS queries",
+
+    "dnat": [
+        {
+            "in": "_fw",
+            "dest": "0.0.0.0/0",
+            "service": [
+                { "proto": "tcp", "port": 53 },
+                { "proto": "udp", "port": 53 }
+            ],
+            "to-addr": "127.0.0.1",
+            "to-port": 53
+        }
+    ]
+}
+```
+
+* Apply the configuration
+
+```sh copy
+$SU awall enable block-dns
+$SU awall activate
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+* Make the rules directly in `iptables`, `ufw` doesn't support this
+
+```sh copy
+$SU iptables -t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:53
+$SU iptables -t nat -A OUTPUT -p tcp --dport 53 -j DNAT --to-destination 127.0.0.1:53
+```
+    </Tabs.Tab>
+</Tabs>
+
 </Steps>
 
 ### Test configuration
-  
+
 ```sh copy
 nslookup microbolt.guide
 ```
 
-```output filename="output"
+```output filename="output" {1-2}
 Server:         127.0.0.1
 Address:        127.0.0.1#53
-
+ 
 Non-authoritative answer:
 Name:   microbolt.guide
 Address: 76.76.21.21
