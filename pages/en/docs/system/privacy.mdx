@@ -540,18 +540,23 @@ documentation](https://github.com/DNSCrypt/dnscrypt-proxy/wiki/Configuration)
 </Callout>
 
 <FAQBox title="Anonymized DNS">
-If you want to anonymize your DNS queries, you can use the `anonymized_dns`
-option. This will route your DNS queries through anon relays. Read more about
-this [here](https://github.com/DNSCrypt/dnscrypt-proxy/wiki/Anonymized-DNS).
+If you want to anonymize your DNS queries, you can use the `[anonymized_dns]`
+option. This will route your DNS queries through anonymous relays. Read more
+about this
+[here](https://github.com/DNSCrypt/dnscrypt-proxy/wiki/Anonymized-DNS).
 
 You can find a complete list of available relays
 [here](https://github.com/DNSCrypt/dnscrypt-resolvers/blob/master/v3/relays.md).
 
-You need to disable the servers you use as relays `via=[...]` in the
-`disabled_server_names`. These are just an example, you need to find the
-appropriate servers for you.
+You need to disable the servers you use as relays by adding them to
+`disabled_server_names` using the `via=[...]` option. These are just examples;
+you need to find the appropriate servers for your needs.
 
-```toml copy filename="/etc/dnscrypt-proxy/dnscrypt-proxy.toml" {3,6,9,12,15,18,21,24,27,31-33,37}
+Using `{ server_name='*', via=['*'] }` is also an option, but it is not
+recommended. While dnscrypt-proxy will pick a relay on a distinct network, this
+does not guarantee that the server and relay are run by different entities.
+
+```toml copy filename="/etc/dnscrypt-proxy/dnscrypt-proxy.toml" {3,6,9,12,15,18,21,24,27,29-34,38}
 [...]
 # Use servers reachable over IPv4
 ipv4_servers = true
@@ -578,12 +583,13 @@ require_nolog = true
 require_nofilter = true
 
 # Server names to avoid even if they match all criteria
-disabled_server_names = ['cs-barcelona', 'cs-fr', 'portland-ipv4']
+disabled_server_names = ['cs-barcelona', 'portland-ipv4']
 [...]
 [anonymized_dns]
 
 routes = [
-    { server_name='*', via=['anon-cs-barcelona', 'anon-cs-fr', 'dnscry.pt-anon-portland-ipv4'] }
+    { server_name='*', via=['anon-cs-barcelona', 'dnscry.pt-anon-portland-ipv4'] },
+    { server_name='circl-doh', via=['anon-cs-barcelona', 'dnscry.pt-anon-portland-ipv4'] }
 ]
 [...]
 ## Skip resolvers incompatible with anonymization instead of using them directly
