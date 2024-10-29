@@ -9,9 +9,11 @@ export default function MyApp({ Component, pageProps }) {
   const styles = useMemo(() => ({
     '/system': { hue: '204', sat: '100%' },
     '/bitcoin': { hue: '34', sat: '93%' },
+    '/ashigaru': { hue: '6', sat: '100%' },
     '/lightning': { hue: '52', sat: '98%' },
+    '/liquid': { hue: '172', sat: '76%' },
+    '/darkirc': { hue: '0', sat: '0%' },
     '/nostr': { hue: '281', sat: '58%' },
-    '/faq': { hue: '5', sat: '97%' },
   }), [])
 
   useEffect(() => {
