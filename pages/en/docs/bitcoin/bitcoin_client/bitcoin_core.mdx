@@ -103,9 +103,9 @@ VERSION=28.0
 * Get the latest source code and signatures
 
 ```sh copy
-wget https://bitcoincore.org/bin/bitcoin-core-$VERSION/bitcoin-$VERSION.tar.gz \
-    https://bitcoincore.org/bin/bitcoin-core-$VERSION/SHA256SUMS \
-    https://bitcoincore.org/bin/bitcoin-core-$VERSION/SHA256SUMS.asc
+curl -OL https://bitcoincore.org/bin/bitcoin-core-$VERSION/bitcoin-$VERSION.tar.gz \
+     -OL https://bitcoincore.org/bin/bitcoin-core-$VERSION/SHA256SUMS \
+     -OL https://bitcoincore.org/bin/bitcoin-core-$VERSION/SHA256SUMS.asc
 ```
 
 ### Checksum check
@@ -132,12 +132,12 @@ Bitcoin Core release attestations (Guix)
 [repository](https://github.com/bitcoin-core/guix.sigs)
 
 ```sh copy
-wget -qO- \
+curl -sL \
     "https://api.github.com/repositories/355107265/contents/builder-keys" |\
     grep download_url |\
     grep -oE "https://[a-zA-Z0-9./-]+" |\
     while read url; do \
-        wget -qO- "$url" |\
+        curl -s "$url" |\
         gpg --import \
     ; done
 ```
@@ -376,7 +376,7 @@ peerblockfilters=1
 [...]
 peerbloomfilters=1
 [...]
-proxy=127.0.0.1:9050
+proxy=unix:/var/run/tor/tor.sock
 [...]
 zmqpubhashblock=tcp://127.0.0.1:8433
 [...]

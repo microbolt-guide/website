@@ -98,9 +98,9 @@ VERSION=27.1.knots20240801
 * Get the latest source code and signatures
 
 ```sh copy
-wget https://bitcoinknots.org/files/${VERSION%%.*}.x/$VERSION/bitcoin-$VERSION.tar.gz \
-    https://bitcoinknots.org/files/${VERSION%%.*}.x/$VERSION/SHA256SUMS \
-    https://bitcoinknots.org/files/${VERSION%%.*}.x/$VERSION/SHA256SUMS.asc
+curl -OL https://bitcoinknots.org/files/${VERSION%%.*}.x/$VERSION/bitcoin-$VERSION.tar.gz \
+     -OL https://bitcoinknots.org/files/${VERSION%%.*}.x/$VERSION/SHA256SUMS \
+     -OL https://bitcoinknots.org/files/${VERSION%%.*}.x/$VERSION/SHA256SUMS.asc
 ```
 
 ### Checksum check
@@ -127,12 +127,12 @@ Bitcoin Core release attestations (Guix)
 [repository](https://github.com/bitcoin-core/guix.sigs)
 
 ```sh copy
-wget -qO- \
+curl -sL \
     "https://api.github.com/repos/bitcoinknots/guix.sigs/contents/builder-keys" |\
     grep download_url |\
     grep -oE "https://[a-zA-Z0-9./-]+" |\
     while read url; do \
-        wget -qO- "$url" |\
+        curl -s "$url" |\
         gpg --import \
     ; done
 ```

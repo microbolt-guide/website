@@ -70,28 +70,31 @@ $SU cp /etc/tor/torrc.sample /etc/tor/torrc
 $SU $EDITOR /etc/tor/torrc
 ```
 
-* Uncomment the following lines
+* Uncomment, add or modify the following lines
 
-```conf filename="/etc/tor/torrc" {4,8}
-...
+```conf filename="/etc/tor/torrc" {7-8,12,16-19}
+[...]
+## Tor opens a SOCKS proxy on port 9050 by default -- even if you don't
+## configure one below. Set "SOCKSPort 0" if you plan to run Tor only
+## as a relay, and not make any local application connections yourself.
+#SOCKSPort 9050 # Default: Bind to localhost:9050 for local connections.
+#SOCKSPort 192.168.0.1:9100 # Bind to this address:port too.
+SOCKSPort 9050
+SOCKSPort unix:/var/run/tor/socks.sock WorldWritable
+[...]
 ## The port on which Tor will listen for local connections from Tor
 ## controller applications, as documented in control-spec.txt.
-ControlPort 9051
+ControlPort unix:/var/run/tor/control.sock GroupWritable RelaxDirModeCheck
 ## If you enable the controlport, be sure to enable one of these
 ## authentication methods, to prevent attackers from accessing it.
 #HashedControlPassword 24:972860B76453A77B40CA2BB8C1A7982072093276A3D701AD685353
 CookieAuthentication 1
-
-############### This section is just for location-hidden services ###
-...
-```
-
-* Add under `CookieAuthentication 1`
-
-```conf copy filename="/etc/tor/torrc"
-CookieAuthFile /var/lib/tor/control_auth_cookie
+CookieAuthFile /var/run/tor/control.authcookie
 CookieAuthFileGroupReadable 1
 DataDirectoryGroupReadable 1
+
+############### This section is just for location-hidden services ###
+[...]
 ```
 
 * Start Tor and add service to runlevel
@@ -102,15 +105,14 @@ $SU rc-update add tor default
 ```
 
 * Ensure that the Tor service is working and listening at the default ports
-`9050` and `9051`
+`9050`
 
 ```sh copy
 $SU netstat -lntup | grep LISTEN | grep tor
 ```
 
 ```output filename="output"
-tcp      0     0 127.0.0.1:9051       0.0.0.0:*             LISTEN     3359/tor
-tcp      0     0 127.0.0.1:9050       0.0.0.0:*             LISTEN     3359/tor
+tcp        0      0 127.0.0.1:9050          0.0.0.0:*               LISTEN      6432/tor
 ```
 
 * Check the logs to see Tor in real time updates output logs. Exit with `Ctrl-C`
@@ -121,6 +123,44 @@ $SU tail -f /var/log/tor/notices.log
 
 Not all network traffic is routed over the Tor network. But we now have the base
 to configure sensitive applications to use it.
+
+### `curl` and `git` through Tor
+
+If you want to download files with `curl` and/or `git` through Tor, you can use
+the `*_PROXY` environment variable. This is useful for downloading files from
+the internet without revealing your IP address.
+
+* Uncomment these lines in the default environment variables
+
+```sh copy
+$SU $EDITOR /etc/profile.d/defaults.sh
+```
+
+```sh copy filename="/etc/profile.d/defaults.sh" {3-7}
+[...]
+# Tor proxy
+export ALL_PROXY="socks5h://localhost/var/run/tor/socks.sock"
+export HTTP_PROXY="${ALL_PROXY}"
+export HTTPS_PROXY="${ALL_PROXY}"
+export http_proxy="${HTTP_PROXY}"
+export https_proxy="${HTTPS_PROXY}"
+```
+
+* Source the changes
+
+```sh copy
+. /etc/profile.d/defaults.sh
+```
+
+* Test the configuration
+
+```sh copy
+curl -s https://check.torproject.org | grep -m 1 -e "Congratulations" -e "Sorry"
+```
+
+```output filename="output"
+Congratulations. This browser is configured to use Tor.
+```
 
 <FAQBox title="SSH through Tor">
 If you want to log into your Microbolt with SSH when you're away, you can easily
@@ -405,9 +445,9 @@ $SU adduser satoshi dnscrypt
 
 ```sh copy
 cd /tmp
-LATEST=$(wget -qO- https://api.github.com/repos/DNSCrypt/dnscrypt-proxy/releases/latest | grep "tag_name" | cut -d '"' -f 4 | sed 's/^v//')
-wget https://github.com/DNSCrypt/dnscrypt-proxy/releases/download/$LATEST/dnscrypt-proxy-linux_x86_64-${LATEST}.tar.gz \
-     https://github.com/DNSCrypt/dnscrypt-proxy/releases/download/$LATEST/dnscrypt-proxy-linux_x86_64-${LATEST}.tar.gz.minisig
+LATEST=$(curl https://api.github.com/repos/DNSCrypt/dnscrypt-proxy/releases/latest | grep "tag_name" | cut -d '"' -f 4 | sed 's/^v//')
+curl -OL https://github.com/DNSCrypt/dnscrypt-proxy/releases/download/$LATEST/dnscrypt-proxy-linux_x86_64-${LATEST}.tar.gz \
+     -OL https://github.com/DNSCrypt/dnscrypt-proxy/releases/download/$LATEST/dnscrypt-proxy-linux_x86_64-${LATEST}.tar.gz.minisig
 ```
 
 #### Verify the signature

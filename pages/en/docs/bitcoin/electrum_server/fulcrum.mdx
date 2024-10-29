@@ -200,7 +200,7 @@ signed by the main developer [Calin Culianu](https://github.com/cculianu).
 
 ```sh copy
 url="https://raw.githubusercontent.com/Electron-Cash/keys-n-hashes/master/pubkeys/calinkey.txt"
-wget -qO- "$url" | gpg --import
+curl -s "$url" | gpg --import
 ```
 
 ```sh copy
@@ -239,11 +239,11 @@ $SU install -D -m 0660 -o fulcrum -g fulcrum ./doc/fulcrum-example-config.conf /
 want [here](https://patorjk.com/software/taag/#p=display\&f=Slant\&t=Fulcrum)
 
 ```sh copy
-$SU wget \
+$SU curl -L \
     https://gist.githubusercontent.com/doitwithnotepad/\
 4472a92414223672d9ab4c3b55d0cd23/raw/ecb086f1b8cca49f22929778ac167b35915842e7/\
 banner.txt \
-    -O /etc/fulcrum/banner.txt
+    -o /etc/fulcrum/banner.txt
 ```
 
 ### Strip installed binaries

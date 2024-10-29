@@ -78,11 +78,11 @@ VERSION=0.18.3-beta
 ```
 
 ```sh copy
-wget https://github.com/lightningnetwork/lnd/releases/download/v$VERSION/lnd-linux-amd64-v$VERSION.tar.gz \
-    https://github.com/lightningnetwork/lnd/releases/download/v$VERSION/manifest-v$VERSION.txt \
-    https://github.com/lightningnetwork/lnd/releases/download/v$VERSION/manifest-roasbeef-v$VERSION.sig \
-    https://github.com/lightningnetwork/lnd/releases/download/v$VERSION/manifest-roasbeef-v$VERSION.sig.ots \
-    https://raw.githubusercontent.com/lightningnetwork/lnd/master/sample-lnd.conf
+curl -OL https://github.com/lightningnetwork/lnd/releases/download/v$VERSION/lnd-linux-amd64-v$VERSION.tar.gz \
+     -OL https://github.com/lightningnetwork/lnd/releases/download/v$VERSION/manifest-v$VERSION.txt \
+     -OL https://github.com/lightningnetwork/lnd/releases/download/v$VERSION/manifest-roasbeef-v$VERSION.sig \
+     -OL https://github.com/lightningnetwork/lnd/releases/download/v$VERSION/manifest-roasbeef-v$VERSION.sig.ots \
+     -OL https://raw.githubusercontent.com/lightningnetwork/lnd/master/sample-lnd.conf
 ```
 
 ### Checksum check
@@ -112,7 +112,7 @@ $SU apk add gnupg
 add it to your GPG keyring
 
 ```sh copy
-wget -qO- \
+curl -s \
     https://raw.githubusercontent.com/lightningnetwork/lnd/master/scripts/keys/roasbeef.asc |\
     gpg --import
 ```
