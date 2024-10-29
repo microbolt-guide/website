@@ -1,4 +1,4 @@
-import { Callout, Tabs } from 'nextra/components'
+import { Callout, Steps, Tabs } from 'nextra/components'
 import { FAQBox } from '@components'
 
 # Privacy
@@ -348,4 +348,266 @@ tcp      0     0 127.0.0.1:7070       0.0.0.0:*             LISTEN     3571/i2pd
 
 ```sh copy
 $SU tail -f /var/log/i2pd/i2pd.log
+```
+
+## DNSCrypt proxy
+
+[DNSCrypt](https://dnscrypt.info) is a protocol that authenticates
+communications between a DNS client and a DNS resolver. It prevents DNS
+spoofing. It uses cryptographic signatures to verify that responses originate
+from the chosen DNS resolver and haven't been tampered with.
+
+<Callout type="warning">
+This is not recommended if DNS queries to external servers are blocked at the
+router/firewall level in your local network. Blocking DNS queries at the
+firewall/router level would be the correct way to address this issue. Proceed
+with caution.
+</Callout>
+
+### Preparations
+
+<Steps>
+#### Install build dependencies
+
+```sh copy
+$SU apk add --virtual .build-dep minisign
+```
+
+```sh copy
+$SU apk add bind-tools
+```
+
+#### Create the `dnscrypt` user/group
+
+```sh copy
+$SU addgroup -S dnscrypt
+```
+
+```sh copy
+$SU adduser \
+    -S \
+    -D \
+    -H \
+    -h /dev/null \
+    -s /sbin/nologin \
+    -G dnscrypt \
+    -g dnscrypt \
+    dnscrypt
+```
+
+* Add the user satoshi to the group dnscrypt
+
+```sh copy
+$SU adduser satoshi dnscrypt
+```
+
+#### Download latest release
+
+```sh copy
+cd /tmp
+LATEST=$(wget -qO- https://api.github.com/repos/DNSCrypt/dnscrypt-proxy/releases/latest | grep "tag_name" | cut -d '"' -f 4 | sed 's/^v//')
+wget https://github.com/DNSCrypt/dnscrypt-proxy/releases/download/$LATEST/dnscrypt-proxy-linux_x86_64-${LATEST}.tar.gz \
+     https://github.com/DNSCrypt/dnscrypt-proxy/releases/download/$LATEST/dnscrypt-proxy-linux_x86_64-${LATEST}.tar.gz.minisig
+```
+
+#### Verify the signature
+
+```sh copy
+minisign \
+    -Vm dnscrypt-proxy-linux_x86_64-${LATEST}.tar.gz \
+    -P RWTk1xXqcTODeYttYMCMLo0YJHaFEHn7a3akqHlb/7QvIQXHVPxKbjB5
+```
+
+```output filename="output"
+Signature and comment signature verified
+[...]
+```
+</Steps>
+
+### Installation
+
+<Steps>
+#### Extract and install binary
+
+```sh copy
+$SU tar xzf dnscrypt-proxy-linux_x86_64-${LATEST}.tar.gz
+```
+
+* Create the necessary directories and copy the binary and configuration file
+
+```sh copy
+$SU mkdir -p /etc/dnscrypt-proxy
+```
+  
+```sh copy
+$SU cp linux-x86_64/dnscrypt-proxy /usr/bin/
+$SU cp linux-x86_64/example-dnscrypt-proxy.toml /etc/dnscrypt-proxy/dnscrypt-proxy.toml
+```
+
+#### Cleanup
+
+```sh copy
+cd
+$SU apk del .build-dep
+$SU rm -rf /tmp/dnscrypt-proxy-linux_x86_64-${LATEST}* /tmp/linux-x86_64
+```
+</Steps>
+
+### Configuration
+
+<Steps>
+#### Edit the DNSCrypt configuration file
+
+```sh copy
+$SU $EDITOR /etc/dnscrypt-proxy/dnscrypt-proxy.toml
+```
+
+```toml copy filename="/etc/dnscrypt-proxy/dnscrypt-proxy.toml" {3,6,9,12,15,18,21,24,28}
+[...]
+# Use servers reachable over IPv4
+ipv4_servers = true
+
+# Use servers reachable over IPv6 -- Do not enable if you don't have IPv6 connectivity
+ipv6_servers = false
+
+# Use servers implementing the DNSCrypt protocol
+dnscrypt_servers = true
+
+# Use servers implementing the DNS-over-HTTPS protocol
+doh_servers = true
+
+# Use servers implementing the Oblivious DoH protocol
+odoh_servers = false
+[...]
+# Server must support DNS security extensions (DNSSEC)
+require_dnssec = false
+
+# Server must not log user queries (declarative)
+require_nolog = true
+
+# Server must not enforce its own blacklist (for parental control, ads blocking...)
+require_nofilter = true
+[...]
+## Skip resolvers incompatible with anonymization instead of using them directly
+
+skip_incompatible = false
+[...]
+```
+
+<Callout type="info">
+You can learn more about the configuration options in the [official
+documentation](https://github.com/DNSCrypt/dnscrypt-proxy/wiki/Configuration)
+</Callout>
+
+#### Create the DNSCrypt service
+
+```sh copy
+$SU $EDITOR /etc/init.d/dnscrypt-proxy
+```
+
+```sh copy filename="/etc/init.d/dnscrypt-proxy"
+#!/sbin/openrc-run
+
+: ${DNSCRYPT_PROXY_CONFIGFILE:=/etc/${RC_SVCNAME}/${RC_SVCNAME}.toml}
+: ${DNSCRYPT_PROXY_CACHEDIR:=/var/cache/${RC_SVCNAME}}
+: ${DNSCRYPT_PROXY_LOGDIR:=/var/log/${RC_SVCNAME}}
+: ${DNSCRYPT_PROXY_USER:=dnscrypt}
+: ${DNSCRYPT_PROXY_GROUP:=dnscrypt}
+: ${DNSCRYPT_PROXY_BIN:=/usr/bin/${RC_SVCNAME}}
+: ${DNSCRYPT_PROXY_OPTS=${DNSCRYPT_PROXY_OPTS}}
+: ${DNSCRYPT_PROXY_SIGTERM_TIMEOUT:=600}
+
+DNSCRYPT_PROXY_PIDDIR="/run/${RC_SVCNAME}"
+
+name="DNSCrypt client proxy"
+description="Encrypted/authenticated DNS proxy"
+
+required_files="${DNSCRYPT_PROXY_CONFIGFILE}"
+pidfile="${DNSCRYPT_PROXY_PIDDIR}/${RC_SVCNAME}.pid"
+retry="${DNSCRYPT_PROXY_SIGTERM_TIMEOUT}"
+capabilities="^cap_net_bind_service"
+
+command="${DNSCRYPT_PROXY_BIN}"
+command_args="-config ${DNSCRYPT_PROXY_CONFIGFILE}
+              ${DNSCRYPT_PROXY_OPTS}"
+command_user="${DNSCRYPT_PROXY_USER}:${DNSCRYPT_PROXY_GROUP}"
+command_background="true"
+
+start_stop_daemon_args="--stdout ${DNSCRYPT_PROXY_LOGDIR}/debug.log
+                        --stderr ${DNSCRYPT_PROXY_LOGDIR}/debug.log"
+
+depend() {
+  use logger net
+  provide dns
+}
+
+start_pre() {
+    checkpath --file      --mode 0660 --owner "${command_user}" "${DNSCRYPT_PROXY_CONFIGFILE}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${DNSCRYPT_PROXY_CACHEDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${DNSCRYPT_PROXY_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${DNSCRYPT_PROXY_PIDDIR}"
+}
+```
+
+* Enable execution permission
+
+```sh copy
+$SU chmod +x /etc/init.d/dnscrypt-proxy
+```
+
+#### Enable and start the DNSCrypt service
+
+```sh copy
+$SU rc-service dnscrypt-proxy start
+$SU rc-update add dnscrypt-proxy
+```
+
+#### Ensure that the DNSCrypt service is working
+
+```sh copy
+$SU netstat -lntup | grep LISTEN | grep dnscrypt
+```
+
+```output filename="output"
+tcp        0      0 127.0.0.1:53            0.0.0.0:*               LISTEN      18433/dnscrypt-prox
+```
+
+#### Setup DNS
+
+<Callout type="warning">
+Depending on your network configuration, you may need to change the DNS server
+in the interface configuration file or in the DHCP server configuration.
+
+Interface config setup `$SU setup-interfaces` or edit →
+`/etc/network/interfaces`
+</Callout>
+
+```sh copy
+$SU setup-dns 127.0.0.1
+```
+
+```sh copy
+printf "%s\n" "options edns0" | $SU tee -a /etc/resolv.conf
+```
+</Steps>
+
+### Test configuration
+  
+```sh copy
+nslookup microbolt.guide
+```
+
+```output filename="output"
+Server:         127.0.0.1
+Address:        127.0.0.1#53
+
+Non-authoritative answer:
+Name:   microbolt.guide
+Address: 76.76.21.21
+```
+
+* You can monitor DNSCrypt logs by entering this command. Exit with `Ctrl + C`
+
+```sh copy
+tail -f /var/log/dnscrypt-proxy/debug.log
 ```
