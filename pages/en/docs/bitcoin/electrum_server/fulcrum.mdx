@@ -76,7 +76,7 @@ $SU $EDITOR /etc/caddy/streams/electrum.caddy
 ```nginx copy filename="/etc/caddy/streams/electrum.caddy"
 :50002 {
         route {
-                tls 
+                tls
                 proxy {
                         upstream 127.0.0.1:50001
                 }
@@ -374,7 +374,7 @@ description="A fast & nimble SPV Server for BCH, BTC, and LTC"
 command="${FULCRUM_BIN}"
 command_args="${FULCRUM_CONFIGFILE}
               --datadir ${FULCRUM_DATADIR}
-              --admin ${FULCRUM_ADMINPORT}
+              --admin 127.0.0.1:${FULCRUM_ADMINPORT}
               --pidfile ${pidfile}
               ${FULCRUM_OPTS}"
 command_user="${FULCRUM_USER}:${FULCRUM_GROUP}"
