@@ -80,7 +80,7 @@ export const TGLogo = (props) => (
 )
 
 export default {
-  docsRepositoryBase: "https://github.com/microbolt-guide/microbolt/blob/main",
+  docsRepositoryBase: "https://github.com/microbolt-guide/website/blob/main",
   feedback: {
     content() {
       const { locale } = useRouter()
@@ -95,7 +95,7 @@ export default {
       config.frontMatter.description || DESCRIPTION[locale]
     const image =
       config.frontMatter.image ||
-      'https://raw.githubusercontent.com/microbolt-guide/microbolt/main/public/img/microbolt-banner.webp'
+      'https://raw.githubusercontent.com/microbolt-guide/website/main/public/img/microbolt-banner.webp'
     const title = `${config.title} – Microbolt`
     return (
       <>
@@ -130,7 +130,7 @@ export default {
     </>
   ),
   project: {
-    link: 'https://github.com/microbolt-guide/microbolt'
+    link: 'https://github.com/microbolt-guide/website'
   },
   chat: {
     link: 'https://t.me/microbolt_official',
