@@ -386,6 +386,7 @@ start_stop_daemon_args="--stdout ${FULCRUM_LOGDIR}/debug.log
 depend() {
     use bitcoind
     after bitcoind
+    provide electrum
 }
 
 start_pre() {

@@ -757,24 +757,8 @@ start_stop_daemon_args="--env MEMPOOL_CONFIG_FILE=${MEMPOOL_CONFIGFILE}
                         --stderr ${MEMPOOL_LOGDIR}/debug.log"
 
 depend() {
-    need bitcoind
-    need mariadb
+    need bitcoind electrum mariadb
     checkdepend REDIS redis
-
-    if service_started fulcrum; then
-        need fulcrum
-    elif service_started electrs; then
-        need electrs
-    else
-        if service_exists fulcrum; then
-            need fulcrum
-        elif service_exists electrs; then
-            need electrs
-        else
-            eerror "Neither fulcrum nor electrs is installed or started"
-            return 1
-        fi
-    fi
 }
 
 checkdepend() {
