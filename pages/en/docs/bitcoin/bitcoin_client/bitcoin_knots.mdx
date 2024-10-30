@@ -427,7 +427,7 @@ depend() {
 
 checkdepend() {
     if grep -qs "^${1}=" "${BITCOIND_CONFIGFILE}"; then
-        need "${2:-$1}"
+        use "${2:-$1}"
     fi
 }
 
