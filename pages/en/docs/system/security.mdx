@@ -320,24 +320,24 @@ $SU adduser satoshi caddy
 ```sh copy
 cd /tmp
 LATEST=$(curl https://api.github.com/repos/caddyserver/caddy/releases/latest | grep "tag_name" | cut -d '"' -f 4 | sed 's/^v//')
-curl -OL https://github.com/caddyserver/caddy/releases/download/v$LATEST/caddy_${LATEST}_linux_amd64.tar.gz \
+curl -OL https://github.com/caddyserver/caddy/releases/download/v$LATEST/caddy_${LATEST}_linux_${ARCH}.tar.gz \
      -OL https://github.com/caddyserver/caddy/releases/download/v$LATEST/caddy_${LATEST}_checksums.txt
 ```
 
 * Checksum check
 
 ```sh copy
-grep caddy_${LATEST}_linux_amd64.tar.gz caddy_${LATEST}_checksums.txt | sha512sum -c
+grep caddy_${LATEST}_linux_${ARCH}.tar.gz caddy_${LATEST}_checksums.txt | sha512sum -c
 ```
 
 ```output filename="output"
-caddy_${LATEST}_linux_amd64.tar.gz: OK
+caddy_${LATEST}_linux_${ARCH}.tar.gz: OK
 ```
 
 {<h3>Extract and install binary</h3>}
 
 ```sh copy
-$SU tar xzf caddy_${LATEST}_linux_amd64.tar.gz caddy -C /usr/bin/
+$SU tar xzf caddy_${LATEST}_linux_${ARCH}.tar.gz caddy -C /usr/bin/
 ```
 
 * Add necessary modules

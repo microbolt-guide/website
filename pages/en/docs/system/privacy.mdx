@@ -466,15 +466,15 @@ $SU adduser satoshi dnscrypt
 ```sh copy
 cd /tmp
 LATEST=$(curl -s https://api.github.com/repos/DNSCrypt/dnscrypt-proxy/releases/latest | grep "tag_name" | cut -d '"' -f 4 | sed 's/^v//')
-curl -OL https://github.com/DNSCrypt/dnscrypt-proxy/releases/download/$LATEST/dnscrypt-proxy-linux_x86_64-${LATEST}.tar.gz \
-     -OL https://github.com/DNSCrypt/dnscrypt-proxy/releases/download/$LATEST/dnscrypt-proxy-linux_x86_64-${LATEST}.tar.gz.minisig
+curl -OL https://github.com/DNSCrypt/dnscrypt-proxy/releases/download/$LATEST/dnscrypt-proxy-linux_${ARCH//amd64/x86_64}-${LATEST}.tar.gz \
+     -OL https://github.com/DNSCrypt/dnscrypt-proxy/releases/download/$LATEST/dnscrypt-proxy-linux_${ARCH//amd64/x86_64}-${LATEST}.tar.gz.minisig
 ```
 
 #### Verify the signature
 
 ```sh copy
 minisign \
-    -Vm dnscrypt-proxy-linux_x86_64-${LATEST}.tar.gz \
+    -Vm dnscrypt-proxy-linux_${ARCH//amd64/x86_64}-${LATEST}.tar.gz \
     -P RWTk1xXqcTODeYttYMCMLo0YJHaFEHn7a3akqHlb/7QvIQXHVPxKbjB5
 ```
 
@@ -490,7 +490,7 @@ Signature and comment signature verified
 #### Extract and install binary
 
 ```sh copy
-tar xzf dnscrypt-proxy-linux_x86_64-${LATEST}.tar.gz
+tar xzf dnscrypt-proxy-linux_${ARCH//amd64/x86_64}-${LATEST}.tar.gz
 ```
 
 * Create the necessary directories and copy the binary and configuration file
@@ -500,8 +500,8 @@ $SU mkdir -p /etc/dnscrypt-proxy
 ```
 
 ```sh copy
-$SU cp linux-x86_64/dnscrypt-proxy /usr/bin/
-$SU cp linux-x86_64/example-dnscrypt-proxy.toml /etc/dnscrypt-proxy/dnscrypt-proxy.toml
+$SU cp linux-${ARCH//amd64/x86_64}/dnscrypt-proxy /usr/bin/
+$SU cp linux-${ARCH//amd64/x86_64}/example-dnscrypt-proxy.toml /etc/dnscrypt-proxy/dnscrypt-proxy.toml
 ```
 
 #### Cleanup
@@ -509,7 +509,7 @@ $SU cp linux-x86_64/example-dnscrypt-proxy.toml /etc/dnscrypt-proxy/dnscrypt-pro
 ```sh copy
 cd
 $SU apk del .build-dep
-$SU rm -rf /tmp/dnscrypt-proxy-linux_x86_64-${LATEST}* /tmp/linux-x86_64
+$SU rm -rf /tmp/dnscrypt-proxy-linux_${ARCH//amd64/x86_64}-${LATEST}* /tmp/linux-${ARCH//amd64/x86_64}
 ```
 </Steps>
 

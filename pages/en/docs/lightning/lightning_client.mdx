@@ -78,7 +78,7 @@ VERSION=0.18.3-beta
 ```
 
 ```sh copy
-curl -OL https://github.com/lightningnetwork/lnd/releases/download/v$VERSION/lnd-linux-amd64-v$VERSION.tar.gz \
+curl -OL https://github.com/lightningnetwork/lnd/releases/download/v$VERSION/lnd-linux-${ARCH}-v$VERSION.tar.gz \
      -OL https://github.com/lightningnetwork/lnd/releases/download/v$VERSION/manifest-v$VERSION.txt \
      -OL https://github.com/lightningnetwork/lnd/releases/download/v$VERSION/manifest-roasbeef-v$VERSION.sig \
      -OL https://github.com/lightningnetwork/lnd/releases/download/v$VERSION/manifest-roasbeef-v$VERSION.sig.ots \
@@ -90,11 +90,11 @@ curl -OL https://github.com/lightningnetwork/lnd/releases/download/v$VERSION/lnd
 * Verify the signed checksum against the actual checksum of your download
 
 ```sh copy
-grep lnd-linux-amd64-v$VERSION.tar.gz manifest-v$VERSION.txt | sha256sum -c
+grep lnd-linux-${ARCH}-v$VERSION.tar.gz manifest-v$VERSION.txt | sha256sum -c
 ```
 
 ```output filename="output"
-lnd-linux-amd64-v0.17.4-beta.tar.gz: OK
+lnd-linux-${ARCH}-v${VERSION}.tar.gz: OK
 ```
 
 ### Signature check
@@ -167,7 +167,7 @@ safely proceed to install it!
 * Install LND
 
 ```sh copy
-$SU tar xzf lnd-linux-amd64-v$VERSION.tar.gz -C /usr/bin --strip-components=1
+$SU tar xzf lnd-linux-${ARCH}-v$VERSION.tar.gz -C /usr/bin --strip-components=1
 ```
 
 ```sh copy
@@ -179,7 +179,7 @@ lnd --version
 ```
 
 ```output filename="output"
-lnd version 0.17.4-beta commit=v0.17.4-beta
+lnd version ${VERSION} commit=v${VERSION}
 ```
 </Steps>
 
