@@ -509,7 +509,7 @@ $SU mysql -e "grant all privileges on mempool.* to 'mempool'@'localhost' identif
 ```sh copy
 cd /tmp/mempool/backend
 ```
-    
+
 ```sh copy
 npm ci --omit=dev --omit=optional
 ```
@@ -831,7 +831,7 @@ $SU logrotate /etc/logrotate.d/mempool --debug
 ```sh copy
 $SU rc-update add mempool
 ```
-    
+
 ```sh copy
 $SU rc-service mempool start
 ```

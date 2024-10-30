@@ -73,7 +73,7 @@ $SU $EDITOR /etc/caddy/streams/electrum.caddy
 ```nginx copy filename="/etc/caddy/streams/electrum.caddy"
 :50002 {
         route {
-                tls 
+                tls
                 proxy {
                         upstream 127.0.0.1:50001
                 }
