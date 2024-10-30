@@ -93,7 +93,7 @@ curl -OL https://github.com/lightningnetwork/lnd/releases/download/v$VERSION/lnd
 grep lnd-linux-${ARCH}-v$VERSION.tar.gz manifest-v$VERSION.txt | sha256sum -c
 ```
 
-```output filename="output"
+```sh filename="output"
 lnd-linux-${ARCH}-v${VERSION}.tar.gz: OK
 ```
 
@@ -117,7 +117,7 @@ curl -s \
     gpg --import
 ```
 
-```output filename="output"
+```sh filename="output"
 [...]
 gpg: key 372CBD7633C61696: public key "Olaoluwa Osuntokun <laolu32@gmail.com>" imported
 [...]
@@ -130,7 +130,7 @@ application
 gpg --verify manifest-roasbeef-v$VERSION.sig manifest-v$VERSION.txt
 ```
 
-```output filename="output"
+```sh filename="output"
 gpg: Signature made Tue Feb  6 20:39:45 2024 CET
 gpg:                using RSA key 60A1FA7DA5BFF08BDCBBE7903BBD59E99B280306
 gpg: Good signature from "Olaoluwa Osuntokun <laolu32@gmail.com>" [unknown]
@@ -151,7 +151,7 @@ release using its timestamp.
 ots --no-cache verify manifest-roasbeef-v$VERSION.sig.ots -f manifest-roasbeef-v$VERSION.sig
 ```
 
-```output filename="output"
+```sh filename="output"
 [...]
 Success! Bitcoin block 829257 attests existence as of 2024-02-06 CET
 ```
@@ -178,7 +178,7 @@ $SU install -D -m 0660 -o lnd -g lnd ./sample-lnd.conf /etc/lnd/lnd.conf
 lnd --version
 ```
 
-```output filename="output"
+```sh filename="output"
 lnd version ${VERSION} commit=v${VERSION}
 ```
 </Steps>
@@ -417,7 +417,7 @@ have an existing cipher seed. Just press enter if asked about an additional seed
 passphrase, unless you know what you're doing. A new cipher seed consisting of
 24 words is created.
 
-```output filename="output"
+```sh filename="output"
 Input wallet password:
 Confirm password:
  
@@ -648,7 +648,7 @@ lncli wtclient add 023bad37e5795654cecc69b43599da8bd5789ac633c098253f60494bde602
 lncli wtclient towers
 ```
 
-```output filename="output"
+```sh filename="output"
 {
     "towers": [
         {
@@ -701,7 +701,7 @@ by typing the following command and sharing it with your peers.
 lncli tower info
 ```
 
-```output filename="output"
+```sh filename="output"
 {
     "pubkey": "02929aec329a822516a0c5c51f31e7f9b371192a43bf8b6473039915174368a928",
     "listeners": [

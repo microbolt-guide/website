@@ -112,7 +112,7 @@ checksum calculated by you
 grep bitcoin-$VERSION.tar.gz SHA256SUMS | sha256sum -c
 ```
 
-```output filename="output"
+```sh filename="output"
 bitcoin-$VERSION.tar.gz: OK
 ```
 
@@ -147,7 +147,7 @@ gpg --verify SHA256SUMS.asc
 
 * Check that at least a few signatures show the following text
 
-```output filename="output"
+```sh filename="output"
 gpg: Good signature from...
 Primary key fingerprint:...
 ```
@@ -535,7 +535,7 @@ $SU rc-service bitcoind start
 tail -f /var/log/bitcoind/debug.log
 ```
 
-```output filename="output"
+```sh filename="output"
 2024-01-17T13:48:34Z Bitcoin Core version v26.0.0 (release build)
 2024-01-17T13:48:34Z InitParameterInteraction: parameter interaction: -blocksonly=1 -> setting -whitelistrelay=0
 2024-01-17T13:48:34Z InitParameterInteraction: parameter interaction: -blocksonly=1 -> setting -maxmempool=5
@@ -584,7 +584,7 @@ obtain your Tor and I2P addresses. Take note of them, later you might need it
 bitcoin-cli getnetworkinfo | grep 'address.*\.onion\|address.*\.i2p'
 ```
 
-```output filename="output"
+```sh filename="output"
 "address": "vctk9tie5srguvz262xpyukkd7g4z2xxxy5xx5ccyg4f12fzop8hoiad.onion",
 "address": "sesehks6xyh31nyjldpyeckk3ttpanivqhrzhsoracwqjxtk3apgq.b32.i2p",
 ```
@@ -595,7 +595,7 @@ bitcoin-cli getnetworkinfo | grep 'address.*\.onion\|address.*\.i2p'
 bitcoin-cli -netinfo
 ```
 
-```output filename="output"
+```sh filename="output"
 Bitcoin Core client v26.0.0 - server 70016/Satoshi:26.0.0/
           ipv4    ipv6   onion   i2p   total   block
 in          0       0      25     2      27
@@ -613,7 +613,7 @@ etehks3xyh55nyjldjdeckk3nwpanivqhrzhsoracwqjxtk8apgk.b32.i2p       port      0  
 $SU netstat -lntup | grep LISTEN | grep bitcoind
 ```
 
-```output filename="output"
+```sh filename="output"
 tcp        0      0 0.0.0.0:8333            0.0.0.0:*               LISTEN      28295/bitcoind
 tcp        0      0 127.0.0.1:8334          0.0.0.0:*               LISTEN      28295/bitcoind
 tcp        0      0 127.0.0.1:8332          0.0.0.0:*               LISTEN      28295/bitcoind

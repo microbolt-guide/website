@@ -226,7 +226,7 @@ npm audit fix
 ```
 </Callout>
 
-```output filename="output"
+```sh filename="output"
 26 vulnerabilities (1 low, 10 moderate, 15 high)
 
 To address issues that do not require attention, run:
@@ -384,7 +384,7 @@ $SU rc-service tor reload
 $SU cat /var/lib/tor/thunderhub/hostname
 ```
 
-```output filename="output"
+```sh filename="output"
 abcdefg..............xyz.onion
 ```
 
@@ -515,7 +515,7 @@ $SU logrotate /etc/logrotate.d/thunderhub --debug
 ```sh copy
 $SU rc-update add thunderhub
 ```
-    
+
 ```sh copy
 $SU rc-service thunderhub start
 ```

@@ -230,7 +230,7 @@ npm ci --omit=dev --omit=optional
 Installation can take some time. There might be a lot of confusing output, but
 if you see something similar to the following, the installation was successful:
 
-```output filename="output"
+```sh filename="output"
 2 vulnerabilities (1 low, 1 moderate)
 
 To address all issues, run:
@@ -301,7 +301,7 @@ npm ci
 Installation can take some time. There might be a lot of confusing output, but
 if you see something similar to the following, the installation was successful:
 
-```output filename="output"
+```sh filename="output"
 21 vulnerabilities (8 moderate, 11 high, 2 critical)
 
 To address issues that do not require attention, run:
@@ -401,7 +401,7 @@ $SU rc-service tor reload
 $SU cat /var/lib/tor/umbrel-nostr-relay/hostname
 ```
 
-```output filename="output"
+```sh filename="output"
 abcdefg..............xyz.onion
 ```
 
@@ -530,7 +530,7 @@ tail -f /var/log/umbrel-nostr-relay/debug.log
 $SU netstat -lntup | grep LISTEN | grep umbrel
 ```
 
-```output filename="output"
+```sh filename="output"
 tcp        0      0 0.0.0.0:8881            0.0.0.0:*               LISTEN      7140/umbrel-nostr-relay
 ```
 

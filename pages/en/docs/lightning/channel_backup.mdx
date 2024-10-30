@@ -343,7 +343,7 @@ text editor on your local computer (e.g. here `1234-5678`).
 $SU blkid
 ```
 
-```output filename="output"
+```sh filename="output"
 /dev/loop0: TYPE="squashfs"
 /dev/loop/0: TYPE="squashfs"
 /dev/sda1: UUID="b73b1dc9-6e12-4e68-9d06-1a1892663226" TYPE="xfs"
@@ -359,7 +359,7 @@ editor on your local computer (e.g. here GID `XXXX` and UID `YYYY`)
 awk -F ':' '$1=="lnd" {print "GID: "$3" / UID: "$4}' /etc/passwd
 ```
 
-```output filename="output"
+```sh filename="output"
 GID: XXXX / UID: YYYY
 ```
 
@@ -387,7 +387,7 @@ $SU mount -a
 $SU df -h /mnt/scbb-local
 ```
 
-```output filename="output"
+```sh filename="output"
 Filesystem                Size      Used Available Use% Mounted on
 /dev/sdc                  1.9G      4.0K      1.9G   1% /mnt/scbb-local
 ```
@@ -457,7 +457,7 @@ Generating public/private rsa key pair.
 $SU -u lnd cat ~/.lnd/.ssh/id_rsa.pub
 ```
 
-```output filename="output"
+```sh filename="output"
 ssh-rsa 1234abcd... lnd@nakamoto01
 ```
 
@@ -488,7 +488,7 @@ username. When prompted "Are you sure you want to continue connecting", type
 )
 ```
 
-```output filename="output"
+```sh filename="output"
 Cloning into 'remote-lnd-backup'...
 warning: You appear to have cloned an empty repository.
 ```
@@ -528,7 +528,7 @@ stored at the intended backup location.
 tail -f /var/log/messages | grep scbb
 ```
 
-```output filename="output"
+```sh filename="output"
 [...]
 Mar 12 13:28:35 nakamoto01 daemon.info scbb[22817]: Watches established.
 ```
@@ -543,7 +543,7 @@ $SU touch /var/lib/lnd/data/chain/bitcoin/mainnet/channel.backup
 * In the logs, you should see new entries similar to these (depending on which
 backup methods you enabled):
 
-```output filename="output"
+```sh filename="output"
 [...]
 Mar 12 13:32:12 nakamoto01 daemon.info scbb[23543]: Watches established.
 Mar 12 13:32:33 nakamoto01 daemon.info scbb[23543]: Local backup is enabled
@@ -573,7 +573,7 @@ the test made just above
 ls -lha /mnt/scbb-local
 ```
 
-```output filename="output"
+```sh filename="output"
 [...]
 -rwxr-xr-x    1 lnd      lnd           45 Mar 12 13:32 channel-20240312-133233.backup
 [...]

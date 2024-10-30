@@ -178,7 +178,7 @@ $SU rc-update add ip6tables
 $SU awall list
 ```
 
-```output filename="output"
+```sh filename="output"
 base-config  disabled  Base zones and policies
 ssh          disabled  Allow incoming SSH access (TCP/22)
 ```
@@ -194,7 +194,7 @@ $SU awall activate
 $SU iptables -S | grep 22
 ```
 
-```output filename="output"
+```sh filename="output"
 -A INPUT -i eth0 -p tcp -m tcp --dport 22 -j limit-ssh-0
 ```
 
@@ -242,7 +242,7 @@ $SU rc-update add ufw default
 $SU ufw status verbose
 ```
 
-```output filename="output"
+```sh filename="output"
 Status: active
 Logging: off
 Default: deny (incoming), allow (outgoing), disabled (routed)
@@ -330,7 +330,7 @@ curl -OL https://github.com/caddyserver/caddy/releases/download/v$LATEST/caddy_$
 grep caddy_${LATEST}_linux_${ARCH}.tar.gz caddy_${LATEST}_checksums.txt | sha512sum -c
 ```
 
-```output filename="output"
+```sh filename="output"
 caddy_${LATEST}_linux_${ARCH}.tar.gz: OK
 ```
 
@@ -599,7 +599,7 @@ $SU mkdir -p \
 $SU nginx -t
 ```
 
-```output filename="output"
+```sh filename="output"
 nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
 nginx: configuration file /etc/nginx/nginx.conf test is successful
 ```

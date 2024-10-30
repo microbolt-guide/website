@@ -111,7 +111,7 @@ $SU rc-update add tor default
 $SU netstat -lntup | grep LISTEN | grep tor
 ```
 
-```output filename="output"
+```sh filename="output"
 tcp        0      0 127.0.0.1:9050          0.0.0.0:*               LISTEN      6432/tor
 ```
 
@@ -158,7 +158,7 @@ export https_proxy="${HTTPS_PROXY}"
 curl -s https://check.torproject.org | grep -m 1 -e "Congratulations" -e "Sorry"
 ```
 
-```output filename="output"
+```sh filename="output"
 Congratulations. This browser is configured to use Tor.
 ```
 
@@ -201,7 +201,7 @@ $SU rc-service tor reload
 $SU cat /var/lib/tor/ssh/hostname
 ```
 
-```output filename="output"
+```sh filename="output"
 abcdefg..............xyz.onion
 ```
 
@@ -236,7 +236,7 @@ Check tor service are working
 netstat -aon | findstr ":9050"
 ```
 
-```output filename="output"
+```sh filename="output"
   TCP    127.0.0.1:9050         0.0.0.0:0              LISTENING       23656
 ```
 
@@ -398,7 +398,7 @@ $SU rc-update add i2pd default
 $SU netstat -lntup | grep LISTEN | grep i2pd
 ```
 
-```output filename="output"
+```sh filename="output"
 tcp        0      0 127.0.0.1:6668          0.0.0.0:*               LISTEN      11060/i2pd
 tcp        0      0 127.0.0.1:7656          0.0.0.0:*               LISTEN      11060/i2pd
 tcp        0      0 0.0.0.0:23178           0.0.0.0:*               LISTEN      11060/i2pd
@@ -417,7 +417,7 @@ communications between a DNS client and a DNS resolver. It prevents DNS
 spoofing. It uses cryptographic signatures to verify that responses originate
 from the chosen DNS resolver and haven't been tampered with.
 
-<Callout type="warning">
+<Callout type="error">
 This is not recommended if DNS queries to external servers are blocked at the
 router/firewall level in your local network. Blocking DNS queries at the
 firewall/router level would be the correct way to address this issue. Proceed
@@ -478,7 +478,7 @@ minisign \
     -P RWTk1xXqcTODeYttYMCMLo0YJHaFEHn7a3akqHlb/7QvIQXHVPxKbjB5
 ```
 
-```output filename="output"
+```sh filename="output"
 Signature and comment signature verified
 [...]
 ```
@@ -688,7 +688,7 @@ $SU rc-update add dnscrypt-proxy
 $SU netstat -lntup | grep LISTEN | grep dnscrypt
 ```
 
-```output filename="output"
+```sh filename="output"
 tcp        0      0 127.0.0.1:53            0.0.0.0:*               LISTEN      18433/dnscrypt-prox
 ```
 
@@ -782,7 +782,7 @@ $SU iptables -t nat -A OUTPUT -p tcp --dport 53 -j DNAT --to-destination 127.0.0
 nslookup microbolt.guide
 ```
 
-```output filename="output" {1-2}
+```sh filename="output" {1-2}
 Server:         127.0.0.1
 Address:        127.0.0.1#53
 
