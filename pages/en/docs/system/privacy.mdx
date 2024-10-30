@@ -72,7 +72,7 @@ $SU $EDITOR /etc/tor/torrc
 
 * Uncomment, add or modify the following lines
 
-```conf filename="/etc/tor/torrc" {7-8,12,16-19}
+```sh filename="/etc/tor/torrc" {7-8,12,16-19}
 [...]
 ## Tor opens a SOCKS proxy on port 9050 by default -- even if you don't
 ## configure one below. Set "SOCKSPort 0" if you plan to run Tor only
@@ -139,7 +139,7 @@ $SU $EDITOR /etc/profile.d/defaults.sh
 ```sh copy filename="/etc/profile.d/defaults.sh" {3-7}
 [...]
 # Tor proxy
-export ALL_PROXY="socks5h://localhost/var/run/tor/socks.sock"
+export ALL_PROXY="socks5h://127.0.0.1:9050"
 export HTTP_PROXY="${ALL_PROXY}"
 export HTTPS_PROXY="${ALL_PROXY}"
 export http_proxy="${HTTP_PROXY}"
