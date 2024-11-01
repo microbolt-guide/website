@@ -124,11 +124,18 @@ $SU tail -f /var/log/tor/notices.log
 Not all network traffic is routed over the Tor network. But we now have the base
 to configure sensitive applications to use it.
 
-### `curl` and `git` through Tor
+### `curl`, `git` and `npm` through Tor
 
-If you want to download files with `curl` and/or `git` through Tor, you can use
-the `*_PROXY` environment variable. This is useful for downloading files from
-the internet without revealing your IP address.
+To download files with `curl`, `git`, and `npm` through Tor, you can use the
+`*_PROXY` environment variable. This is useful for downloading files from the
+internet without revealing your IP address.
+
+<Callout type="warning">
+This approach may not work for all applications. Always test after configuring
+the proxy to ensure proper functionality. We use `curl` because `wget` does not
+support the `socks5h` proxy. Everything in this guide has been tested and works
+with this Tor configuration.
+</Callout>
 
 * Uncomment these lines in the default environment variables
 
