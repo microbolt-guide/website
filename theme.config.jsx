@@ -38,7 +38,7 @@ const GIT_TIMESTAMP = l10n('GIT_TIMESTAMP')
 
 const BANNER_KEY = 'microbolt-2'
 const BANNER_LINK = 'https://t.me/microbolt_official'
-const TOC_L10N_LINK = 'https://crowdin.com/project/microbolt'
+const TOC_L10N_LINK = 'https://l10n.microbolt.guide'
 // End of l10n strings
 
 export const MOBLogo = (props) => (

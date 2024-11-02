@@ -13,16 +13,11 @@ process_file() {
 }
 
 trap process_file INT EXIT
+process_file .mdx
 
 case "$1" in
-    push)
-        process_file .mdx
-        crowdin "$1"              --identity ./.crowdin.yml
-        crowdin "$1" translations --identity ./.crowdin.yml
-    ;;
-    pull)
-        crowdin "$1" sources      --identity ./.crowdin.yml
-        crowdin "$1"              --identity ./.crowdin.yml
+    push|pull)
+        crowdin "$1" --identity ./.crowdin.yml
     ;;
     *)
         printf "%s\n\n" "Usage: ${0##*/} {push|pull}"
