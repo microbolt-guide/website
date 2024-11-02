@@ -364,17 +364,17 @@ $SU $EDITOR /etc/tor/torrc
 
 ```sh copy filename="/etc/tor/torrc"
 # Hidden Service BTC RPC Explorer
-HiddenServiceDir /var/lib/tor/btc-rpc-explorer/
+HiddenServiceDir /var/lib/tor/hsv3explorer/
 HiddenServiceVersion 3
 HiddenServicePoWDefensesEnabled 1
-HiddenServicePort 443 127.0.0.1:4000
+HiddenServicePort 80 127.0.0.1:3002
 ```
 
 * Reload Tor configuration and get your connection address.
 
 ```sh copy
 $SU rc-service tor reload
-$SU cat /var/lib/tor/btc-rpc-explorer/hostname
+$SU cat /var/lib/tor/hsv3explorer/hostname
 ```
 
 ```sh filename="output"
@@ -382,7 +382,7 @@ abcdefg..............xyz.onion
 ```
 
 * You should now be able to connect to your BTC RPC Explorer remotely via Tor
-using your hostname and port `4000`
+using your hostname and port `3002`
 </FAQBox>
 
 ### Autostart on boot
@@ -429,6 +429,7 @@ start_stop_daemon_args="--stdout ${BTCRPCEXPL_LOGDIR}/debug.log
 
 depend() {
     need bitcoind electrum
+    provide explorer
 }
 
 service_exists() {
