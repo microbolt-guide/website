@@ -8,5 +8,7 @@ export default {
   },
   ashigaru: "Ashigaru",
   lightning: "Lightning",
+  liquid: "Liquid",
+  darkirc: "DarkIRC",
   nostr: "Nostr"
 }
