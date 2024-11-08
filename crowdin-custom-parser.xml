@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<srx version="2.0"
+     xmlns="http://www.lisa.org/srx20"
+     xsi:schemaLocation="http://www.lisa.org/srx20 srx20.xsd"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <header segmentsubflows="yes" cascade="yes">
+    <formathandle type="start" include="no"/>
+    <formathandle type="end" include="yes"/>
+    <formathandle type="isolated" include="yes"/>
+  </header>
+  <body>
+    <languagerules>
+      <languagerule languagerulename="Default">
+        <!-- For HTML tags -->
+        <rule break="no">
+          <beforebreak>&lt;[^>]*></beforebreak>
+          <afterbreak></afterbreak>
+        </rule>
+        <!-- For title attribute -->
+        <rule break="no">
+          <beforebreak>&lt;[^>]*title="</beforebreak>
+          <afterbreak>"[^>]*></afterbreak>
+        </rule>
+        <rule break="yes">
+          <beforebreak>title="</beforebreak>
+          <afterbreak>"</afterbreak>
+        </rule>
+        <!-- For markdown images -->
+        <rule break="no">
+          <beforebreak>!\[.*?\]</beforebreak>
+          <afterbreak>\(/[^)]*\)</afterbreak>
+        </rule>
+        <!-- For lines starting with import -->
+        <rule break="no">
+          <beforebreak>^import\s.*\n</beforebreak>
+          <afterbreak></afterbreak>
+        </rule>
+      </languagerule>
+    </languagerules>
+    <maprules>
+      <!-- Common breaking rules -->
+      <languagemap languagepattern=".*" languagerulename="Default"/>
+    </maprules>
+  </body>
+</srx>
