@@ -1,5 +1,5 @@
 # Put the commented values in your .crowdin.yml file
-# project_id: "CROWDIN_PROJECT_ID"
+project_id: "1"
 # api_token: "CROWDIN_PERSONAL_TOKEN"
 base_path: "."
 base_url: "https://microbolt.api.crowdin.com"
@@ -13,33 +13,31 @@ files: [
     type: "js"
   },
   {
-    source: "/pages/en/**/*.mdx",
+    source: "/pages/en/**/*.html",
     translation: "/pages/%two_letters_code%/**/%original_file_name%",
-    type: "mdx_v2",
-    ignore: [
-      "/pages/en/docs/ashigaru/*.mdx",
-      "/pages/en/docs/darkirc/*.mdx",
-      "/pages/en/docs/liquid/*.mdx"
-    ]
-  },
-  {
-    source: "/pages/en/**/*.md",
-    translation: "/pages/%two_letters_code%/**/%original_file_name%",
-    type: "mdx_v2",
-    ignore: [
-      "/pages/en/docs/ashigaru.md",
-      "/pages/en/docs/darkirc.md",
-      "/pages/en/docs/liquid.md"
-    ]
+    type: "html"
   },
   {
     source: "/pages/en/**/*.js",
     translation: "/pages/%two_letters_code%/**/%original_file_name%",
     type: "js",
     ignore: [
-      "/pages/en/docs/ashigaru/_meta.js",
-      "/pages/en/docs/darkirc/_meta.js",
-      "/pages/en/docs/liquid/_meta.js"
+      "/pages/en/**/ashigaru",
+      "/pages/en/**/darkirc",
+      "/pages/en/**/liquid"
+    ]
+  },
+  {
+    source: "/pages/en/**/*.mdx",
+    translation: "/pages/%two_letters_code%/**/%original_file_name%",
+    type: "mdx_v2",
+    ignore: [
+      "/pages/en/**/ashigaru",
+      "/pages/en/**/darkirc",
+      "/pages/en/**/liquid",
+      "/pages/en/**/ashigaru.mdx",
+      "/pages/en/**/darkirc.mdx",
+      "/pages/en/**/liquid.mdx"
     ]
   }
 ]
