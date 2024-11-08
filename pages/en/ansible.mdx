@@ -59,15 +59,15 @@ Proxmox/Debian. You'll thank me later.
 
 ```sh copy
 qm create "${blank:-9000}" \
-		--name template \
-		--ostype l26 \
-		--agent enabled=1,fstrim_cloned_disks=1 \
-		--cpu host \
-		--balloon 0 \
-		--vga serial0 \
-		--scsihw virtio-scsi-pci \
-		--net0 virtio,bridge=vmbr0,firewall=1 \
-		--serial0 socket
+    --name template \
+    --ostype l26 \
+    --agent enabled=1,fstrim_cloned_disks=1 \
+    --cpu host \
+    --balloon 0 \
+    --vga serial0 \
+    --scsihw virtio-scsi-pci \
+    --net0 virtio,bridge=vmbr0,firewall=1 \
+    --serial0 socket
 qm template "${blank:-9000}"
 ```
 
@@ -77,8 +77,8 @@ Clone the blank template
 
 ```sh copy
 qm clone "${blank:-9000}" "${alpine:-9010}" \
-		--name alpine-3.20 \
-		--full
+    --name alpine-3.20 \
+    --full
 ```
 
 Download the cloud image
@@ -102,16 +102,16 @@ export ssh_keyfile=./github_keys
 
 ```sh copy
 qm set "${alpine:-9010}" \
-		--scsi0 "${storage:-local-zfs}:0,import-from=$(pwd)/nocloud_alpine-3.20.3-x86_64-bios-cloudinit-r0.qcow2,iothread=1,discard=on,ssd=${ssd:-1}" \
-		--ide0 "${storage:-local-zfs}:cloudinit" \
-		--tags alpine \
-		--ciuser "${username:-satoshi}" \
-		--sshkeys "${ssh_keyfile:-/etc/pve/priv/authorized_keys}" \
-		--cipassword "${password:-changeme}" \
-		--ipconfig0 "ip6=auto,ip=dhcp" \
-		--boot order=scsi0 \
-		--ciupgrade 1 \
-		--scsihw virtio-scsi-single
+    --scsi0 "${storage:-local-zfs}:0,import-from=$(pwd)/nocloud_alpine-3.20.3-x86_64-bios-cloudinit-r0.qcow2,iothread=1,discard=on,ssd=${ssd:-1}" \
+    --ide0 "${storage:-local-zfs}:cloudinit" \
+    --tags alpine \
+    --ciuser "${username:-satoshi}" \
+    --sshkeys "${ssh_keyfile:-/etc/pve/priv/authorized_keys}" \
+    --cipassword "${password:-changeme}" \
+    --ipconfig0 "ip6=auto,ip=dhcp" \
+    --boot order=scsi0 \
+    --ciupgrade 1 \
+    --scsihw virtio-scsi-single
 qm template "${alpine:-9010}"
 ```
 
@@ -127,36 +127,36 @@ Clone the Alpine cloud template
 
 ```sh copy
 qm clone "${alpine:-9010}" "${microbolt:-2140}" \
-		--name "${name:-nakamoto01}" \
-		--full
+    --name "${name:-nakamoto01}" \
+    --full
 ```
 
 Set the Microbolt VM
 
 ```sh copy
 qm set "${microbolt:-2140}" \
-		--onboot 1 \
-		--cores "${cores:-2}" \
-		--memory "${memory:-8192}" \
-		--net0 "virtio,bridge=vmbr0,firewall=1,tag=${vlan:-1}" \
-		--tags "alpine,microbolt"
+    --onboot 1 \
+    --cores "${cores:-2}" \
+    --memory "${memory:-8192}" \
+    --net0 "virtio,bridge=vmbr0,firewall=1,tag=${vlan:-1}" \
+    --tags "alpine,microbolt"
 ```
 
 Rezise the disk(s)
 
 <Tabs items={['one disk', 'two disks']}>
-		<Tabs.Tab>
+    <Tabs.Tab>
 ```sh copy
 qm disk resize "${microbolt:-2140}" scsi0 2048G
 ```
-		</Tabs.Tab>
-		<Tabs.Tab>
+    </Tabs.Tab>
+    <Tabs.Tab>
 ```sh copy
 qm set "${microbolt:-2140}" \
-		--scsi1 "${second_storage:-local-zfs}:2048,iothread=1,discard=on,ssd=${second_ssd:-1}"
+    --scsi1 "${second_storage:-local-zfs}:2048,iothread=1,discard=on,ssd=${second_ssd:-1}"
 qm disk resize "${microbolt:-2140}" scsi0 32G
 ```
-		</Tabs.Tab>
+    </Tabs.Tab>
 </Tabs>
 
 Start the VM
@@ -174,20 +174,20 @@ Run the following commands on your main machine.
 ### Install Ansible
 
 <Tabs items={['Alpine', 'Linux/*BSD/plan9', 'macOS', 'windows']}>
-		<Tabs.Tab>
+    <Tabs.Tab>
 ```sh copy
 apk add ansible
 ```
-		</Tabs.Tab>
-		<Tabs.Tab>
+    </Tabs.Tab>
+    <Tabs.Tab>
 <Callout type="info">
 For some Linux distributions, refer to the [installation
 guide](https://docs.ansible.com/ansible/latest/installation_guide/installation_distros.html).
 Other Unix-like systems can also check the [installation
 instructions](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html).
 </Callout>
-		</Tabs.Tab>
-		<Tabs.Tab>
+    </Tabs.Tab>
+    <Tabs.Tab>
 <Callout type="warning">
 First, install [Homebrew](https://brew.sh).
 </Callout>
@@ -195,15 +195,15 @@ First, install [Homebrew](https://brew.sh).
 ```sh copy
 brew install ansible
 ```
-		</Tabs.Tab>
-		<Tabs.Tab>
+    </Tabs.Tab>
+    <Tabs.Tab>
 <Callout type="error">
 Ansible does not support Windows natively. For more information, refer to the
 [Windows FAQ](https://docs.ansible.com/ansible/latest/os_guide/windows_faq.html#windows-faq-ansible).
 To use Ansible on Windows, consider using WSL. Learn more about the reasons
 [here](https://blog.rolpdog.com/2020/03/why-no-ansible-controller-for-windows.html).
 </Callout>
-		</Tabs.Tab>
+    </Tabs.Tab>
 </Tabs>
 
 ### Clone the repository

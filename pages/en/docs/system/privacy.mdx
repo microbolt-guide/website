@@ -41,14 +41,14 @@ $SU addgroup -S tor
 
 ```sh copy
 $SU adduser \
-		-S \
-		-D \
-		-H \
-		-h /dev/null \
-		-s /sbin/nologin \
-		-G tor \
-		-g tor \
-		tor
+    -S \
+    -D \
+    -H \
+    -h /dev/null \
+    -s /sbin/nologin \
+    -G tor \
+    -g tor \
+    tor
 ```
 
 ### Install
@@ -173,7 +173,7 @@ You also need to have Tor installed on your regular computer where you start the
 SSH connection. Usage of SSH over Tor differs by client and operating system.
 
 <Tabs items={['windows', 'macOS', 'linux']}>
-		<Tabs.Tab>
+    <Tabs.Tab>
 Popular tools like `torify` or `torsocks` are not available on Windows, and
 `torifier` are abandoned.
 
@@ -197,15 +197,15 @@ netstat -aon | findstr ":9050"
 ```
 
 ```output filename="output"
-	TCP    127.0.0.1:9050         0.0.0.0:0              LISTENING       23656
+  TCP    127.0.0.1:9050         0.0.0.0:0              LISTENING       23656
 ```
 
 You can SSH to your PC "out of the box" with the following proxy command:
 
 ```sh copy
 ssh `
-		-o "ProxyCommand ncat --proxy-type socks5 --proxy 127.0.0.1:9050 %h %p" `
-		satoshi@abcdefg..............xyz.onion -p 2222
+    -o "ProxyCommand ncat --proxy-type socks5 --proxy 127.0.0.1:9050 %h %p" `
+    satoshi@abcdefg..............xyz.onion -p 2222
 ```
 
 * For a more permanent solution, add these six lines below to your local SSH
@@ -217,11 +217,11 @@ notepad .ssh/config
 
 ```conf filename="~/.ssh/config"
 Host HOSTNICKNAME
-	Hostname abcdefg..............xyz.onion
-	User satoshi
-	Port 2222
-	CheckHostIP no
-	ProxyCommand ncat --proxy-type socks5 --proxy 127.0.0.1:9050 %h %p
+  Hostname abcdefg..............xyz.onion
+  User satoshi
+  Port 2222
+  CheckHostIP no
+  ProxyCommand ncat --proxy-type socks5 --proxy 127.0.0.1:9050 %h %p
 ```
 
 * Restart Tor
@@ -236,8 +236,8 @@ tor --service start
 ```sh copy
 ssh HOSTNICKNAME
 ```
-		</Tabs.Tab>
-		<Tabs.Tab>
+    </Tabs.Tab>
+    <Tabs.Tab>
 Using `torify` or `torsocks` may not work due to Apple's
 _System Integrity Protection (SIP)_ which will deny access to `/usr/bin/ssh`.
 
@@ -255,8 +255,8 @@ You can SSH to your PC "out of the box" with the following proxy command:
 
 ```sh
 ssh \
-		-o "ProxyCommand nc -X 5 -x 127.0.0.1:9050 %h %p" \
-		satoshi@abcdefg..............xyz.onion -p 2222
+    -o "ProxyCommand nc -X 5 -x 127.0.0.1:9050 %h %p" \
+    satoshi@abcdefg..............xyz.onion -p 2222
 ```
 
 * For a more permanent solution, add these six lines below to your local SSH
@@ -268,11 +268,11 @@ vi .ssh/config
 
 ```conf filename="~/.ssh/config"
 Host HOSTNICKNAME
-	Hostname abcdefg..............xyz.onion
-	User satoshi
-	Port 2222
-	CheckHostIP no
-	ProxyCommand /usr/bin/nc -x localhost:9050 %h %p
+  Hostname abcdefg..............xyz.onion
+  User satoshi
+  Port 2222
+  CheckHostIP no
+  ProxyCommand /usr/bin/nc -x localhost:9050 %h %p
 ```
 
 * Restart Tor
@@ -286,8 +286,8 @@ brew services restart tor
 ```sh copy
 ssh HOSTNICKNAME
 ```
-		</Tabs.Tab>
-		<Tabs.Tab>
+    </Tabs.Tab>
+    <Tabs.Tab>
 * Use `torify` or `torsocks`, both work similarly; just use whatever you have
 available
 
@@ -298,7 +298,7 @@ torify ssh admin@abcdefg..............xyz.onion -p 2222
 ```sh
 torsocks ssh admin@abcdefg..............xyz.onion -p 2222
 ```
-		</Tabs.Tab>
+    </Tabs.Tab>
 </Tabs>
 </FAQBox>
 

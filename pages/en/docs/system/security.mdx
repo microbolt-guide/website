@@ -34,7 +34,7 @@ can use `password [A]`
 
 ```sh copy
 cat ./.ssh/id_rsa.pub |
-		ssh satoshi@nakamoto01 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+    ssh satoshi@nakamoto01 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
 
 ```
 </Steps>
@@ -49,30 +49,30 @@ It's also recommended to change default `ssh` port `22`, to something else like
 <Steps>
 ### Disable password and root logins
 <Tabs items={['dropbear', 'openssh']}>
-		<Tabs.Tab>
+    <Tabs.Tab>
 ```sh copy
 sed 's/DROPBEAR_OPTS=""/DROPBEAR_OPTS="-w -s -p 2222"/' /etc/conf.d/dropbear > _
 $SU mv -f _ /etc/conf.d/dropbear
 
 ```
-		</Tabs.Tab>
-		<Tabs.Tab>
+    </Tabs.Tab>
+    <Tabs.Tab>
 ```sh copy
 printf "%s\n" \
-		"Port 2222" \
-		"PermitRootLogin no" \
-		"PasswordAuthentication no" \
-		| $SU tee -a /etc/ssh/sshd_config.d/defaults.conf
+    "Port 2222" \
+    "PermitRootLogin no" \
+    "PasswordAuthentication no" \
+    | $SU tee -a /etc/ssh/sshd_config.d/defaults.conf
 
 ```
-		</Tabs.Tab>
+    </Tabs.Tab>
 </Tabs>
 ### Restart service to apply changes
 ```sh copy
 if $SU rc-service dropbear status | grep -q "started"; then
-		$SU rc-service dropbear restart
+    $SU rc-service dropbear restart
 elif $SU rc-service sshd status | grep -q "started"; then
-		$SU rc-service sshd restart
+    $SU rc-service sshd restart
 fi
 ```
 </Steps>
@@ -94,8 +94,8 @@ For now, only SSH should be reachable from the outside. Bitcoin Core and LND are
 using Tor and don't need incoming ports.
 
 <Tabs items={['awall', 'ufw']}>
-		<Tabs.Tab>
-			<Steps>
+    <Tabs.Tab>
+      <Steps>
 {<h3>Install awall</h3>}
 
 ```sh copy
@@ -107,12 +107,12 @@ $SU apk add awall iptables ip6tables
 ```sh copy
 $SU modprobe -av ip_tables ip6_tables
 ```
-		
+
 ```sh copy
 printf "%s\n" \
-		"ip_tables" \
-		"ip6_tables" \
-		| $SU tee /etc/modules-load.d/awall.conf
+    "ip_tables" \
+    "ip6_tables" \
+    | $SU tee /etc/modules-load.d/awall.conf
 ```
 
 {<h3>Configure and enable the firewall rules</h3>}
@@ -127,16 +127,16 @@ $SU $EDITOR /etc/awall/optional/base-config.json
 
 ```json copy filename="/etc/awall/optional/base-config.json" {5}
 {
-	"description": "Base zones and policies",
+  "description": "Base zones and policies",
 
-	"zone": {
-		"internet": { "iface": "eth0" }
-	},
+  "zone": {
+    "internet": { "iface": "eth0" }
+  },
 
-	"policy": [
-		 { "in": "internet", "action": "drop" },
-		 { "out": "internet", "action": "accept" }
-	]
+  "policy": [
+     { "in": "internet", "action": "drop" },
+     { "out": "internet", "action": "accept" }
+  ]
 }
 ```
 
@@ -151,17 +151,17 @@ $SU $EDITOR /etc/awall/optional/ssh.json
 
 ```json copy filename="/etc/awall/optional/ssh.json" {8}
 {
-	"description": "Allow incoming SSH access (TCP/22)",
+  "description": "Allow incoming SSH access (TCP/22)",
 
-	"filter": [
-		{
-			"in": "internet",
-			"out": "_fw",
-			"service": "ssh",
-			"action": "accept",
-			"conn-limit": { "count": 3, "interval": 60 }
-		}
-	]
+  "filter": [
+    {
+      "in": "internet",
+      "out": "_fw",
+      "service": "ssh",
+      "action": "accept",
+      "conn-limit": { "count": 3, "interval": 60 }
+    }
+  ]
 }
 ```
 
@@ -203,10 +203,10 @@ More: [Alpine Wall User’s Guide](https://git.alpinelinux.org/awall/about)
 
 How-To: [How-To Alpine Wall](https://wiki.alpinelinux.org/wiki/How-To_Alpine_Wall)
 </Callout>
-			</Steps>
-		</Tabs.Tab>
-		<Tabs.Tab>
-			<Steps>
+      </Steps>
+    </Tabs.Tab>
+    <Tabs.Tab>
+      <Steps>
 {<h3>Install ufw</h3>}
 
 ```sh copy
@@ -257,14 +257,14 @@ To                         Action      From
 <Callout>
 More: [UFW Essentials](https://wiki.alpinelinux.org/wiki/Uncomplicated_Firewall)
 </Callout>
-			</Steps>
-		</Tabs.Tab>
+      </Steps>
+    </Tabs.Tab>
 </Tabs>
 
 <Callout type="info">
 If you find yourself locked out by mistake, you can connect a keyboard and
 screen to your PC to log in locally and fix these settings (especially for the
-SSH port). 
+SSH port).
 </Callout>
 
 ## Reverse proxy
@@ -282,7 +282,7 @@ without encryption. Alternatively you can also install nginx to perform the same
 functions.
 
 <Tabs items={['caddy', 'nginx']}>
-		<Tabs.Tab>
+    <Tabs.Tab>
 
 <Callout type="warning">
 We do not recommend using the Caddy available in Alpine because it will conflict
@@ -290,23 +290,23 @@ when Caddy updates itself to the latest version and adds modules. Also, the
 provided init script is not as complete as the one proposed in this guide.
 </Callout>
 
-			<Steps>
+      <Steps>
 {<h3>Create the caddy user/group</h3>}
 
 ```sh copy
 $SU addgroup -S caddy
 ```
-	
+
 ```sh copy
 $SU adduser \
-		-S \
-		-D \
-		-H \
-		-h /dev/null \
-		-s /sbin/nologin \
-		-G caddy \
-		-g caddy \
-		caddy
+    -S \
+    -D \
+    -H \
+    -h /dev/null \
+    -s /sbin/nologin \
+    -G caddy \
+    -g caddy \
+    caddy
 ```
 
 * Add the user satoshi to the group caddy
@@ -321,7 +321,7 @@ $SU adduser satoshi caddy
 cd /tmp
 LATEST=$(wget -qO- https://api.github.com/repos/caddyserver/caddy/releases/latest | grep "tag_name" | cut -d '"' -f 4 | sed 's/^v//')
 wget https://github.com/caddyserver/caddy/releases/download/v$LATEST/caddy_${LATEST}_linux_amd64.tar.gz \
-		https://github.com/caddyserver/caddy/releases/download/v$LATEST/caddy_${LATEST}_checksums.txt
+    https://github.com/caddyserver/caddy/releases/download/v$LATEST/caddy_${LATEST}_checksums.txt
 ```
 
 * Checksum check
@@ -329,7 +329,7 @@ wget https://github.com/caddyserver/caddy/releases/download/v$LATEST/caddy_${LAT
 ```sh copy
 grep caddy_${LATEST}_linux_amd64.tar.gz caddy_${LATEST}_checksums.txt | sha512sum -c
 ```
-	
+
 ```output filename="output"
 caddy_${LATEST}_linux_amd64.tar.gz: OK
 ```
@@ -352,8 +352,8 @@ $SU caddy add-package github.com/mholt/caddy-l4
 
 ```sh copy
 $SU mkdir -p \
-		/etc/caddy/sites \
-		/etc/caddy/streams
+    /etc/caddy/sites \
+    /etc/caddy/streams
 ```
 
 ```sh copy
@@ -362,22 +362,22 @@ $SU $EDITOR /etc/caddy/Caddyfile
 
 ```nginx copy filename="/etc/caddy/Caddyfile"
 {
-				local_certs
-				ocsp_stapling off
-				log {
-								format console
-				}
-				layer4 {
-								import /etc/caddy/streams/*.caddy
-				}
+        local_certs
+        ocsp_stapling off
+        log {
+                format console
+        }
+        layer4 {
+                import /etc/caddy/streams/*.caddy
+        }
 }
 (tls) {
-				tls internal {
-								on_demand
-				}
+        tls internal {
+                on_demand
+        }
 }
 https:// {
-				import tls
+        import tls
 }
 import /etc/caddy/sites/*.caddy
 ```
@@ -385,18 +385,18 @@ import /etc/caddy/sites/*.caddy
 <FAQBox title="Use your own self-signed certificates">
 ```sh
 $SU openssl req \
-		-x509 \
-		-nodes \
-		-newkey rsa:4096 \
-		-keyout /path/to/your-key.pem \
-		-out /path/to/your-cert.pem \
-		-subj "/CN=localhost" \
-		-days 3650
+    -x509 \
+    -nodes \
+    -newkey rsa:4096 \
+    -keyout /path/to/your-key.pem \
+    -out /path/to/your-cert.pem \
+    -subj "/CN=localhost" \
+    -days 3650
 
 $SU chown \
-		caddy:caddy \
-		/path/to/your-key.pem \
-		/path/to/your-cert.pem
+    caddy:caddy \
+    /path/to/your-key.pem \
+    /path/to/your-cert.pem
 ```
 
 ```diff filename="/etc/caddy/Caddyfile"
@@ -404,8 +404,8 @@ $SU chown \
  (tls) {
 -        tls internal {
 +        tls /path/to/your-cert.pem /path/to/your-key.pem {
-								 on_demand
-				 }
+                 on_demand
+         }
  }
  [...]
 ```
@@ -441,15 +441,15 @@ capabilities="^cap_net_bind_service"
 
 command="${CADDY_BIN}"
 command_args="run
-							--config ${CADDY_CONFIGFILE}
-							${CADDY_OPTS}"
+              --config ${CADDY_CONFIGFILE}
+              ${CADDY_OPTS}"
 command_user="${CADDY_USER}:${CADDY_GROUP}"
 command_background="true"
 
 start_stop_daemon_args="--env XDG_CONFIG_HOME=${CADDY_DATADIR%/caddy}
-												--env XDG_DATA_HOME=${CADDY_DATADIR%/caddy}
-												--stdout ${CADDY_LOGDIR}/debug.log
-												--stderr ${CADDY_LOGDIR}/debug.log"
+                        --env XDG_DATA_HOME=${CADDY_DATADIR%/caddy}
+                        --stdout ${CADDY_LOGDIR}/debug.log
+                        --stderr ${CADDY_LOGDIR}/debug.log"
 
 extra_commands="checkconfig"
 description_checkconfig="Check configuration"
@@ -458,35 +458,35 @@ extra_started_commands="reload"
 description_reload="Reload configuration without downtime"
 
 depend() {
-	need net localmount
-	after firewall
+  need net localmount
+  after firewall
 }
 
 start_pre() {
-		checkpath --file      --mode 0660 --owner "${command_user}" "${CADDY_CONFIGFILE}"
-		checkpath --directory --mode 0750 --owner "${command_user}" "${CADDY_DATADIR}"
-		checkpath --directory --mode 0755 --owner "${command_user}" "${CADDY_LOGDIR}"
-		checkpath --directory --mode 0755 --owner "${command_user}" "${CADDY_PIDDIR}"
-		checkconfig
+    checkpath --file      --mode 0660 --owner "${command_user}" "${CADDY_CONFIGFILE}"
+    checkpath --directory --mode 0750 --owner "${command_user}" "${CADDY_DATADIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${CADDY_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${CADDY_PIDDIR}"
+    checkconfig
 }
 
 checkconfig() {
-	if [ ! -f "${CADDY_CONFIGFILE}" ] ; then
-		ewarn "${CADDY_CONFIGFILE} does not exist." && return 1
-	fi
-	$command validate ${command_args#run} > /dev/null 2>&1
-	eend $?
+  if [ ! -f "${CADDY_CONFIGFILE}" ] ; then
+    ewarn "${CADDY_CONFIGFILE} does not exist." && return 1
+  fi
+  $command validate ${command_args#run} > /dev/null 2>&1
+  eend $?
 }
 
 reload() {
-	if ! service_started "${SVCNAME}" ; then
-			eerror "${SVCNAME} isn't running" && return 1
-	fi
-	checkconfig || { eerror "Invalid configuration file !" && return 1; }
+  if ! service_started "${SVCNAME}" ; then
+      eerror "${SVCNAME} isn't running" && return 1
+  fi
+  checkconfig || { eerror "Invalid configuration file !" && return 1; }
 
-	ebegin "Reloading ${SVCNAME}"
-	$command reload --force ${command_args#run} > /dev/null 2>&1
-	eend $?
+  ebegin "Reloading ${SVCNAME}"
+  $command reload --force ${command_args#run} > /dev/null 2>&1
+  eend $?
 }
 ```
 
@@ -502,15 +502,15 @@ $SU chmod +x /etc/init.d/caddy
 $SU rc-service caddy start
 $SU rc-update add caddy
 ```
-			</Steps>
+      </Steps>
 
 * You can monitor the Caddy logs by entering this command. Exit with `Ctrl + C`
 
 ```sh copy
 tail -f /var/log/caddy/debug.log
 ```
-		</Tabs.Tab>
-		<Tabs.Tab>
+    </Tabs.Tab>
+    <Tabs.Tab>
 <Steps>
 {<h3>Install ngnix</h3>}
 
@@ -522,13 +522,13 @@ $SU apk add nginx nginx-mod-stream
 
 ```sh copy
 $SU openssl req \
-		-x509 \
-		-nodes \
-		-newkey rsa:4096 \
-		-keyout /etc/ssl/private/nginx-selfsigned.key \
-		-out /etc/ssl/certs/nginx-selfsigned.crt \
-		-subj "/CN=localhost" \
-		-days 3650
+    -x509 \
+    -nodes \
+    -newkey rsa:4096 \
+    -keyout /etc/ssl/private/nginx-selfsigned.key \
+    -out /etc/ssl/certs/nginx-selfsigned.crt \
+    -subj "/CN=localhost" \
+    -days 3650
 ```
 
 {<h3>Backup and create new configuration</h3>}
@@ -554,28 +554,28 @@ pid /run/nginx/nginx.pid;
 include /etc/nginx/modules-enabled/*.conf;
 
 events {
-	worker_connections 768;
+  worker_connections 768;
 }
 
 http {
-	ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
-	ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
-	ssl_session_cache shared:HTTP-TLS:1m;
-	ssl_session_timeout 4h;
-	ssl_protocols TLSv1.2 TLSv1.3;
-	ssl_prefer_server_ciphers on;
-	include /etc/nginx/mime.types;
-	include /etc/nginx/sites-enabled/*.conf;
+  ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
+  ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+  ssl_session_cache shared:HTTP-TLS:1m;
+  ssl_session_timeout 4h;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_prefer_server_ciphers on;
+  include /etc/nginx/mime.types;
+  include /etc/nginx/sites-enabled/*.conf;
 }
 
 stream {
-	ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
-	ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
-	ssl_session_cache shared:STREAM-TLS:1m;
-	ssl_session_timeout 4h;
-	ssl_protocols TLSv1.2 TLSv1.3;
-	ssl_prefer_server_ciphers on;
-	include /etc/nginx/streams-enabled/*.conf;
+  ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
+  ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+  ssl_session_cache shared:STREAM-TLS:1m;
+  ssl_session_timeout 4h;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_prefer_server_ciphers on;
+  include /etc/nginx/streams-enabled/*.conf;
 }
 ```
 
@@ -583,10 +583,10 @@ stream {
 
 ```sh copy
 $SU mkdir -p \
-		/etc/nginx/sites-available \
-		/etc/nginx/sites-enabled \
-		/etc/nginx/streams-available \
-		/etc/nginx/streams-enabled
+    /etc/nginx/sites-available \
+    /etc/nginx/sites-enabled \
+    /etc/nginx/streams-available \
+    /etc/nginx/streams-enabled
 ```
 
 {<h3>Test this barebone Nginx configuration</h3>}
@@ -619,5 +619,5 @@ tail -f /var/log/messages | grep nginx
 ```sh copy
 $SU tail -f /var/log/nginx/error.log
 ```
-		</Tabs.Tab>
+    </Tabs.Tab>
 </Tabs>

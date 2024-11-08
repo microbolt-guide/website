@@ -1,4 +1,4 @@
 export default {
-	fulcrum: "Fulcrum",
-	electrs: "Electrs"
+  fulcrum: "Fulcrum",
+  electrs: "Electrs"
 }

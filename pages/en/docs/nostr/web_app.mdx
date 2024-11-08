@@ -21,7 +21,7 @@ $SU apk add --virtual .build-deps git npm
 ```
 
 * These are runtime dependencies
-	
+
 ```sh copy
 $SU apk add nodejs-current
 ```
@@ -34,18 +34,18 @@ $SU addgroup -S umbrel
 
 ```sh copy
 $SU adduser \
-		-S \
-		-D \
-		-H \
-		-h /dev/null \
-		-s /sbin/nologin \
-		-G umbrel \
-		-g umbrel \
-		umbrel
+    -S \
+    -D \
+    -H \
+    -h /dev/null \
+    -s /sbin/nologin \
+    -G umbrel \
+    -g umbrel \
+    umbrel
 ```
 
 ### Add the user `satoshi` to the group `umbrel` as well
-	
+
 ```sh copy
 $SU adduser satoshi umbrel
 ```
@@ -59,35 +59,35 @@ proxy. Now we can add the Umbrel Nostr Relay configuration.
 to the Umbrel Nostr Relay
 
 <Tabs items={['caddy', 'nginx']}>
-		<Tabs.Tab>
+    <Tabs.Tab>
 ```sh copy
 $SU $EDITOR /etc/caddy/sites/umbrel-nostr-relay.caddy
 ```
 
 ```nginx copy filename="/etc/caddy/sites/umbrel-nostr-relay.caddy"
 :8881 {
-				import tls
-				root * /var/www/umbrel-nostr-relay
-				encode gzip
+        import tls
+        root * /var/www/umbrel-nostr-relay
+        encode gzip
 
-				@websockets {
-								header Connection *Upgrade*
-								header Upgrade    websocket
-				}
+        @websockets {
+                header Connection *Upgrade*
+                header Upgrade    websocket
+        }
 
-				@nostr {
-								header Accept application/nostr+json
-				}
+        @nostr {
+                header Accept application/nostr+json
+        }
 
-				@relayproxy {
-								path /relay-proxy/*
-				}
+        @relayproxy {
+                path /relay-proxy/*
+        }
 
-				reverse_proxy @websockets 127.0.0.1:8880
-				reverse_proxy @nostr 127.0.0.1:8880
-				reverse_proxy @relayproxy 127.0.0.1:81
+        reverse_proxy @websockets 127.0.0.1:8880
+        reverse_proxy @nostr 127.0.0.1:8880
+        reverse_proxy @relayproxy 127.0.0.1:81
 
-				file_server
+        file_server
 }
 ```
 
@@ -96,48 +96,48 @@ $SU $EDITOR /etc/caddy/sites/umbrel-nostr-relay.caddy
 ```sh copy
 $SU rc-service caddy reload
 ```
-		</Tabs.Tab>
-		<Tabs.Tab>
+    </Tabs.Tab>
+    <Tabs.Tab>
 ```sh copy
 $SU $EDITOR /etc/nginx/sites-available/umbrel-nostr-relay-reverse-proxy.conf
 ```
 
 ```nginx copy filename="/etc/nginx/sites-available/umbrel-nostr-relay-reverse-proxy.conf"
 server {
-		listen 8881 ssl;
+    listen 8881 ssl;
 
-		root /var/www/umbrel-nostr-relay;
+    root /var/www/umbrel-nostr-relay;
 
-		gzip on;
+    gzip on;
 
-		location = / {
-				try_files $uri $uri/ =404;
+    location = / {
+        try_files $uri $uri/ =404;
 
-				if ($http_upgrade = "websocket") {
-						proxy_pass http://127.0.0.1:8880; 
-				}
+        if ($http_upgrade = "websocket") {
+            proxy_pass http://127.0.0.1:8880;
+        }
 
-				proxy_http_version 1.1;
-				proxy_set_header Upgrade $http_upgrade;
-				proxy_set_header Connection Upgrade;
-				proxy_set_header Host $host;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection Upgrade;
+        proxy_set_header Host $host;
 
-				proxy_set_header X-Real-IP $remote_addr;
-				proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-				proxy_set_header X-Forwarded-Proto $scheme;
-		}
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 
-		location /relay-proxy/ {
-				proxy_pass http://127.0.0.1:81;
-		}
+    location /relay-proxy/ {
+        proxy_pass http://127.0.0.1:81;
+    }
 }
 ```
 
 ```sh copy
 $SU ln \
-		-s \
-		../sites-available/umbrel-nostr-relay-reverse-proxy.conf \
-		/etc/nginx/sites-enabled/umbrel-nostr-relay-reverse-proxy.conf
+    -s \
+    ../sites-available/umbrel-nostr-relay-reverse-proxy.conf \
+    /etc/nginx/sites-enabled/umbrel-nostr-relay-reverse-proxy.conf
 ```
 
 * Test and reload NGINX configuration
@@ -146,7 +146,7 @@ $SU ln \
 $SU nginx -t
 $SU rc-service nginx restart
 ```
-		</Tabs.Tab>
+    </Tabs.Tab>
 </Tabs>
 
 ### Firewall
@@ -154,24 +154,24 @@ $SU rc-service nginx restart
 * Configure the firewall to allow incoming HTTPS requests
 
 <Tabs items={['awall', 'ufw']}>
-		<Tabs.Tab>
+    <Tabs.Tab>
 ```sh copy
 $SU $EDITOR /etc/awall/optional/umbrel-nostr-relay.json
 ```
 
 ```json copy filename="/etc/awall/optional/umbrel-nostr-relay.json"
 {
-	"description": "Allow Umbrel Nostr Relay webGUI SSL",
+  "description": "Allow Umbrel Nostr Relay webGUI SSL",
 
-	"filter": [
-		{
-			"in": "internet",
-			"out": "_fw",
-			"service": { "proto": "tcp", "port": 8881 },
-			"action": "accept",
-			"conn-limit": { "count": 10, "interval": 60 }
-		}
-	]
+  "filter": [
+    {
+      "in": "internet",
+      "out": "_fw",
+      "service": { "proto": "tcp", "port": 8881 },
+      "action": "accept",
+      "conn-limit": { "count": 10, "interval": 60 }
+    }
+  ]
 }
 ```
 
@@ -181,12 +181,12 @@ $SU $EDITOR /etc/awall/optional/umbrel-nostr-relay.json
 $SU awall enable umbrel-nostr-relay
 $SU awall activate
 ```
-		</Tabs.Tab>
-		<Tabs.Tab>
+    </Tabs.Tab>
+    <Tabs.Tab>
 ```sh copy
 $SU ufw limit 8881/tcp comment 'Allow Umbrel Nostr Relay webGUI SSL'
 ```
-		</Tabs.Tab>
+    </Tabs.Tab>
 </Tabs>
 </Steps>
 
@@ -234,7 +234,7 @@ if you see something similar to the following, the installation was successful:
 2 vulnerabilities (1 low, 1 moderate)
 
 To address all issues, run:
-	npm audit fix
+  npm audit fix
 
 Run `npm audit` for details.
 ```
@@ -256,9 +256,9 @@ mkdir ./bin
 
 ```sh copy
 printf "%s\n" \
-		"#!/bin/sh" \
-		"node \$@ /var/lib/umbrel-nostr-relay/server" \
-		> ./bin/cli.sh
+    "#!/bin/sh" \
+    "node \$@ /var/lib/umbrel-nostr-relay/server" \
+    > ./bin/cli.sh
 ```
 
 ```sh copy
@@ -305,10 +305,10 @@ if you see something similar to the following, the installation was successful:
 21 vulnerabilities (8 moderate, 11 high, 2 critical)
 
 To address issues that do not require attention, run:
-	npm audit fix
+  npm audit fix
 
 To address all issues (including breaking changes), run:
-	npm audit fix --force
+  npm audit fix --force
 
 Run `npm audit` for details.
 ```
@@ -331,9 +331,9 @@ mv -f _ public/index.html
 
 ```sh copy
 sed \
-		-e 's/{ relayPort }//' \
-		-e '/<p className="text-slate-800 dark:text-slate-400 text-xs mt-4 mb-6">/,/<\/p>/d' \
-		src/components/ConnectClient.js > _
+    -e 's/{ relayPort }//' \
+    -e '/<p className="text-slate-800 dark:text-slate-400 text-xs mt-4 mb-6">/,/<\/p>/d' \
+    src/components/ConnectClient.js > _
 mv -f _ src/components/ConnectClient.js
 ```
 
@@ -445,34 +445,34 @@ description="A Nostr relay webGUI made by Umbrel"
 
 command="${UMBREL_NOSTR_RELAY_BIN}"
 command_args="--env-file=${UMBREL_NOSTR_RELAY_ENVFILE}
-							${UMBREL_NOSTR_RELAY_OPTS}"
+              ${UMBREL_NOSTR_RELAY_OPTS}"
 command_user="${UMBREL_NOSTR_RELAY_USER}:${UMBREL_NOSTR_RELAY_GROUP}"
 command_background="true"
 
 start_stop_daemon_args="--stdout ${UMBREL_NOSTR_RELAY_LOGDIR}/debug.log
-												--stderr ${UMBREL_NOSTR_RELAY_LOGDIR}/debug.log"
+                        --stderr ${UMBREL_NOSTR_RELAY_LOGDIR}/debug.log"
 
 depend() {
-		need nostr-rs-relay
+    need nostr-rs-relay
 }
 
 start_pre() {
-		checkpath --directory --mode 0755 --owner "${command_user}" "${UMBREL_NOSTR_RELAY_ENVFILE%/*}"
-		checkpath --file      --mode 0660 --owner "${command_user}" "${UMBREL_NOSTR_RELAY_ENVFILE}"
-		checkpath --directory --mode 0750 --owner "${command_user}" "${UMBREL_NOSTR_RELAY_DATADIR}"
-		checkpath --directory --mode 0755 --owner "${command_user}" "${UMBREL_NOSTR_RELAY_LOGDIR}"
-		checkpath --directory --mode 0755 --owner "${command_user}" "${UMBREL_NOSTR_RELAY_PIDDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${UMBREL_NOSTR_RELAY_ENVFILE%/*}"
+    checkpath --file      --mode 0660 --owner "${command_user}" "${UMBREL_NOSTR_RELAY_ENVFILE}"
+    checkpath --directory --mode 0750 --owner "${command_user}" "${UMBREL_NOSTR_RELAY_DATADIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${UMBREL_NOSTR_RELAY_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${UMBREL_NOSTR_RELAY_PIDDIR}"
 }
 
 stop() {
-		ebegin "Stopping ${SVCNAME}"
-		pkill -TERM -P "$(cat ${pidfile})" > /dev/null 2>&1
-		start-stop-daemon \
-				--stop \
-				--pidfile="${pidfile}" \
-				--retry="${UMBREL_NOSTR_RELAY_SIGTERM_TIMEOUT}" \
-				--exec="${UMBREL_NOSTR_RELAY_BIN}"
-		eend $?
+    ebegin "Stopping ${SVCNAME}"
+    pkill -TERM -P "$(cat ${pidfile})" > /dev/null 2>&1
+    start-stop-daemon \
+        --stop \
+        --pidfile="${pidfile}" \
+        --retry="${UMBREL_NOSTR_RELAY_SIGTERM_TIMEOUT}" \
+        --exec="${UMBREL_NOSTR_RELAY_BIN}"
+    eend $?
 }
 ```
 
@@ -488,17 +488,17 @@ $SU chmod +x /etc/init.d/umbrel-nostr-relay
 
 ```sh copy filename="/etc/logrotate.d/umbrel-nostr-relay"
 /var/log/umbrel-nostr-relay/*.log {
-		weekly
-		missingok
-		rotate 104
-		compress
-		delaycompress
-		notifempty
-		create 0640 nostr nostr
-		sharedscripts
-		postrotate
-				killall -HUP `cat /run/umbrel-nostr-relay/umbrel-nostr-relay.pid`
-		endscript
+    weekly
+    missingok
+    rotate 104
+    compress
+    delaycompress
+    notifempty
+    create 0640 nostr nostr
+    sharedscripts
+    postrotate
+        killall -HUP `cat /run/umbrel-nostr-relay/umbrel-nostr-relay.pid`
+    endscript
 }
 ```
 

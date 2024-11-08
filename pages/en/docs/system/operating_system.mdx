@@ -166,12 +166,12 @@ at your own risk
 ### Flash it
 
 <Tabs items={['Unix/Linux', 'windows']}>
-		<Tabs.Tab>
+    <Tabs.Tab>
 ```sh
 dd if=<iso-file> of=<target-device> bs=4M; eject <target-device>
 ```
-		</Tabs.Tab>
-		<Tabs.Tab>
+    </Tabs.Tab>
+    <Tabs.Tab>
 For example, there is the [Rufus](https://rufus.ie/) program.
 
 Use it with the following settings:
@@ -186,7 +186,7 @@ Use it with the following settings:
 <Callout type="info">
 Remember to eject the `<target-device>`
 </Callout>
-		</Tabs.Tab>
+    </Tabs.Tab>
 </Tabs>
 </Steps>
 
@@ -303,7 +303,7 @@ Enter apk cache directory `none`
 </Steps>
 
 <Tabs items={['sys', 'data']}>
-		<Tabs.Tab>
+    <Tabs.Tab>
 * Setup installation disk
 
 ```sh copy
@@ -320,8 +320,8 @@ WARNING: Erase the above disk(s) and continue? `y`
 Your installation is done when you see this:
 `Installation is complete. Please reboot.`
 </Callout>
-		</Tabs.Tab>
-		<Tabs.Tab>
+    </Tabs.Tab>
+    <Tabs.Tab>
 * Copy modloop and umount `USB/SD`
 
 ```sh copy
@@ -430,7 +430,7 @@ lbu status
 ```sh copy
 lbu commit
 ```
-		</Tabs.Tab>
+    </Tabs.Tab>
 </Tabs>
 
 * Reboot
@@ -454,8 +454,8 @@ chmod 600 /var/swapfile
 
 ```sh copy
 printf "%s\n" \
-		"/var/swapfile none swap sw 0 0" \
-		>> /etc/fstab
+    "/var/swapfile none swap sw 0 0" \
+    >> /etc/fstab
 ```
 
 * Start and enable swapfile on boot
