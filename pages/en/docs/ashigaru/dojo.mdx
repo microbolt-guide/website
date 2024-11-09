@@ -1,3 +1,793 @@
+import { Callout, Steps, Tabs } from 'nextra/components'
+import { FAQBox } from '@components'
+
 # Samourai Dojo
 
-Placeholder
+[Samourai Dojo](https://github.com/Dojo-Open-Source-Project/samourai-dojo) is
+the backing server for Samourai Wallet. Provides HD account & loose addresses
+(BIP47) balances & transactions lists. Provides unspent output lists to the
+wallet. PushTX endpoint broadcasts transactions through the backing bitcoind
+node.
+
+## Preparations
+
+<Steps>
+### Install dependencies
+
+These are build dependencies (safe to remove after installation, if you want)
+
+```sh copy
+$SU apk add --virtual .build-deps gnupg npm
+```
+
+These are runtime dependencies
+
+```sh copy
+$SU apk add mariadb mariadb-client nodejs-current
+```
+
+### Create the `samourai` user/group
+
+```sh copy
+$SU addgroup -S samourai
+```
+
+```sh copy
+$SU adduser \
+    -S \
+    -D \
+    -H \
+    -h /dev/null \
+    -s /sbin/nologin \
+    -G samourai \
+    -g samourai \
+    samourai
+```
+
+### Add `samourai` user to the `bitcoin` group
+
+```sh copy
+$SU adduser samourai bitcoin
+```
+
+### Add the user `satoshi` to the group `samourai` as well
+
+```sh copy
+$SU adduser satoshi samourai
+```
+
+### Reverse proxy
+
+In the [Security section](../system/security#reverse-proxy), we set up a reverse
+proxy. Now we can add the Samourai Dojo configuration.
+
+* Enable the reverse proxy to route external encrypted HTTPS traffic internally
+to the Samourai Dojo
+
+<Tabs items={['caddy', 'nginx']}>
+    <Tabs.Tab>
+```sh copy
+$SU $EDITOR /etc/caddy/sites/samourai-dojo.caddy
+```
+
+```nginx copy filename="/etc/caddy/sites/samourai-dojo.caddy"
+(common_config) {
+    encode gzip
+
+    @websockets {
+        header Connection *Upgrade*
+        header Upgrade    websocket
+    }
+
+    reverse_proxy @websockets 127.0.0.1:8080
+    reverse_proxy /v2/pushtx/* 127.0.0.1:8081
+    reverse_proxy /v2/tracker/* 127.0.0.1:8082
+    reverse_proxy /admin/* 127.0.0.1:8080/static/admin/
+    reverse_proxy /v2/* 127.0.0.1:8080
+
+    redir / /admin 301
+
+    @status {
+        path /
+    }
+    handle @status {
+        header Content-Type application/json
+        respond '{"status":"ok"}'
+    }
+}
+
+:4011 {
+    import tls
+    import common_config
+}
+
+:4010 {
+    import common_config
+}
+```
+
+* Reload Caddy
+
+```sh copy
+$SU rc-service caddy reload
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+```sh copy
+$SU $EDITOR /etc/nginx/sites-available/samourai-dojo-reverse-proxy.conf
+```
+
+```nginx copy filename="/etc/nginx/sites-available/samourai-dojo-reverse-proxy.conf"
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    '' close;
+}
+
+upstream websocket {
+    server 127.0.0.1:8080;
+}
+
+server {
+    listen 4010;
+    listen 4011 ssl;
+    server_name _;
+
+    default_type application/octet-stream;
+    keepalive_timeout 95;
+    gzip on;
+    gzip_comp_level 4;
+    gzip_min_length 128;
+    gzip_types application/json application/javascript;
+    gzip_vary on;
+
+    proxy_connect_timeout 600;
+    proxy_read_timeout 600;
+    proxy_send_timeout 600;
+    send_timeout 600;
+
+    location /v2/inv {
+        proxy_pass http://websocket;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+    }
+
+    location /v2/pushtx/ {
+        proxy_pass http://127.0.0.1:8081/;
+    }
+
+    location /v2/tracker/ {
+        proxy_pass http://127.0.0.1:8082/;
+    }
+
+    location /admin/ {
+        proxy_pass http://127.0.0.1:8080/static/admin/;
+    }
+
+    location /v2/ {
+        proxy_pass http://127.0.0.1:8080/;
+    }
+
+    location = / {
+        return 301 /admin;
+    }
+
+    location / {
+        return 200 '{"status":"ok"}';
+        add_header Content-Type application/json;
+    }
+}
+```
+
+```sh copy
+$SU ln \
+    -s \
+    ../sites-available/samourai-dojo-reverse-proxy.conf \
+    /etc/nginx/sites-enabled/samourai-dojo-reverse-proxy.conf
+```
+
+* Test and reload NGINX configuration
+
+```sh copy
+$SU nginx -t
+$SU rc-service nginx restart
+```
+    </Tabs.Tab>
+</Tabs>
+
+### Firewall
+
+* Configure the firewall to allow incoming HTTPS requests
+
+<Tabs items={['awall', 'ufw']}>
+    <Tabs.Tab>
+```sh copy
+$SU $EDITOR /etc/awall/optional/samourai-dojo.json
+```
+
+```json copy filename="/etc/awall/optional/samourai-dojo.json"
+{
+  "description": "Allow Samourai Dojo SSL",
+
+  "filter": [
+    {
+      "in": "internet",
+      "out": "_fw",
+      "service": "samourai-dojo",
+      "action": "accept",
+      "conn-limit": { "count": 10, "interval": 60 }
+    }
+  ]
+}
+```
+
+* Enable it
+
+```sh copy
+$SU awall enable samourai-dojo
+$SU awall activate
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+```sh copy
+$SU ufw limit 4011/tcp comment 'Allow Samourai Dojo SSL'
+```
+    </Tabs.Tab>
+</Tabs>
+</Steps>
+
+## Installation
+
+<Steps>
+### Download source code
+
+```sh copy
+cd /tmp
+```
+
+```sh copy
+VERSION=1.26.0
+```
+
+* Download over Tor the latest version of Dojo from GitHub
+
+```sh copy
+curl \
+    -L https://github.com/Dojo-Open-Source-Project/samourai-dojo/archive/refs/tags/v$VERSION.tar.gz \
+    -o samourai-dojo-$VERSION.tar.gz
+```
+
+* Download over Tor the Dojo fingerprints file and PGP signed fingerprints file
+from GitHub:
+
+```sh copy
+curl \
+    -OL https://github.com/Dojo-Open-Source-Project/samourai-dojo/releases/download/v$VERSION/samourai-dojo-$VERSION-fingerprints.txt \
+    -OL https://github.com/Dojo-Open-Source-Project/samourai-dojo/releases/download/v$VERSION/samourai-dojo-$VERSION-fingerprints.txt.sig
+```
+
+### Checksum check
+
+* Hash locally the downloaded Dojo .tar.gz file using the SHA256 hash algorithm
+
+```sh copy
+grep samourai-dojo-$VERSION.tar.gz samourai-dojo-$VERSION-fingerprints.txt | sha256sum -c
+```
+
+### Signature check
+
+* Download over Tor developer's PGP key, and import locally
+
+```sh copy
+curl \
+    --proxy socks5h://localhost/var/run/tor/socks.sock \
+    http://zkaan2xfbuxia2wpf7ofnkbz6r5zdbbvxbunvp5g2iebopbfc4iqmbad.onion/vks/v1/by-fingerprint/E53AD419B242822F19E23C6D3033D463D6E544F6 |\
+    gpg --import
+```
+
+* Verify the PGP signed fingerprints file
+
+```sh copy
+gpg --verify samourai-dojo-$VERSION-fingerprints.txt.sig
+```
+
+### Extract source
+
+* Decompress the downloaded file
+
+```sh copy
+tar xzf samourai-dojo-$VERSION.tar.gz && cd samourai-dojo-$VERSION
+```
+
+### MariaDB
+
+[MariaDB](https://mariadb.org) is an open source relational database.
+
+<Callout type="warning">
+If you have followed the Mempool Space guide, you can skip the MariaDB setup
+step.
+</Callout>
+
+* First need to create initial databases and start the service
+
+```sh copy
+$SU rc-service mariadb setup
+$SU rc-service mariadb start
+```
+
+* These commands allow you to create a dojo database and grant privileges to
+`dojo` user directly from the command line
+
+```sh copy
+$SU mysql -e "create database dojo;"
+$SU mysql -e "grant all privileges on dojo.* to 'samourai'@'localhost' identified via unix_socket;"
+```
+
+### Dojo
+
+* Install the dojo dependencies and build the project
+
+```sh copy
+npm ci --omit=dev --omit=optional
+```
+
+Installation can take some time. There might be a lot of confusing output, but
+if you see something similar to the following, the installation was successful:
+
+```sh filename="output"
+added 266 packages, and audited 267 packages in 5s
+
+36 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+```
+
+* Patch the source code
+
+```sh copy
+# Fix hidden services
+sed -e "s#\`http://\${fs.readFileSync('/var/lib/tor/hsv3dojo/hostname', 'utf8').trim()}\`#process.env.DOJO_HSV3#g" \
+    ./docker/my-dojo/node/keys.index.js > _
+$SU mv -f _ ./docker/my-dojo/node/keys.index.js
+```
+    
+```sh copy
+# RPC cookie support
+sed '/pass: process.env.BITCOIND_RPC_PASSWORD,/a \
+                // Cookie path\
+                cookie_path: process.env.BITCOIND_RPC_COOKIE_PATH,' \
+    ./docker/my-dojo/node/keys.index.js > _
+$SU mv -f _ ./docker/my-dojo/node/keys.index.js
+
+sed '/password: keys.bitcoind.rpc.pass,/a \
+            cookie: keys.bitcoind.rpc.cookie_path' \
+    ./estimator/index.js > _
+$SU mv -f _ ./estimator/index.js
+
+sed '/password: keys.bitcoind.rpc.pass,/a \
+        cookie: keys.bitcoind.rpc.cookie_path,' \
+    ./lib/bitcoind-rpc/rpc-client.js > _
+$SU mv -f _ ./lib/bitcoind-rpc/rpc-client.js
+```
+
+* Create the `bin` directory and the `cli.js` file
+
+```sh copy
+mkdir ./bin
+```
+
+```sh copy
+$EDITOR ./bin/cli.js
+```
+
+```js copy filename="./bin/cli.js"
+#!/usr/bin/env node
+
+import { fork } from 'child_process';
+import path from 'path';
+
+// Obté els arguments de la línia de comandes, excloent els primers dos (node i cli.js)
+const args = process.argv.slice(2);
+
+const processes = [
+    {
+        name: 'Samourai Dojo - Accounts',
+        script: './index.js',
+        cwd: path.join(process.env.APP_DIR, 'accounts')
+    },
+    {
+        name: 'Samourai Dojo - PushTX',
+        script: './index.js',
+        cwd: path.join(process.env.APP_DIR, 'pushtx')
+    },
+    {
+        name: 'Samourai Dojo - PushTX Orhestrator',
+        script: './index-orchestrator.js',
+        cwd: path.join(process.env.APP_DIR, 'pushtx')
+    },
+    {
+        name: 'Samourai Dojo - Tracker',
+        script: './index.js',
+        cwd: path.join(process.env.APP_DIR, 'tracker')
+    },
+    {
+        name: 'Samourai Dojo - Estimator',
+        script: './index.js',
+        cwd: path.join(process.env.APP_DIR, 'estimator')
+    }
+];
+
+const children = [];
+
+processes.forEach(proc => {
+    const child = fork(proc.script, [], {
+        cwd: proc.cwd,
+        stdio: 'inherit', // Mostra stdout i stderr a la consola
+        execArgv: [...args] // Passa els arguments de la línia de comandes a cada subprocess
+    });
+
+    children.push(child);
+
+    child.on('close', (code) => {
+        console.log(`${proc.name} exited with code ${code}`);
+        const index = children.indexOf(child);
+        if (index > -1) {
+            children.splice(index, 1);
+        }
+        if (children.length === 0) {
+            console.log('All child processes have exited.');
+            process.exit(0);
+        }
+    });
+
+    child.on('error', (err) => {
+        console.error(`Failed to start ${proc.name}: ${err}`);
+    });
+});
+
+const shutdown = (signal) => {
+    console.log(`Received ${signal}, shutting down...`);
+    const promises = children.map(child => {
+        return new Promise((resolve) => {
+            child.on('close', () => resolve());
+            try {
+                child.kill(signal);
+            } catch (err) {
+                console.error(`Failed to kill process ${child.pid}: ${err}`);
+                resolve();
+            }
+        });
+    });
+
+    Promise.all(promises).then(() => {
+        console.log('All child processes have exited.');
+        process.exit(0);
+    });
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+```
+
+* Make the `cli.js` file executable
+
+```sh copy
+chmod +x ./bin/cli.js
+```
+
+* Make it a global permanent installation
+
+```sh copy
+$SU mkdir /var/lib/samourai-dojo
+```
+
+```sh copy
+for dir in accounts bin db-scripts estimator lib node_modules package.json pushtx scripts static tracker; do
+    $SU cp -r ./$dir /var/lib/samourai-dojo/
+done
+```
+
+```sh copy
+$SU ln -s /var/lib/samourai-dojo /usr/lib/node_modules/samourai-dojo
+$SU ln -s ../lib/node_modules/samourai-dojo/bin/cli.js /usr/bin/samourai-dojo
+```
+
+* Copy `keys` file
+
+```sh copy
+$SU install -D -m 0644 ./docker/my-dojo/node/keys.index.js  /var/lib/samourai-dojo/keys/index.js
+```
+
+* Symlink `index-mainnet.js` file
+
+```sh copy
+$SU ln -sf index-mainnet.js /var/lib/samourai-dojo/static/admin/conf/index.js
+```
+
+### Cleanup
+
+```sh copy
+cd
+rm -rf /tmp/samourai-dojo-$VERSION*
+$SU apk del .build-deps
+```
+</Steps>
+
+## Configuration
+
+### Remote access over Tor
+
+To use your Samourai Dojo when you're on the go, you can easily create a Tor
+hidden service on the Microbolt and accessing the Samourai Dojo with the Tor
+browser from any device.
+
+* Add the following three lines in the "location-hidden services" section in the
+`torrc` file.
+
+```sh copy
+$SU $EDITOR /etc/tor/torrc
+```
+
+```sh copy filename="/etc/tor/torrc"
+# Hidden Service Samourai Dojo
+HiddenServiceDir /var/lib/tor/hsv3dojo/
+HiddenServiceVersion 3
+HiddenServicePoWDefensesEnabled 1
+HiddenServicePort 80 127.0.0.1:4010
+```
+
+* Reload Tor configuration and get your connection address.
+
+```sh copy
+$SU rc-service tor reload
+$SU cat /var/lib/tor/hsv3dojo/hostname
+```
+
+```sh filename="output"
+abcdefg..............xyz.onion
+```
+
+* You should now be able to connect to your Samourai Dojo remotely via Tor using
+your hostname
+
+### Samourai Dojo configuration
+
+* Add this values in the `mainnet.env` file
+
+```sh copy
+$SU mkdir /etc/samourai-dojo
+```
+
+```sh copy
+$SU $EDITOR /etc/samourai-dojo/mainnet.env
+```
+
+<Callout type="warning">
+Replace `abcdefg..............xyz.onion` with your own hidden service address
+created in the previously.
+</Callout>
+
+<Callout type="info">
+Replace `#CHANGEME#` with your own unique values. You can use this command to
+generate a random string:
+
+```sh
+openssl rand -base64 30 | tr -dc 'a-zA-Z0-9' | head -c 40
+```
+</Callout>
+
+```sh copy filename="/etc/samourai-dojo/mainnet.env" /abcdefg..............xyz.onion/ /#CHANGEME#/
+# GLOBAL
+COMMON_BTC_NETWORK=mainnet
+DOJO_VERSION_TAG=1.26.0
+NET_DOJO_TOR_IPV4=127.0.0.1
+TOR_SOCKS_PORT=9050
+NET_DOJO_MYSQL_IPV4=/var/run/mysqld/mysqld.sock
+
+# HIDDEN SERVICES
+DOJO_HSV3=http://abcdefg..............xyz.onion
+
+# BITCOIND
+BITCOIND_IP=127.0.0.1
+BITCOIND_RPC_PORT=8332
+BITCOIND_RPC_USER=''
+BITCOIND_RPC_PASSWORD=''
+BITCOIND_RPC_COOKIE_PATH=/var/lib/bitcoind/.cookie
+BITCOIND_ZMQ_RAWTXS=28333
+BITCOIND_ZMQ_BLK_HASH=8433
+
+# INDEXER
+INDEXER_IP=127.0.0.1
+INDEXER_RPC_PORT=50002
+INDEXER_PROTOCOL=tls
+INDEXER_BATCH_SUPPORT=inactive # 'active' for ElectrumX, 'inactive' otherwise
+
+# MYSQL
+MYSQL_DATABASE=dojo
+MYSQL_USER=samourai
+MYSQL_PASSWORD=''
+
+# NODEJS
+NODE_GAP_EXTERNAL=100
+NODE_GAP_INTERNAL=100
+NODE_ADDR_FILTER_THRESHOLD=1000
+NODE_ADDR_DERIVATION_MIN_CHILD=2
+NODE_ADDR_DERIVATION_MAX_CHILD=2
+NODE_ADDR_DERIVATION_THRESHOLD=10
+NODE_TXS_SCHED_MAX_ENTRIES=10
+NODE_TXS_SCHED_MAX_DELTA_HEIGHT=18
+NODE_JWT_ACCESS_EXPIRES=900
+NODE_JWT_REFRESH_EXPIRES=7200
+NODE_PREFIX_STATUS=status
+NODE_PREFIX_SUPPORT=support
+NODE_PREFIX_STATUS_PUSHTX=status
+NODE_TRACKER_MEMPOOL_PERIOD=10000
+NODE_TRACKER_UNCONF_TXS_PERIOD=300000
+NODE_ACTIVE_INDEXER=local_indexer
+NODE_FEE_TYPE=ECONOMICAL
+
+# SECURITY
+NODE_API_KEY=#CHANGEME#
+NODE_ADMIN_KEY=#CHANGEME#
+NODE_JWT_SECRET=#CHANGEME#
+
+# EXPLORER
+EXPLORER_INSTALL="off"
+```
+
+<FAQBox title="Remove ban Bitcoin client Knots">
+If you are using the Bitcoin client Knots, you need to remove the ban check
+before starting the Samourai Dojo. Otherwise, the Dojo will not be able to
+connect to the Knots client.
+
+* Comment this line
+
+```sh copy
+$SU $EDITOR /var/lib/samourai-dojo/lib/bitcoind-rpc/rpc-client.js
+```
+
+```diff filename="/var/lib/samourai-dojo/lib/bitcoind-rpc/rpc-client.js"
+[...]
+         if (networkInfo.subversion.includes('Knots')) {
+-            Logger.error(null, `Unsupported Bitcoin client detected: ${networkInfo.subversion}. Exiting...`)
+-            process.exit(0)
++            // Logger.error(null, `Unsupported Bitcoin client detected: ${networkInfo.subversion}. Exiting...`)
++            // process.exit(0)
+         }
+[...]
+```
+</FAQBox>
+
+### Initialize the database
+
+```sh copy
+$SU -u samourai mysql dojo < /var/lib/samourai-dojo/db-scripts/1_db.sql.tpl
+```
+
+### Autostart on boot
+
+Samourai Dojo needs to start automatically on system boot.
+
+* Create the dojo init.d unit and copy/paste the following
+configuration
+
+```sh copy
+$SU $EDITOR /etc/init.d/samourai-dojo
+```
+
+```sh copy filename="/etc/init.d/samourai-dojo"
+#!/sbin/openrc-run
+
+: ${SAMOURAI_DOJO_ENVFILE:=/etc/samourai-dojo/mainnet.env}
+: ${SAMOURAI_DOJO_DATADIR:=/var/lib/samourai-dojo}
+: ${SAMOURAI_DOJO_LOGDIR:=/var/log/samourai-dojo}
+: ${SAMOURAI_DOJO_USER:=samourai}
+: ${SAMOURAI_DOJO_GROUP:=samourai}
+: ${SAMOURAI_DOJO_BIN:=/usr/bin/samourai-dojo}
+: ${SAMOURAI_DOJO_OPTS=${SAMOURAI_DOJO_OPTS}}
+: ${SAMOURAI_DOJO_SIGTERM_TIMEOUT:=600}
+
+SAMOURAI_DOJO_PIDDIR="/run/samourai-dojo"
+
+directory="${SAMOURAI_DOJO_DATADIR}"
+required_files="${SAMOURAI_DOJO_ENVFILE}"
+pidfile="${SAMOURAI_DOJO_PIDDIR}/${SVCNAME}.pid"
+retry="${SAMOURAI_DOJO_SIGTERM_TIMEOUT}"
+
+name="Samourai Dojo"
+description="The backing server for Samourai and Ashigaru Wallet"
+
+command="${SAMOURAI_DOJO_BIN}"
+command_args="--env-file=${SAMOURAI_DOJO_ENVFILE}
+              ${SAMOURAI_DOJO_OPTS}"
+command_user="${SAMOURAI_DOJO_USER}:${SAMOURAI_DOJO_GROUP}"
+command_background="true"
+
+start_stop_daemon_args="--env APP_DIR=${SAMOURAI_DOJO_DATADIR}
+                        --env PM2_HOME=${SAMOURAI_DOJO_DATADIR}/.pm2
+                        --stdout ${SAMOURAI_DOJO_LOGDIR}/debug.log
+                        --stderr ${SAMOURAI_DOJO_LOGDIR}/debug.log"
+
+depend() {
+    need bitcoind electrum explorer mariadb tor
+}
+
+start_pre() {
+    checkpath --directory --mode 0755 --owner "${command_user}" "${SAMOURAI_DOJO_ENVFILE%/*}"
+    checkpath --file      --mode 0660 --owner "${command_user}" "${SAMOURAI_DOJO_ENVFILE}"
+    checkpath --directory --mode 0750 --owner "${command_user}" "${SAMOURAI_DOJO_DATADIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${SAMOURAI_DOJO_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${SAMOURAI_DOJO_PIDDIR}"
+}
+```
+
+* Enable execution permission
+
+```sh copy
+$SU chmod +x /etc/init.d/samourai-dojo
+```
+
+### Enable logrotate
+
+* Enter the complete next configuration. Save and exit
+
+```sh copy
+$SU $EDITOR /etc/logrotate.d/samourai-dojo
+```
+
+```sh copy filename="/etc/logrotate.d/samourai-dojo"
+/var/log/samourai-dojo/*.log {
+    weekly
+    missingok
+    rotate 104
+    compress
+    delaycompress
+    notifempty
+    create 0640 samourai samourai
+    sharedscripts
+    postrotate
+        killall -HUP `cat /run/samourai-dojo/samourai-dojo.pid`
+    endscript
+}
+```
+
+* Test
+
+```sh copy
+$SU logrotate /etc/logrotate.d/samourai-dojo --debug
+```
+
+## Enable and start Samourai Dojo
+
+```sh copy
+$SU rc-update add samourai-dojo
+```
+
+```sh copy
+$SU rc-service samourai-dojo start
+```
+
+* Check the log to see Samourai Dojo output. Exit with Ctrl-C
+
+```sh copy
+tail -f /var/log/samourai-dojo/debug.log
+```
+
+## For the future: Samourai Dojo upgrade
+
+Follow again [Samourai Dojo](./dojo) page replacing the environment variable
+`VERSION=x.xx` value for the latest if it has not been already changed in this
+guide.
+
+* Update the Samourai Dojo configuration if necessary (see release notes)
+
+```sh copy
+$SU $EDITOR /etc/samourai-dojo/mainnet.env
+```
+
+* Restart the service to apply the changes
+
+```sh copy
+$SU rc-service samourai-dojo restart
+```
