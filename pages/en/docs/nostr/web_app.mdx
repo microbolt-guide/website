@@ -167,7 +167,7 @@ $SU $EDITOR /etc/awall/optional/umbrel-nostr-relay.json
     {
       "in": "internet",
       "out": "_fw",
-      "service": { "proto": "tcp", "port": 8881 },
+      "service": "umbrel-nostr-relay",
       "action": "accept",
       "conn-limit": { "count": 10, "interval": 60 }
     }

@@ -154,38 +154,18 @@ $SU rc-service nginx restart
 <Tabs items={['awall', 'ufw']}>
     <Tabs.Tab>
 ```sh copy
-$SU $EDITOR /etc/awall/optional/pool-ui.json
+$SU $EDITOR /etc/awall/optional/public-pool.json
 ```
 
-```json copy filename="/etc/awall/optional/pool-ui.json"
+```json copy filename="/etc/awall/optional/public-pool.json"
 {
-  "description": "Allow Public Pool UI SSL",
+  "description": "Allow Public Pool UI and Stratum",
 
   "filter": [
     {
       "in": "internet",
       "out": "_fw",
-      "service": { "proto": "tcp", "port": 4040 },
-      "action": "accept",
-      "conn-limit": { "count": 10, "interval": 60 }
-    }
-  ]
-}
-```
-
-```sh copy
-$SU $EDITOR /etc/awall/optional/pool-stratum.json
-```
-
-```json copy filename="/etc/awall/optional/pool-stratum.json"
-{
-  "description": "Allow Public Pool Stratum",
-
-  "filter": [
-    {
-      "in": "internet",
-      "out": "_fw",
-      "service": { "proto": "tcp", "port": 23333 },
+      "service": "public-pool",
       "action": "accept",
       "conn-limit": { "count": 10, "interval": 60 }
     }
@@ -196,7 +176,7 @@ $SU $EDITOR /etc/awall/optional/pool-stratum.json
 * Enable it
 
 ```sh copy
-$SU awall enable pool-ui pool-stratum
+$SU awall enable public-pool
 $SU awall activate
 ```
     </Tabs.Tab>

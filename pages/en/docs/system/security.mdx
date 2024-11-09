@@ -115,17 +115,33 @@ printf "%s\n" \
     | $SU tee /etc/modules-load.d/awall.conf
 ```
 
-{<h3>Configure and enable the firewall rules</h3>}
+{<h3>Create main and base firewall rules</h3>}
+
+* Main firewall configuration
+
+```sh copy
+$SU $EDITOR /etc/awall/optional/main.json
+```
+
+```json copy filename="/etc/awall/optional/main.json"
+{
+  "description": "Main firewall",
+
+  "import": [ "base", "custom-services" ]
+}
+```
+
+* Base firewall configuration
 
 <Callout type="info">
 Replace `eth0` with your network interface
 </Callout>
 
 ```sh copy
-$SU $EDITOR /etc/awall/optional/base-config.json
+$SU $EDITOR /etc/awall/private/base.json
 ```
 
-```json copy filename="/etc/awall/optional/base-config.json" {5}
+```json copy filename="/etc/awall/private/base.json" {5}
 {
   "description": "Base zones and policies",
 
@@ -134,24 +150,53 @@ $SU $EDITOR /etc/awall/optional/base-config.json
   },
 
   "policy": [
-     { "in": "internet", "action": "drop" },
-     { "out": "internet", "action": "accept" }
+    { "in": "internet", "action": "drop" },
+    { "out": "internet", "action": "accept" }
   ]
 }
 ```
 
+{<h3>Create custom services firewall rule</h3>}
+
 <Callout>
-If you changed the SSH port, replace `"service": "ssh"` with your new port
-`"service": { "proto": "tcp", "port": 2222 },` or whatever you chose
+If you changed the SSH port, replace `"port": 22` with your new port
 </Callout>
+
+```sh copy
+$SU $EDITOR /etc/awall/private/custom-services.json
+```
+
+```json copy filename="/etc/awall/private/custom-services.json" /"port": 22/
+{
+  "service": {
+    "btcrpcexpl": { "proto": "tcp", "port": 4000 },
+    "dns": [
+      { "proto": "tcp", "port": 53 },
+      { "proto": "udp", "port": 53 }
+    ],
+    "electrum": { "proto": "tcp", "port": 50002 },
+    "lnd-rest": { "proto": "tcp", "port": 8081 },
+    "mempool": { "proto": "tcp", "port": 4081 },
+    "public-pool": [
+      { "proto": "tcp", "port": 23333 },
+      { "proto": "tcp", "port": 4040 }
+    ],
+    "ssh": { "proto": "tcp", "port": 22 },
+    "thunderhub": { "proto": "tcp", "port": 4002 },
+    "umbrel-nostr-relay": { "proto": "tcp", "port": 8881 }
+  }
+}
+```
+
+{<h3>Create SSH firewall rules</h3>}
 
 ```sh copy
 $SU $EDITOR /etc/awall/optional/ssh.json
 ```
 
-```json copy filename="/etc/awall/optional/ssh.json" {8}
+```json copy filename="/etc/awall/optional/ssh.json"
 {
-  "description": "Allow incoming SSH access (TCP/22)",
+  "description": "Allow incoming SSH access (TCP)",
 
   "filter": [
     {
@@ -179,12 +224,12 @@ $SU awall list
 ```
 
 ```sh filename="output"
-base-config  disabled  Base zones and policies
-ssh          disabled  Allow incoming SSH access (TCP/22)
+main         disabled  Main firewall
+ssh          disabled  Allow incoming SSH access (TCP)
 ```
 
 ```sh copy
-$SU awall enable base-config ssh
+$SU awall enable main ssh
 $SU awall activate
 ```
 

@@ -143,7 +143,7 @@ $SU $EDITOR /etc/awall/optional/thunderhub.json
     {
       "in": "internet",
       "out": "_fw",
-      "service": { "proto": "tcp", "port": 4002 },
+      "service": "thunderhub",
       "action": "accept",
       "conn-limit": { "count": 10, "interval": 60 }
     }

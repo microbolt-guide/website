@@ -753,10 +753,7 @@ $SU $EDITOR /etc/awall/optional/block-dns.json
         {
             "in": "_fw",
             "dest": "0.0.0.0/0",
-            "service": [
-                { "proto": "tcp", "port": 53 },
-                { "proto": "udp", "port": 53 }
-            ],
+            "service": "dns",
             "to-addr": "127.0.0.1",
             "to-port": 53
         }

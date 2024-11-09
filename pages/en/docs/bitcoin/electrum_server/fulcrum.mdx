@@ -140,7 +140,7 @@ $SU $EDITOR /etc/awall/optional/electrum.json
     {
       "in": "internet",
       "out": "_fw",
-      "service": { "proto": "tcp", "port": 50002 },
+      "service": "electrum",
       "action": "accept",
       "conn-limit": { "count": 10, "interval": 60 }
     }
