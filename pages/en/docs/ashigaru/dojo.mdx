@@ -280,7 +280,7 @@ grep samourai-dojo-$VERSION.tar.gz samourai-dojo-$VERSION-fingerprints.txt | sha
 
 ```sh copy
 curl \
-    --proxy socks5h://localhost/var/run/tor/socks.sock \
+    --proxy socks5h://localhost/run/tor/socks.sock \
     http://zkaan2xfbuxia2wpf7ofnkbz6r5zdbbvxbunvp5g2iebopbfc4iqmbad.onion/vks/v1/by-fingerprint/E53AD419B242822F19E23C6D3033D463D6E544F6 |\
     gpg --import
 ```
@@ -583,7 +583,7 @@ COMMON_BTC_NETWORK=mainnet
 DOJO_VERSION_TAG=1.26.0
 NET_DOJO_TOR_IPV4=127.0.0.1
 TOR_SOCKS_PORT=9050
-NET_DOJO_MYSQL_IPV4=/var/run/mysqld/mysqld.sock
+NET_DOJO_MYSQL_IPV4=/run/mysqld/mysqld.sock
 
 # HIDDEN SERVICES
 DOJO_HSV3=http://abcdefg..............xyz.onion
@@ -694,7 +694,7 @@ $SU $EDITOR /etc/init.d/samourai-dojo
 : ${SAMOURAI_DOJO_OPTS=${SAMOURAI_DOJO_OPTS}}
 : ${SAMOURAI_DOJO_SIGTERM_TIMEOUT:=600}
 
-SAMOURAI_DOJO_PIDDIR="/var/run/samourai-dojo"
+SAMOURAI_DOJO_PIDDIR="/run/samourai-dojo"
 
 directory="${SAMOURAI_DOJO_DATADIR}"
 required_files="${SAMOURAI_DOJO_ENVFILE}"
@@ -753,7 +753,7 @@ $SU $EDITOR /etc/logrotate.d/samourai-dojo
     create 0640 samourai samourai
     sharedscripts
     postrotate
-        kill -HUP `cat /var/run/samourai-dojo/samourai-dojo.pid`
+        kill -HUP `cat /run/samourai-dojo/samourai-dojo.pid`
     endscript
 }
 ```

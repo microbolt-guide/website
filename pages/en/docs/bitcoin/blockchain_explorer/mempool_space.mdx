@@ -652,7 +652,7 @@ $SU $EDITOR /etc/mempool/mempool-config.json
 [...]
   "DATABASE": {
 [...]
-    "SOCKET": "/var/run/mysqld/mysqld.sock",
+    "SOCKET": "/run/mysqld/mysqld.sock",
 [...]
     "PASSWORD": "",
 [...]
@@ -673,7 +673,7 @@ $SU apk add redis
 [...]
   "REDIS": {
     "ENABLED": true,
-    "UNIX_SOCKET_PATH": "/var/run/redis/redis.sock",
+    "UNIX_SOCKET_PATH": "/run/redis/redis.sock",
 [...]
 ```
 </FAQBox>
