@@ -22,7 +22,6 @@ files: [
     translation: "/pages/%two_letters_code%/**/%original_file_name%",
     type: "js",
     ignore: [
-      "/pages/en/**/ashigaru",
       "/pages/en/**/darkirc",
       "/pages/en/**/liquid"
     ]
@@ -32,10 +31,8 @@ files: [
     translation: "/pages/%two_letters_code%/**/%original_file_name%",
     type: "mdx_v2",
     ignore: [
-      "/pages/en/**/ashigaru",
       "/pages/en/**/darkirc",
       "/pages/en/**/liquid",
-      "/pages/en/**/ashigaru.mdx",
       "/pages/en/**/darkirc.mdx",
       "/pages/en/**/liquid.mdx"
     ]
