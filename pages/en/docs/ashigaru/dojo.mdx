@@ -347,11 +347,11 @@ found 0 vulnerabilities
 
 ```sh copy
 # Fix hidden services
-sed -e "s#\`http://\${fs.readFileSync('/var/lib/tor/hsv3dojo/hostname', 'utf8').trim()}\`#process.env.DOJO_HSV3#g" \
+sed "s#\`http://\${fs.readFileSync('/var/lib/tor/hsv3dojo/hostname', 'utf8').trim()}\`#process.env.DOJO_HSV3#g" \
     ./docker/my-dojo/node/keys.index.js > _
 $SU mv -f _ ./docker/my-dojo/node/keys.index.js
 ```
-    
+
 ```sh copy
 # RPC cookie support
 sed '/pass: process.env.BITCOIND_RPC_PASSWORD,/a \
@@ -636,6 +636,12 @@ NODE_JWT_SECRET=#CHANGEME#
 EXPLORER_INSTALL="off"
 ```
 
+* Make the configuration file readable only by the `samourai` user
+
+```sh copy
+$SU chmod 600 /etc/samourai-dojo/mainnet.env
+```
+
 <FAQBox title="Remove ban Bitcoin client Knots">
 If you are using the Bitcoin client Knots, you need to remove the ban check
 before starting the Samourai Dojo. Otherwise, the Dojo will not be able to
@@ -688,7 +694,7 @@ $SU $EDITOR /etc/init.d/samourai-dojo
 : ${SAMOURAI_DOJO_OPTS=${SAMOURAI_DOJO_OPTS}}
 : ${SAMOURAI_DOJO_SIGTERM_TIMEOUT:=600}
 
-SAMOURAI_DOJO_PIDDIR="/run/samourai-dojo"
+SAMOURAI_DOJO_PIDDIR="/var/run/samourai-dojo"
 
 directory="${SAMOURAI_DOJO_DATADIR}"
 required_files="${SAMOURAI_DOJO_ENVFILE}"
@@ -705,7 +711,7 @@ command_user="${SAMOURAI_DOJO_USER}:${SAMOURAI_DOJO_GROUP}"
 command_background="true"
 
 start_stop_daemon_args="--env APP_DIR=${SAMOURAI_DOJO_DATADIR}
-                        --env PM2_HOME=${SAMOURAI_DOJO_DATADIR}/.pm2
+                        --env PM2_HOME=/tmp/pm2-dojo
                         --stdout ${SAMOURAI_DOJO_LOGDIR}/debug.log
                         --stderr ${SAMOURAI_DOJO_LOGDIR}/debug.log"
 
@@ -747,7 +753,7 @@ $SU $EDITOR /etc/logrotate.d/samourai-dojo
     create 0640 samourai samourai
     sharedscripts
     postrotate
-        killall -HUP `cat /run/samourai-dojo/samourai-dojo.pid`
+        kill -HUP `cat /var/run/samourai-dojo/samourai-dojo.pid`
     endscript
 }
 ```
