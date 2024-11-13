@@ -1,6 +1,8 @@
 import Document, { Head, Html, Main, NextScript } from 'next/document'
 import { SkipNavLink } from 'nextra-theme-docs'
 
+import { Crowdjet } from '@components'
+
 export default class MyDocument extends Document {
   render() {
     const pathname = this.props.__NEXT_DATA__.page
@@ -13,6 +15,7 @@ export default class MyDocument extends Document {
           <SkipNavLink styled />
           <Main />
           <NextScript />
+          <Crowdjet />
         </body>
       </Html>
     )

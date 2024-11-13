@@ -2,6 +2,7 @@ import { useEffect, useRef, useMemo } from 'react'
 import { useRouter } from 'nextra/hooks'
 
 export default function MyApp({ Component, pageProps }) {
+  // Rainbow color effect and accent color based on the current route
   const { route, events } = useRouter()
   const hueRef = useRef(0) // Initial hue value
   const intervalIdRef = useRef() // Ref to store interval ID
@@ -69,6 +70,50 @@ export default function MyApp({ Component, pageProps }) {
       }
     }
   }, [events, route, styles])
+
+  // Add mutation observers to change the color scheme of the crowdjet iframe
+  useEffect(() => {
+    const updateIframeStyles = (iframe) => {
+      const colorScheme = getComputedStyle(document.documentElement).getPropertyValue('color-scheme');
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+      const htmlTag = iframeDoc.querySelector('html');
+      if (htmlTag) {
+        htmlTag.style.setProperty('color-scheme', colorScheme);
+        htmlTag.style.setProperty('color', '#111111');
+      }
+    };
+
+    const handleIframeLoad = (iframe) => {
+      updateIframeStyles(iframe);
+    };
+
+    const iframeObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.tagName === 'IFRAME' && node.parentElement.id.startsWith('crowdjet')) {
+            node.addEventListener('load', () => handleIframeLoad(node));
+          }
+        });
+      });
+    });
+
+    iframeObserver.observe(document.body, { childList: true, subtree: true });
+
+    const colorSchemeObserver = new MutationObserver(() => {
+      document.querySelectorAll('iframe').forEach((iframe) => {
+        if (iframe.parentElement.id.startsWith('crowdjet')) {
+          updateIframeStyles(iframe);
+        }
+      });
+    });
+
+    colorSchemeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
+
+    return () => {
+      iframeObserver.disconnect();
+      colorSchemeObserver.disconnect();
+    };
+  }, []);
 
   return <Component {...pageProps} />
 }
