@@ -14,6 +14,7 @@ export default withNextra({
   },
   webpack: (config) => {
     config.resolve.alias['@components'] = path.join(process.cwd(), 'components');
+    config.resolve.alias['@styles'] = path.join(process.cwd(), 'styles');
     return config;
   },
   redirects: () => {

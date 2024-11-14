@@ -1,0 +1,17 @@
+#crowdjet-container {
+  bottom: 90px;
+  right: 20px;
+  z-index: 0 !important;
+}
+
+#crowdjet-expand-container {
+  bottom: 10px;
+  right: 20px;
+  z-index: 0 !important;
+}
+
+/* Ensure the color scheme of the crowdjet iframe is light */
+#crowdjet-container iframe,
+#crowdjet-expand-container iframe {
+  color-scheme: var(--color-scheme, light);
+}
