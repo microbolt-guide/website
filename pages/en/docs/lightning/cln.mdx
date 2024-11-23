@@ -1,0 +1,329 @@
+import { Callout, Steps } from "nextra/components";
+
+# Core Lightning
+
+We set up [lightningd](https://github.com/ElementsProject/lightning) by [Core
+Lightning](https://corelightning.org).
+
+## Preparations
+
+<Steps>
+### Install dependencies
+
+These are build dependencies (safe to remove after installation, if you want)
+
+```sh copy
+$SU apk add --virtual .build-deps alpine-sdk autoconf automake ca-certificates \
+    gettext git gnupg jq libsodium libtool net-tools sqlite-dev sqlite-static \
+    pkgconf python3 py3-mako py3-setuptools zlib-dev zlib-static
+```
+
+These are runtime dependencies
+
+```sh copy
+$SU apk add libgcc libsodium sqlite-libs zlib
+```
+
+### Create the `cln` user/group
+
+```sh copy
+$SU addgroup -S cln
+```
+
+```sh copy
+$SU adduser \
+    -S \
+    -D \
+    -H \
+    -h /dev/null \
+    -s /sbin/nologin \
+    -G cln \
+    -g cln \
+    cln
+```
+
+### Add `cln` user to the `bitcoin` group
+
+```sh copy
+$SU adduser cln bitcoin
+```
+
+### Add the user `satoshi` to the group `cln` as well
+
+```sh copy
+$SU adduser satoshi cln
+```
+
+### Add the user `cln` to the group `tor`
+
+This allow the user `cln` to use the control port and configure Tor directly
+
+```sh copy
+$SU adduser cln tor
+```
+
+### Create a symbolic link cln to `satoshi` home
+
+```sh copy
+ln -s /var/lib/lightningd "$HOME/.lightning"
+```
+
+</Steps>
+
+## Installation
+
+The installation of Core Lightning is straight-forward, but the application is
+quite powerful and capable of things not explained here. Check out their [GitHub
+repository](https://github.com/ElementsProject/lightning) for a wealth of
+information about their open-source project and Lightning in general.
+
+<Steps>
+### Download binaries
+
+We'll download, verify and install Core Lightning.
+
+- Download the application and the checksums file (.txt) with its signature
+  (.sig) and timestamp (.ots)
+
+```sh copy
+cd /tmp
+```
+
+```sh copy
+VERSION=24.08.1
+```
+
+```sh copy
+git clone --branch v$VERSION https://github.com/ElementsProject/lightning.git
+cd lightning
+git submodule update --init --recursive
+
+```
+
+### Signature check
+
+- To avoid using bad source code, verify that the release has been properly
+  signed by the main developers.
+
+```sh copy
+wget -qO- \
+    https://api.github.com/repos/ElementsProject/lightning/contents/contrib/keys |\
+    grep download_url |\
+    grep -oE "https://[a-zA-Z0-9./-]+" |\
+    while read url; do \
+        wget -qO- "$url" |\
+        gpg --import \
+    ; done
+```
+
+```sh copy
+git verify-tag v$VERSION
+```
+
+### Configure, compile and install
+
+<Callout type="info">
+  If you don't want to install man pages, you need to comment this lines in the
+  Makefile ```sh copy MAN=0 sed -e '/^\s*$(MKDIR_P) \$(DESTDIR)\$(man[0-9]dir)/
+  s/^/#/' \ -e '/^\s*$(MKDIR_P) \$(DESTDIR)\$(docdir)/ s/^/#/' \ -e '/^datadir =
+  / s/^/#/' \ -e '/^docdir = / s/^/#/' \ -e '/^mandir = / s/^/#/' \ -e
+  '/^man[0-9]dir = / s/^/#/' Makefile > _ mv -f _ Makefile ```
+</Callout>
+
+```sh copy
+./configure \
+    COPTFLAGS="$CFLAGS" \
+    --prefix=/usr \
+    --enable-static \
+    --disable-rust
+```
+
+```sh copy
+make
+```
+
+```sh copy
+$SU make "install${MAN:+-program}"
+```
+
+### Strip installed binaries
+
+```sh copy
+$SU strip /usr/bin/lightning*
+```
+
+### Cleanup
+
+```sh copy
+cd
+$SU rm -rf /tmp/lightning
+$SU apk del .build-deps
+```
+
+</Steps>
+
+## Configuration
+
+- Modify/uncomment these lines. Save and exit.
+
+```sh copy
+$SU $EDITOR /etc/lightningd/config
+```
+
+```conf filename="/etc/lightningd/config" {}
+[...]
+```
+
+<Callout>
+  Check the Core Lightning
+  [documentation](https://docs.corelightning.org/docs/configuration) on web
+  browser to learn more.
+</Callout>
+
+### Autostart on boot
+
+Now, let's set up Core Lightning to start automatically on system startup.
+
+- Create Core Lightning init.d unit with the following content. Save and exit.
+
+```sh copy
+$SU $EDITOR /etc/init.d/lightningd
+```
+
+```sh copy filename="/etc/init.d/lightningd"
+#!/sbin/openrc-run
+
+: ${CLN_CONFIGFILE:=/etc/lightningd/config}
+: ${CLN_DATADIR:=/var/lib/lightningd}
+: ${CLN_LOGDIR:=/var/log/lightningd}
+: ${CLN_USER:=cln}
+: ${CLN_GROUP:=cln}
+: ${CLN_BIN:=/usr/bin/lightningd}
+: ${CLN_OPTS=${CLN_OPTS}}
+: ${CLN_SIGTERM_TIMEOUT:=600}
+
+: ${CLN_STOP_BIN:=/usr/bin/lightning-cli}
+: ${CLN_STOP_OPTS:=${CLN_STOP_OPTS}}
+
+: ${BITCOIND_DATADIR:=/var/lib/bitcoind}
+
+CLN_PIDDIR="/var/run/lightningd"
+
+name="CLN"
+description="Core Lightning"
+
+required_files="${CLN_CONFIGFILE}"
+pidfile="${CLN_PIDDIR}/${SVCNAME}.pid"
+retry="${CLN_SIGTERM_TIMEOUT}"
+
+command="${CLN_BIN}"
+command_args="--conf=${CLN_CONFIGFILE}
+              --lightning-dir=${CLN_DATADIR}
+              --log-file=${CLN_LOGDIR}/debug.log
+              --bitcoin-datadir=${BITCOIND_DATADIR}
+              --rpc-file-mode=0660
+              --pid-file=${pidfile}
+              --daemon
+              ${CLN_OPTS}"
+command_user="${CLN_USER}:${CLN_GROUP}"
+
+depend() {
+    need bitcoind
+    checkdepend proxy tor
+}
+
+checkdepend() {
+    if grep -qs "^${1}=" "${CLN_CONFIGFILE}"; then
+        need "${2:-$1}"
+    fi
+}
+
+start_pre() {
+    checkpath --file      --mode 0660 --owner "${command_user}" "${CLN_CONFIGFILE}"
+    checkpath --directory --mode 0750 --owner "${command_user}" "${CLN_DATADIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${CLN_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${CLN_PIDDIR}"
+}
+
+start_post() {
+    chmod -R u=rwX,g=rX,o= "${CLN_DATADIR}" "${CLN_LOGDIR}"
+}
+
+stop() {
+    ebegin "Stopping ${name}"
+    "${CLN_STOP_BIN}" \
+        --lightning-dir="${CLN_DATADIR}" \
+        "${CLN_STOP_OPTS}" \
+        stop \
+        > /dev/null 2>&1
+    eend $?
+}
+```
+
+- Enable execution permission
+
+```sh copy
+$SU chmod +x /etc/init.d/lightningd
+```
+
+## Enable logrotate
+
+- Create the logrotate configuration file
+
+```sh copy
+$SU $EDITOR /etc/logrotate.d/lightningd
+```
+
+```sh copy filename="/etc/logrotate.d/lightningd"
+/var/log/lightningd/*.log {
+    weekly
+    missingok
+    rotate 104
+    compress
+    delaycompress
+    notifempty
+    create 0640 cln cln
+    sharedscripts
+    postrotate
+        kill -HUP `cat /var/run/lightningd/lightningd.pid`
+    endscript
+}
+```
+
+- Test
+
+```sh copy
+$SU logrotate /etc/logrotate.d/lightningd --debug
+```
+
+## Enable and start Core Lightning
+
+```sh copy
+$SU rc-update add lightningd
+$SU rc-service lightningd start
+```
+
+- Check the log to see Core Lightning output. Exit with `Ctrl-C`
+
+```sh copy
+tail -f /var/log/lightningd/debug.log
+```
+
+## For the future: upgrade Core Lightning
+
+Follow again [Core Lightning](./lightning_client.mdx) page replacing the
+environment variable `VERSION=x.xx` value for the latest if it has not been
+already changed in this guide.
+
+- Update the Core Lightning configuration if necessary (see [release
+  notes](https://github.com/ElementsProject/lightning/releases))
+
+```sh copy
+$SU $EDITOR /etc/lightningd/config
+```
+
+- Restart the services with the new configuration
+
+```sh copy
+$SU rc-service lightningd restart
+```
