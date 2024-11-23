@@ -24,7 +24,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-VERSION="0.1.0"
+VERSION="0.1.1"
 
 ALIASES="
 update
@@ -150,7 +150,8 @@ remove() {
 
 # int main()
 {
-    case "${0##*/}" in
+    cmd="${0##*/}"
+    case "$cmd" in
         microbolt)
             case "$1" in
                 -c|--create)  create ;;
@@ -161,9 +162,9 @@ remove() {
                               usage; exit 1 ;;
             esac
         ;;
-        update|upgrade)            "$SU" apk "$0" ;;
-        add|del)                   "$SU" rc-update  "$0" "$1" "${2:-default}" ;;
-        start|stop|status|restart) "$SU" rc-service "$1" "$0" ;;
+        update|upgrade)            "$SU" apk "$cmd" ;;
+        add|del)                   "$SU" rc-update  "$cmd" "$1" "${2:-default}" ;;
+        start|stop|status|restart) "$SU" rc-service "$1" "$cmd" ;;
         log)
             case "$1" in
                 tor)               "$SU" tail -f /var/log/tor/notices.log ;;
@@ -192,10 +193,10 @@ remove() {
         unlock|listchaintxns|listpayments|listinvoices|getinfo|walletbalance|\
         listpeers|listchannels|channelbalance|pendingchannels|openchannel|\
         connect|payinvoice|addinvoice)
-                       lightning "$0" "$1" ;;
-        newaddress)    lightning "$0" "$1" "${2:-p2tr}" ;;
-        addinvoiceamp) lightning "$0 --amp" "$1" ;;
-        wtclient)      lightning "$0 towers" "$1" ;;
+                       lightning "$cmd" "$1" ;;
+        newaddress)    lightning "$cmd" "$1" "${2:-p2tr}" ;;
+        addinvoiceamp) lightning "$cmd --amp" "$1" ;;
+        wtclient)      lightning "$cmd towers" "$1" ;;
         wtserver)      lightning "tower info" "$1" ;;
     esac
 }
