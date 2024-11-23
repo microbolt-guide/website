@@ -220,7 +220,7 @@ $SU chmod +x /etc/init.d/nostr-rs-relay
     create 0640 nostr nostr
     sharedscripts
     postrotate
-        killall -HUP `cat /run/nostr-rs-relay/nostr-rs-relay.pid`
+        kill -HUP `cat /run/nostr-rs-relay/nostr-rs-relay.pid`
     endscript
 }
 ```

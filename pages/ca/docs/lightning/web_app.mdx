@@ -506,7 +506,7 @@ $SU $EDITOR /etc/logrotate.d/thunderhub
     create 0640 thunderhub thunderhub
     sharedscripts
     postrotate
-        killall -HUP `cat /run/thunderhub/thunderhub.pid`
+        kill -HUP `cat /run/thunderhub/thunderhub.pid`
     endscript
 }
 ```

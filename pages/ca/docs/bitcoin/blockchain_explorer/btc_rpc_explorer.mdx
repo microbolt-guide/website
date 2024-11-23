@@ -502,7 +502,7 @@ $SU $EDITOR /etc/logrotate.d/btc-rpc-explorer
     create 0640 btc-rpc-explorer btc-rpc-explorer
     sharedscripts
     postrotate
-        killall -HUP `cat /run/btc-rpc-explorer/btc-rpc-explorer.pid`
+        kill -HUP `cat /run/btc-rpc-explorer/btc-rpc-explorer.pid`
     endscript
 }
 ```

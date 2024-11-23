@@ -508,7 +508,7 @@ $SU chmod +x /etc/init.d/umbrel-nostr-relay
     create 0640 nostr nostr
     sharedscripts
     postrotate
-        killall -HUP `cat /run/umbrel-nostr-relay/umbrel-nostr-relay.pid`
+        kill -HUP `cat /run/umbrel-nostr-relay/umbrel-nostr-relay.pid`
     endscript
 }
 ```

@@ -391,7 +391,7 @@ $SU $EDITOR /etc/logrotate.d/electrs
     create 0640 electrs electrs
     sharedscripts
     postrotate
-        killall -HUP `cat /run/electrs/electrs.pid`
+        kill -HUP `cat /run/electrs/electrs.pid`
     endscript
 }
 ```

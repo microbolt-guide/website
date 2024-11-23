@@ -249,10 +249,25 @@ line for the config file.
 
 But we prefer to do it our way, much more simple
 
+<Callout type="info">
+The following command will ask for the RPC username and password. The password
+will be hashed and stored in the `bitcoin.conf` file.
+Copy and paste the following command into your terminal and press `Enter`
+</Callout>
+
 ```sh copy
-read -r username password; \
-[ ! "$username" ] || [ ! "$password" ] && { 
-    printf "%s\n" "Error, must provide username and password"
+clear && \
+printf "Enter the RPC username: " && \
+read -r username; \
+[ ! "$username" ] && { 
+    printf "\033[38;5;1m%s\033[m\n" "Error, must provide username"; kill -SIGINT $$
+} || \
+printf "Enter the [ B ] RPC password: " && \
+stty -echo && \
+read -r password; \
+stty echo && \
+[ ! "$password" ] && { 
+    printf "\033[38;5;1m%s\033[m\n" "Error, must provide password"; kill -SIGINT $$
 } || {
     sed "s/^#*rpcauth=.*$/rpcauth=${username}:${salt=$(openssl rand -hex 16)}\$$(\
             printf "%s" "${password}" | \
@@ -260,7 +275,9 @@ read -r username password; \
             awk '{print $2}' \
         )/" /etc/bitcoin/bitcoin.conf > _; \
     unset salt; \
-    $SU mv -f _ /etc/bitcoin/bitcoin.conf
+    $SU mv -f _ /etc/bitcoin/bitcoin.conf && \
+    printf "\n\033[38;5;34m%s\033[m\n" \
+        "Done! The password hash is stored in the bitcoin.conf file" 
 }
 ```
 
@@ -276,7 +293,7 @@ read -r username password; \
 $SU $EDITOR /etc/bitcoin/bitcoin.conf
 ```
 
-```nginx filename="/etc/bitcoin/bitcoin.conf" {2,4,6,8,10,12,14,16,18,20,22,24,26,28-29,31,33,35}
+```nginx filename="/etc/bitcoin/bitcoin.conf" {2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32-33,35,37,39}
 [...]
 assumevalid=0
 [...]
@@ -290,7 +307,11 @@ dbcache=8192
 [...]
 txindex=1
 [...]
+bind=127.0.0.1
+[...]
 i2psam=127.0.0.1:7656
+[...]
+listen=1
 [...]
 peerblockfilters=1
 [...]
@@ -320,32 +341,6 @@ Check this Bitcoin Knots sample
 [config](https://gist.github.com/doitwithnotepad/7fc0fb95fed99ca6c6a288dbf73d18fa)
 on web browser
 </Callout>
-
-<FAQBox title="Reject non-private networks">
-```conf filename="/etc/bitcoin/bitcoin.conf" {2,4,6,8}
-[...]
-onlynet=onion
-[...]
-onlynet=i2p
-[...]
-dns=0
-[...]
-dnsseed=0
-[...]
-```
-
-And add seed nodes, check a list of seed nodes
-[here](https://github.com/bitcoin/bitcoin/blob/master/contrib/seeds/nodes_main_manual.txt)
-
-```conf filename="/etc/bitcoin/bitcoin.conf" {2,5}
-##Tor seed nodes
-seednode=2bqghnldu6mcug...tvci6klcwzepnjd46ikjyd.onion:8333
-[...]
-##I2P seed nodes
-seednode=255fhcp6ajvftn...3bamyh2iu5r3gnr2rq.b32.i2p:0
-[...]
-```
-</FAQBox>
 
 <FAQBox title="Slow device mode">
 ```conf filename="/etc/bitcoin/bitcoin.conf" {4,7,10,13,15,17}
@@ -511,7 +506,7 @@ $SU $EDITOR /etc/logrotate.d/bitcoind
     create 0640 bitcoin bitcoin
     sharedscripts
     postrotate
-        killall -HUP `cat /run/bitcoind.pid`
+        kill -HUP `cat /run/bitcoind/bitcoind.pid`
     endscript
 }
 ```

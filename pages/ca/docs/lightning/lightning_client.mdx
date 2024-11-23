@@ -309,11 +309,13 @@ $SU $EDITOR /etc/init.d/lnd
 : ${LND_OPTS=${LND_OPTS}}
 : ${LND_SIGTERM_TIMEOUT:=600}
 
+LND_PIDDIR="/run/lnd"
+
 name="LND"
 description="Lightning Network Daemon"
 
 required_files="${LND_CONFIGFILE}"
-pidfile="/run/${SVCNAME}.pid"
+pidfile="${LND_PIDDIR}/${SVCNAME}.pid"
 retry="${LND_SIGTERM_TIMEOUT}"
 
 command="${LND_BIN}"
@@ -339,6 +341,7 @@ start_pre() {
     checkpath --file      --mode 0600 --owner "${command_user}" "${LND_PASSWDFILE}"
     checkpath --directory --mode 0750 --owner "${command_user}" "${LND_DATADIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${LND_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${LND_PIDDIR}"
 
     [ -e "${LND_DATADIR}/logs" ] || ln -s "${LND_LOGDIR}" "${LND_DATADIR}/logs"
 

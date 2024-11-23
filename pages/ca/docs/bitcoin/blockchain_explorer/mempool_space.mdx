@@ -840,7 +840,7 @@ $SU $EDITOR /etc/logrotate.d/mempool
     create 0640 mempool mempool
     sharedscripts
     postrotate
-        killall -HUP `cat /run/mempool/mempool.pid`
+        kill -HUP `cat /run/mempool/mempool.pid`
     endscript
 }
 ```

@@ -437,7 +437,7 @@ $SU $EDITOR /etc/logrotate.d/fulcrum
     create 0640 fulcrum fulcrum
     sharedscripts
     postrotate
-        killall -HUP `cat /run/fulcrum/fulcrum.pid`
+        kill -HUP `cat /run/fulcrum/fulcrum.pid`
     endscript
 }
 ```
