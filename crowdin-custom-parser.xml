@@ -35,6 +35,25 @@
           <beforebreak>^import\s.*\n</beforebreak>
           <afterbreak></afterbreak>
         </rule>
+        <!-- Common rules for most languages -->
+        <rule break="no">
+          <beforebreak>^\s*[0-9]+\.</beforebreak>
+          <afterbreak>\s</afterbreak>
+        </rule>
+        <!--
+        <rule break="yes">
+          <afterbreak>\n</afterbreak>
+        </rule>
+        -->
+        <rule break="yes">
+          <beforebreak>[\.\?!]+</beforebreak>
+          <afterbreak>\s</afterbreak>
+        </rule>
+        <!-- New rule to treat line breaks that do not end with a period as a space -->
+        <rule break="no">
+          <beforebreak>[^\.\?!]\n</beforebreak>
+          <afterbreak>\s</afterbreak>
+        </rule>
       </languagerule>
     </languagerules>
     <maprules>
