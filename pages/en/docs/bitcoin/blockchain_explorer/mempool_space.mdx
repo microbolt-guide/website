@@ -26,7 +26,7 @@ For the {name} to work, you need your full node to index all transactions.
 * If you followed this guide, the transaction index parameter is already enabled
 (`txindex=1`), and you can skip to the next section.
 * If this is not the case, you need to set the `txindex=1` parameter in your
-Bitcoin client configuration file (`bitcoin.conf`): [Bitcoin node
+Bitcoin client configuration file (`bitcoind/main.conf`): [Bitcoin node
 configuration](../bitcoin_client).
 * After adding the parameter, restart Bitcoin client, which will now index the
 whole blockchain
@@ -39,7 +39,7 @@ Please note that reindexing can take more than a day. You can follow the
 progress using
 
 ```sh copy
-tail -f /var/log/bitcoind/debug.log
+tail -f /var/log/bitcoind/main/debug.log
 ```
 
 ### Install dependencies
@@ -76,10 +76,10 @@ $SU adduser \
     mempool
 ```
 
-### Add {user} user to the bitcoin group
+### Add {user} user to the bitcoind group
 
 ```sh copy
-$SU adduser mempool bitcoin
+$SU adduser mempool bitcoind
 ```
 
 ### Add satoshi user to the {user} group
@@ -99,10 +99,10 @@ to the {name}
 <Tabs items={['caddy', 'nginx']}>
     <Tabs.Tab>
 ```sh copy
-$SU $EDITOR /etc/caddy/sites/mempool-space.caddy
+$SU $EDITOR /etc/caddy/sites/mempool.caddy
 ```
 
-```nginx copy filename="/etc/caddy/sites/mempool-space.caddy"
+```nginx copy filename="/etc/caddy/sites/mempool.caddy"
 :4081 {
     import tls
     root /var/www/mempool/browser
@@ -562,7 +562,7 @@ chmod +x ./package/bin/cli.sh
 ```
 
 ```sh copy
-$SU install -D -m 0660 -o mempool -g mempool ./mempool-config.sample.json /etc/mempool/mempool-config.json
+$SU install -D -m 0660 -o mempool -g mempool ./mempool-config.sample.json /etc/mempool/main.json
 ```
 
 ```sh copy
@@ -631,10 +631,10 @@ $SU apk del .build-deps
 * Check the configuration file and change highlighted values
 
 ```sh copy
-$SU $EDITOR /etc/mempool/mempool-config.json
+$SU $EDITOR /etc/mempool/main.json
 ```
 
-```json filename="/etc/mempool/mempool-config.json" {2,4,8-9,11-12,15-16,19,23,25,28}
+```json filename="/etc/mempool/main.json" {2,4,8-9,11-12,15-16,19,23,25,28}
 [...]
     "INDEXING_BLOCKS_AMOUNT": 52560,
 [...]
@@ -646,7 +646,7 @@ $SU $EDITOR /etc/mempool/mempool-config.json
     "PASSWORD": "",
 [...]
     "COOKIE": true,
-    "COOKIE_PATH": "/var/lib/bitcoind/.cookie"
+    "COOKIE_PATH": "/run/bitcoind/main.authcookie"
   },
   "ESPLORA": {
     "REST_API_URL": "",
@@ -674,7 +674,7 @@ To use Redis caching, you need to install the `redis` package and configure the
 $SU apk add redis
 ```
 
-```json filename="/etc/mempool/mempool-config.json" {3-4}
+```json filename="/etc/mempool/main.json" {3-4}
 [...]
   "REDIS": {
     "ENABLED": true,
@@ -697,7 +697,7 @@ $SU $EDITOR /etc/tor/torrc
 
 ```sh copy filename="/etc/tor/torrc"
 # Hidden Service Mempool Space
-HiddenServiceDir /var/lib/tor/mempool/
+HiddenServiceDir /var/lib/tor/hsv3mempool/
 HiddenServiceVersion 3
 HiddenServicePoWDefensesEnabled 1
 HiddenServicePort 443 127.0.0.1:4081
@@ -707,7 +707,10 @@ HiddenServicePort 443 127.0.0.1:4081
 
 ```sh copy
 $SU rc-service tor reload
-$SU cat /var/lib/tor/mempool/hostname
+```
+
+```sh copy
+$SU cat /var/lib/tor/hsv3mempool/hostname
 ```
 
 ```sh filename="output"
@@ -733,23 +736,23 @@ $SU $EDITOR /etc/init.d/mempool
 ```sh copy filename="/etc/init.d/mempool"
 #!/sbin/openrc-run
 
-: ${MEMPOOL_CONFIGFILE:=/etc/mempool/mempool-config.json}
-: ${MEMPOOL_DATADIR:=/var/lib/mempool}
-: ${MEMPOOL_LOGDIR:=/var/log/mempool}
+: ${MEMPOOL_CHAIN:=main}
+: ${MEMPOOL_CONFIGFILE:=/etc/mempool/${MEMPOOL_CHAIN}.json}
+: ${MEMPOOL_DATADIR:=/var/lib/mempool/${MEMPOOL_CHAIN}}
+: ${MEMPOOL_LOGDIR:=/var/log/mempool/${MEMPOOL_CHAIN}}
 : ${MEMPOOL_USER:=mempool}
 : ${MEMPOOL_GROUP:=mempool}
 : ${MEMPOOL_BIN:=/usr/bin/mempool}
 : ${MEMPOOL_OPTS=${MEMPOOL_OPTS}}
 : ${MEMPOOL_SIGTERM_TIMEOUT:=600}
 
-MEMPOOL_PIDDIR="/run/mempool"
-
-name="Mempool Space"
+name="Mempool Space (${MEMPOOL_CHAIN})"
 description="A self-hosted Bitcoin blockchain and mempool visualizer/explorer"
 
 directory="${MEMPOOL_DATADIR}"
 required_files="${MEMPOOL_CONFIGFILE}"
-pidfile="${MEMPOOL_PIDDIR}/${SVCNAME}.pid"
+piddir="/run/mempool"
+pidfile="${piddir}/${SVCNAME}.pid"
 retry="${MEMPOOL_SIGTERM_TIMEOUT}"
 
 command="${MEMPOOL_BIN}"
@@ -777,10 +780,11 @@ service_exists() {
 }
 
 start_pre() {
+    mkdir -p "${MEMPOOL_DATADIR}" "${MEMPOOL_LOGDIR}"
     checkpath --file      --mode 0660 --owner "${command_user}" "${MEMPOOL_CONFIGFILE}"
     checkpath --directory --mode 0750 --owner "${command_user}" "${MEMPOOL_DATADIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${MEMPOOL_LOGDIR}"
-    checkpath --directory --mode 0755 --owner "${command_user}" "${MEMPOOL_PIDDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${piddir}"
 }
 
 stop() {
@@ -810,7 +814,7 @@ $SU $EDITOR /etc/logrotate.d/mempool
 ```
 
 ```sh copy filename="/etc/logrotate.d/mempool"
-/var/log/mempool/*.log {
+/var/log/mempool/main/*.log {
     weekly
     missingok
     rotate 104
@@ -820,7 +824,7 @@ $SU $EDITOR /etc/logrotate.d/mempool
     create 0640 mempool mempool
     sharedscripts
     postrotate
-        kill -HUP `cat /run/mempool/mempool.pid`
+        kill -HUP `cat /run/mempool/main.pid`
     endscript
 }
 ```
@@ -844,7 +848,7 @@ $SU rc-service mempool start
 * Check the log to see {name} output. Exit with `Ctrl-C`
 
 ```sh copy
-tail -f /var/log/mempool/debug.log
+tail -f /var/log/mempool/main/debug.log
 ```
 
 * You can now access your own {name} from within your local network by browsing
@@ -858,7 +862,7 @@ value for the latest if it has not been already changed in this guide.
 * Update the {name} configuration if necessary (see [release notes])
 
 ```sh copy
-$SU $EDITOR /etc/mempool/mempool-config.json
+$SU $EDITOR /etc/mempool/main.json
 ```
 
 * Restart the service to apply the changes

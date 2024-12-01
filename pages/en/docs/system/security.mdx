@@ -141,7 +141,7 @@ Replace `eth0` with your network interface
 $SU $EDITOR /etc/awall/private/base.json
 ```
 
-```json copy filename="/etc/awall/private/base.json" {5}
+```json copy filename="/etc/awall/private/base.json" /"eth0"/
 {
   "description": "Base zones and policies",
 
@@ -174,7 +174,8 @@ $SU $EDITOR /etc/awall/private/custom-services.json
       { "proto": "tcp", "port": 53 },
       { "proto": "udp", "port": 53 }
     ],
-    "electrum": { "proto": "tcp", "port": 50002 },
+    "fulcrum": { "proto": "tcp", "port": 50002 },
+    "electrs": { "proto": "tcp", "port": 50012 },
     "lnd-rest": { "proto": "tcp", "port": 8081 },
     "mempool": { "proto": "tcp", "port": 4081 },
     "public-pool": [
@@ -183,6 +184,7 @@ $SU $EDITOR /etc/awall/private/custom-services.json
     ],
     "samourai-dojo": { "proto": "tcp", "port": 4011 },
     "ssh": { "proto": "tcp", "port": 22 },
+    "albyhub": { "proto": "tcp", "port": 8030 },
     "thunderhub": { "proto": "tcp", "port": 4002 },
     "umbrel-nostr-relay": { "proto": "tcp", "port": 8881 }
   }
@@ -390,6 +392,12 @@ $SU tar xzf caddy_${LATEST}_linux_${ARCH}.tar.gz caddy -C /usr/bin/
 
 ```sh copy
 $SU caddy add-package github.com/mholt/caddy-l4
+```
+
+{<h3>Cleanup</h3>}
+
+```sh copy
+$SU rm -rf /tmp/caddy*
 ```
 
 {<h3>Configuration</h3>}

@@ -2,7 +2,7 @@ import { Steps, Tabs } from 'nextra/components'
 import { FAQBox } from '@components'
 
 export const name = "BTC RPC Explorer"
-export const user = "btc-rpc-explorer"
+export const user = "explorer"
 
 # BTC RPC Explorer
 
@@ -22,7 +22,7 @@ For the {name} to work, you need your full node to index all transactions.
 * If you followed this guide, the transaction index parameter is already enabled
 (`txindex=1`), and you can skip to the next section.
 * If this is not the case, you need to set the `txindex=1` parameter in your
-Bitcoin client configuration file (`bitcoin.conf`): [Bitcoin node
+Bitcoin client configuration file (`bitcoind/main.conf`): [Bitcoin node
 configuration](../bitcoin_client).
 * After adding the parameter, restart Bitcoin client, which will now index the
 whole blockchain
@@ -35,7 +35,7 @@ Please note that reindexing can take more than a day. You can follow the
 progress using
 
 ```sh copy
-tail -f /var/log/bitcoind/debug.log
+tail -f /var/log/bitcoind/main/debug.log
 ```
 
 ### Install dependencies
@@ -57,7 +57,7 @@ $SU apk add nodejs-current
 ### Create the {user} user/group
 
 ```sh copy
-$SU addgroup -S btc-rpc-explorer
+$SU addgroup -S explorer
 ```
 
 ```sh copy
@@ -67,21 +67,21 @@ $SU adduser \
     -H \
     -h /dev/null \
     -s /sbin/nologin \
-    -G btc-rpc-explorer \
-    -g btc-rpc-explorer \
-    btc-rpc-explorer
+    -G explorer \
+    -g explorer \
+    explorer
 ```
 
-### Add {user} user to the bitcoin group
+### Add {user} user to the bitcoind group
 
 ```sh copy
-$SU adduser btc-rpc-explorer bitcoin
+$SU adduser explorer bitcoind
 ```
 
 ### Add satoshi user to the {user} group
 
 ```sh copy
-$SU adduser satoshi btc-rpc-explorer
+$SU adduser satoshi explorer
 ```
 
 ### Reverse proxy
@@ -95,10 +95,10 @@ to the {name}
 <Tabs items={['caddy', 'nginx']}>
     <Tabs.Tab>
 ```sh copy
-$SU $EDITOR /etc/caddy/sites/btc-rpc-explorer.caddy
+$SU $EDITOR /etc/caddy/sites/btcrpcexpl.caddy
 ```
 
-```nginx copy filename="/etc/caddy/sites/btc-rpc-explorer.caddy"
+```nginx copy filename="/etc/caddy/sites/btcrpcexpl.caddy"
 :4000 {
         import tls
         reverse_proxy 127.0.0.1:3002
@@ -113,25 +113,25 @@ $SU rc-service caddy reload
     </Tabs.Tab>
     <Tabs.Tab>
 ```sh copy
-$SU $EDITOR /etc/nginx/streams-available/btc-rpc-explorer-reverse-proxy.conf
+$SU $EDITOR /etc/nginx/streams-available/btcrpcexpl-reverse-proxy.conf
 ```
 
-```nginx copy filename="/etc/nginx/streams-available/btc-rpc-explorer-reverse-proxy.conf"
-upstream btc-rpc-explorer {
+```nginx copy filename="/etc/nginx/streams-available/btcrpcexpl-reverse-proxy.conf"
+upstream btcrpcexpl {
     server 127.0.0.1:3002;
 }
 
 server {
     listen 4000 ssl;
-    proxy_pass btc-rpc-explorer;
+    proxy_pass btcrpcexpl;
 }
 ```
 
 ```sh copy
 $SU ln \
     -s \
-    ../streams-available/btc-rpc-explorer-reverse-proxy.conf \
-    /etc/nginx/streams-enabled/btc-rpc-explorer-reverse-proxy.conf
+    ../streams-available/btcrpcexpl-reverse-proxy.conf \
+    /etc/nginx/streams-enabled/btcrpcexpl-reverse-proxy.conf
 ```
 
 * Test and reload NGINX configuration
@@ -259,16 +259,16 @@ found 0 vulnerabilities
 * Make it a global permanent installation
 
 ```sh copy
-$SU install -D -m 0660 -o btc-rpc-explorer -g btc-rpc-explorer ./.env-sample /etc/btc-rpc-explorer/btc-rpc-explorer.env
+$SU install -D -m 0660 -o explorer -g explorer ./.env-sample /etc/explorer/main.env
 ```
 
 ```sh copy
-$SU mv -f /tmp/btc-rpc-explorer /var/lib/
+$SU mv -f /tmp/btc-rpc-explorer /var/lib/explorer
 ```
 
 ```sh copy
-$SU ln -s /var/lib/btc-rpc-explorer /usr/lib/node_modules/btc-rpc-explorer
-$SU ln -s ../lib/node_modules/btc-rpc-explorer/bin/cli.js /usr/bin/btc-rpc-explorer
+$SU ln -s /var/lib/explorer /usr/lib/node_modules/explorer
+$SU ln -s ../lib/node_modules/explorer/bin/cli.js /usr/bin/explorer
 ```
 
 ### Cleanup
@@ -285,16 +285,16 @@ $SU apk del .build-deps
 * Activate any setting by removing the `#` at the beginning of the line.
 
 ```sh copy
-$EDITOR /etc/btc-rpc-explorer/btc-rpc-explorer.env
+$EDITOR /etc/explorer/main.env
 ```
 
-```sh filename="/etc/btc-rpc-explorer/btc-rpc-explorer.env" {2,4,6,8,10,12,14}
+```sh filename="/etc/explorer/main.env" {2,4,6,8,10,12,14}
 [...]
 BTCEXP_BITCOIND_HOST=127.0.0.1
 [...]
 BTCEXP_BITCOIND_PORT=8332
 [...]
-BTCEXP_BITCOIND_COOKIE=/var/lib/bitcoind/.cookie
+BTCEXP_BITCOIND_COOKIE=/run/bitcoind/main.authcookie
 [...]
 BTCEXP_ADDRESS_API=electrum
 [...]
@@ -307,7 +307,7 @@ BTCEXP_UI_THEME={dark|light} # Choose one
 ```
 
 <FAQBox title="Slow device mode">
-```sh filename="/etc/btc-rpc-explorer/btc-rpc-explorer.env" {2,4}
+```sh filename="/etc/explorer/main.env" {2,4}
 [...]
 BTCEXP_BITCOIND_RPC_TIMEOUT=10000
 [...]
@@ -319,7 +319,7 @@ BTCEXP_SLOW_DEVICE_MODE=true
 <FAQBox title="Privacy mode">
 * More information mode, including Bitcoin exchange rates:
 
-```sh filename="/etc/btc-rpc-explorer/btc-rpc-explorer.env" {2,4}
+```sh filename="/etc/explorer/main.env" {2,4}
 [...]
 BTCEXP_PRIVACY_MODE=false
 [...]
@@ -329,7 +329,7 @@ BTCEXP_NO_RATES=false
 
 * More privacy mode, no external queries:
 
-```sh filename="/etc/btc-rpc-explorer/btc-rpc-explorer.env" {2,4}
+```sh filename="/etc/explorer/main.env" {2,4}
 [...]
 BTCEXP_PRIVACY_MODE=true
 [...]
@@ -343,7 +343,7 @@ BTCEXP_NO_RATES=true
 `password [D]` for the following option, for which the browser will then prompt
 you. You can enter any user name; only the password is checked.
 
-```sh filename="/etc/btc-rpc-explorer/btc-rpc-explorer.env" {2,4}
+```sh filename="/etc/explorer/main.env" {2,4}
 [...]
 BTCEXP_DEMO=true
 [...]
@@ -369,13 +369,16 @@ $SU $EDITOR /etc/tor/torrc
 HiddenServiceDir /var/lib/tor/hsv3explorer/
 HiddenServiceVersion 3
 HiddenServicePoWDefensesEnabled 1
-HiddenServicePort 80 127.0.0.1:3002
+HiddenServicePort 443 127.0.0.1:4000
 ```
 
 * Reload Tor configuration and get your connection address.
 
 ```sh copy
 $SU rc-service tor reload
+```
+
+```sh copy
 $SU cat /var/lib/tor/hsv3explorer/hostname
 ```
 
@@ -384,7 +387,7 @@ abcdefg..............xyz.onion
 ```
 
 * You should now be able to connect to your {name} remotely via Tor using your
-hostname and port `3002`
+hostname
 </FAQBox>
 
 ### Autostart on boot
@@ -396,29 +399,29 @@ so that it's always running.
 and exit.
 
 ```sh copy
-$SU $EDITOR /etc/init.d/btc-rpc-explorer
+$SU $EDITOR /etc/init.d/explorer
 ```
 
-```sh copy filename="/etc/init.d/btc-rpc-explorer"
+```sh copy filename="/etc/init.d/explorer"
 #!/sbin/openrc-run
 
-: ${BTCRPCEXPL_ENVFILE:=/etc/btc-rpc-explorer/btc-rpc-explorer.env}
-: ${BTCRPCEXPL_DATADIR:=/var/lib/btc-rpc-explorer}
-: ${BTCRPCEXPL_LOGDIR:=/var/log/btc-rpc-explorer}
-: ${BTCRPCEXPL_USER:=btc-rpc-explorer}
-: ${BTCRPCEXPL_GROUP:=btc-rpc-explorer}
-: ${BTCRPCEXPL_BIN:=/usr/bin/btc-rpc-explorer}
+: ${BTCRPCEXPL_CHAIN:=main}
+: ${BTCRPCEXPL_ENVFILE:=/etc/explorer/${BTCRPCEXPL_CHAIN}.env}
+: ${BTCRPCEXPL_DATADIR:=/var/lib/explorer/${BTCRPCEXPL_CHAIN}}
+: ${BTCRPCEXPL_LOGDIR:=/var/log/explorer/${BTCRPCEXPL_CHAIN}}
+: ${BTCRPCEXPL_USER:=explorer}
+: ${BTCRPCEXPL_GROUP:=explorer}
+: ${BTCRPCEXPL_BIN:=/usr/bin/explorer}
 : ${BTCRPCEXPL_OPTS=${BTCRPCEXPL_OPTS}}
 : ${BTCRPCEXPL_SIGTERM_TIMEOUT:=600}
-
-BTCRPCEXPL_PIDDIR="/run/btc-rpc-explorer"
 
 name="BTC RPC Explorer"
 description="Simple, database-free Bitcoin blockchain explorer, via RPC to Bitcoin Core"
 
 directory="${BTCRPCEXPL_DATADIR}"
 required_files="${BTCRPCEXPL_ENVFILE}"
-pidfile="${BTCRPCEXPL_PIDDIR}/${SVCNAME}.pid"
+piddir="/run/explorer"
+pidfile="${piddir}/${BTCRPCEXPL_CHAIN}.pid"
 retry="${BTCRPCEXPL_SIGTERM_TIMEOUT}"
 
 command="${BTCRPCEXPL_BIN}"
@@ -439,10 +442,11 @@ service_exists() {
 }
 
 start_pre() {
+    mkdir -p "${BTCRPCEXPL_DATADIR}" "${BTCRPCEXPL_LOGDIR}"
     checkpath --file      --mode 0660 --owner "${command_user}" "${BTCRPCEXPL_ENVFILE}"
     checkpath --directory --mode 0750 --owner "${command_user}" "${BTCRPCEXPL_DATADIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${BTCRPCEXPL_LOGDIR}"
-    checkpath --directory --mode 0755 --owner "${command_user}" "${BTCRPCEXPL_PIDDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${piddir}"
     checkconfig
 }
 
@@ -462,7 +466,7 @@ checkconfig() {
 * Enable execution permission
 
 ```sh copy
-$SU chmod +x /etc/init.d/btc-rpc-explorer
+$SU chmod +x /etc/init.d/explorer
 ```
 
 ### Enable logrotate
@@ -470,21 +474,21 @@ $SU chmod +x /etc/init.d/btc-rpc-explorer
 * Enter the complete next configuration. Save and exit
 
 ```sh copy
-$SU $EDITOR /etc/logrotate.d/btc-rpc-explorer
+$SU $EDITOR /etc/logrotate.d/explorer
 ```
 
-```sh copy filename="/etc/logrotate.d/btc-rpc-explorer"
-/var/log/btc-rpc-explorer/*.log {
+```sh copy filename="/etc/logrotate.d/explorer"
+/var/log/explorer/main/*.log {
     weekly
     missingok
     rotate 104
     compress
     delaycompress
     notifempty
-    create 0640 btc-rpc-explorer btc-rpc-explorer
+    create 0640 explorer explorer
     sharedscripts
     postrotate
-        kill -HUP `cat /run/btc-rpc-explorer/btc-rpc-explorer.pid`
+        kill -HUP `cat /run/explorer/main.pid`
     endscript
 }
 ```
@@ -492,23 +496,23 @@ $SU $EDITOR /etc/logrotate.d/btc-rpc-explorer
 * Test
 
 ```sh copy
-$SU logrotate /etc/logrotate.d/btc-rpc-explorer --debug
+$SU logrotate /etc/logrotate.d/explorer --debug
 ```
 
 ## Enable and start {name}
 
 ```sh copy
-$SU rc-update add btc-rpc-explorer
+$SU rc-update add explorer
 ```
 
 ```sh copy
-$SU rc-service btc-rpc-explorer start
+$SU rc-service explorer start
 ```
 
 * Check the log to see {name} output. Exit with `Ctrl-C`
 
 ```sh copy
-tail -f /var/log/btc-rpc-explorer/debug.log
+tail -f /var/log/explorer/main/debug.log
 ```
 
 * You can now access your own {name} from within your local network by browsing
@@ -524,11 +528,11 @@ in this guide.
 notes](https://github.com/janoside/btc-rpc-explorer/releases))
 
 ```sh copy
-$SU $EDITOR /etc/btc-rpc-explorer/btc-rpc-explorer.env
+$SU $EDITOR /etc/explorer/main.env
 ```
 
 * Restart the service to apply the changes
 
 ```sh copy
-$SU rc-service btc-rpc-explorer restart
+$SU rc-service explorer restart
 ```

@@ -1,8 +1,8 @@
-import { Callout, Steps } from 'nextra/components'
+import { Callout, Steps, Tabs } from 'nextra/components'
 import { FAQBox } from '@components'
 
 export const name = "Bitcoin Knots"
-export const user = "bitcoin"
+export const user = "bitcoind"
 
 [repository]: https://github.com/bitcoinknots/guix.sigs
 [release page]: https://github.com/bitcoinknots/bitcoin/releases/latest
@@ -38,7 +38,7 @@ $SU apk add libevent libsodium libstdc++ libzmq
 ### Create the {user} user/group
 
 ```sh copy
-$SU addgroup -S bitcoin
+$SU addgroup -S bitcoind
 ```
 
 ```sh copy
@@ -48,15 +48,15 @@ $SU adduser \
     -H \
     -h /dev/null \
     -s /sbin/nologin \
-    -G bitcoin \
-    -g bitcoin \
-    bitcoin
+    -G bitcoind \
+    -g bitcoind \
+    bitcoind
 ```
 
 ### Add the user satoshi to the group {user} as well
 
 ```sh copy
-$SU adduser satoshi bitcoin
+$SU adduser satoshi bitcoind
 ```
 
 ### Add the user {user} to the group tor
@@ -64,13 +64,7 @@ $SU adduser satoshi bitcoin
 This allow the user {user} to use the control port and configure Tor directly
 
 ```sh copy
-$SU adduser bitcoin tor
-```
-
-### Create a symbolic link bitcoin to satoshi home
-
-```sh copy
-ln -s /var/lib/bitcoind "$HOME/.bitcoin"
+$SU adduser bitcoind tor
 ```
 </Steps>
 
@@ -80,7 +74,7 @@ ln -s /var/lib/bitcoind "$HOME/.bitcoin"
 In {name} >25.1 all spam filters are up to date
 </Callout>
 
-![GIF of Linus Torvalds saying "fuck you ordinals"](/img/bitcoin/bitcoin-client/urinals.gif)
+![GIF of Linus Torvalds saying "fuck you ordinals"](/img/bitcoin/client/urinals.gif)
 
 We download the latest {name} source code and compare this file with the signed
 and timestamped checksum. This is a precaution to make sure that this is an
@@ -220,7 +214,7 @@ $SU make install
 ```
 
 ```sh copy
-$SU install -D -m 0660 -o bitcoin -g bitcoin ./share/examples/bitcoin.conf /etc/bitcoin/bitcoin.conf
+$SU install -D -m 0660 -o bitcoind -g bitcoind ./share/examples/bitcoin.conf /etc/bitcoind/main.conf
 ```
 
 ### Strip installed binaries
@@ -275,15 +269,15 @@ stty echo && \
 [ ! "$password" ] && { 
     printf "\033[38;5;1m%s\033[m\n" "Error, must provide password"; kill -SIGINT $$
 } || {
-    sed "s/^#*rpcauth=.*$/rpcauth=${username}:${salt=$(openssl rand -hex 16)}\$$(\
+    $SU sed "s/^#*rpcauth=.*$/rpcauth=${username}:${salt=$(openssl rand -hex 16)}\$$(\
             printf "%s" "${password}" | \
             openssl dgst -sha256 -hmac "$salt" | \
             awk '{print $2}' \
-        )/" /etc/bitcoin/bitcoin.conf > _; \
+        )/" /etc/bitcoind/main.conf | $SU tee _; \
     unset salt; \
-    $SU mv -f _ /etc/bitcoin/bitcoin.conf && \
+    $SU mv -f _ /etc/bitcoind/main.conf && \
     printf "\n\033[38;5;34m%s\033[m\n" \
-        "Done! The password hash is stored in the bitcoin.conf file" 
+        "Done! The password hash is stored in the main.conf file" 
 }
 ```
 
@@ -296,10 +290,10 @@ stty echo && \
 * Modify/uncomment these lines. Save and exit.
 
 ```sh copy
-$SU $EDITOR /etc/bitcoin/bitcoin.conf
+$SU $EDITOR /etc/bitcoind/main.conf
 ```
 
-```nginx filename="/etc/bitcoin/bitcoin.conf" {2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32-33,35,37,39}
+```nginx filename="/etc/bitcoind/main.conf" {2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32-33,35,37,39,41}
 [...]
 assumevalid=0
 [...]
@@ -334,6 +328,8 @@ zmqpubrawtx=tcp://127.0.0.1:28333
 debug=i2p
 debug=tor
 [...]
+uacomment=Microbolt enjoyer
+[...]
 datacarrier=0
 [...]
 permitbaremultisig=0
@@ -349,7 +345,7 @@ on web browser
 </Callout>
 
 <FAQBox title="Slow device mode">
-```conf filename="/etc/bitcoin/bitcoin.conf" {4,7,10,13,15,17}
+```conf filename="/etc/bitcoind/main.conf" {4,7,10,13,15,17}
 [...]
 # Slow devices optimizations
 ## Limit the number of max peers connections
@@ -372,12 +368,30 @@ rpcworkqueue=256
 
 <Callout>
 Realize that with `maxuploadtarget` parameter enabled you will need whitelist
-the connection to Electrs and Bisq by adding these parameter to `bitcoin.conf`:
+the connection to Electrs and Bisq by adding these parameter to `main.conf`:
 
 * Electrs: `whitelist=download@127.0.0.1`
 * Bisq: `whitelist=bloomfilter@192.168.0.0/16`
 </Callout>
 </FAQBox>
+
+### Use bitcoind and bitcoin-cli with satoshi user
+
+* Create the directory for the configuration file
+
+```sh copy
+mkdir -p "$HOME/.bitcoin"
+```
+
+* Put this in the "local" configuration file
+
+```sh copy
+printf "%s\n" \
+    "rpccookiefile=/run/bitcoind/main.authcookie" \
+    "datadir=/var/lib/bitcoind/main" \
+    "includeconf=/etc/bitcoind/main.conf" \
+    > "$HOME/.bitcoin/bitcoin.conf"
+```
 
 ## Create init.d service
 
@@ -396,29 +410,33 @@ $SU $EDITOR /etc/init.d/bitcoind
 ```sh copy filename="/etc/init.d/bitcoind"
 #!/sbin/openrc-run
 
-: ${BITCOIND_CONFIGFILE:=/etc/bitcoin/bitcoin.conf}
-: ${BITCOIND_DATADIR:=/var/lib/bitcoind}
-: ${BITCOIND_LOGDIR:=/var/log/bitcoind}
-: ${BITCOIND_USER:=bitcoin}
-: ${BITCOIND_GROUP:=bitcoin}
+: ${BITCOIND_CHAIN:=main}
+: ${BITCOIND_CONFIGFILE:=/etc/bitcoind/${BITCOIND_CHAIN}.conf}
+: ${BITCOIND_DATADIR:=/var/lib/bitcoind/${BITCOIND_CHAIN}}
+: ${BITCOIND_LOGDIR:=/var/log/bitcoind/${BITCOIND_CHAIN}}
+: ${BITCOIND_USER:=bitcoind}
+: ${BITCOIND_GROUP:=bitcoind}
 : ${BITCOIND_BIN:=/usr/bin/bitcoind}
 : ${BITCOIND_OPTS=${BITCOIND_OPTS}}
 : ${BITCOIND_SIGTERM_TIMEOUT:=600}
 
-BITCOIND_PIDDIR="/run/bitcoind"
-
-name="Bitcoin Knots daemon"
+name="Bitcoin Knots daemon (${BITCOIND_CHAIN})"
 description="Bitcoin cryptocurrency P2P network daemon"
 
 required_files="${BITCOIND_CONFIGFILE}"
-pidfile="${BITCOIND_PIDDIR}/${SVCNAME}.pid"
+piddir="/run/bitcoind"
+pidfile="${piddir}/${BITCOIND_CHAIN}.pid"
+authcookie="${piddir}/${BITCOIND_CHAIN}.authcookie"
 retry="${BITCOIND_SIGTERM_TIMEOUT}"
 
 command="${BITCOIND_BIN}"
-command_args="-pid=${pidfile}
+command_args="-chain=${BITCOIND_CHAIN}
+              -pid=${pidfile}
               -conf=${BITCOIND_CONFIGFILE}
               -datadir=${BITCOIND_DATADIR}
               -debuglogfile=${BITCOIND_LOGDIR}/debug.log
+              -rpccookiefile=${authcookie}
+              -rpccookieperms=group
               ${BITCOIND_OPTS}"
 command_args_background="-daemonwait"
 command_user="${BITCOIND_USER}:${BITCOIND_GROUP}"
@@ -438,10 +456,11 @@ checkdepend() {
 }
 
 start_pre() {
+    mkdir -p "${BITCOIND_DATADIR}" "${BITCOIND_LOGDIR}"
     checkpath --file      --mode 0660 --owner "${command_user}" "${BITCOIND_CONFIGFILE}"
     checkpath --directory --mode 0750 --owner "${command_user}" "${BITCOIND_DATADIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${BITCOIND_LOGDIR}"
-    checkpath --directory --mode 0755 --owner "${command_user}" "${BITCOIND_PIDDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${piddir}"
     checkconfig
 }
 
@@ -502,17 +521,17 @@ $SU $EDITOR /etc/logrotate.d/bitcoind
 * Enter the complete next configuration. Save and exit
 
 ```sh copy filename="/etc/logrotate.d/bitcoind"
-/var/log/bitcoind/*.log {
+/var/log/bitcoind/main/*.log {
     weekly
     missingok
     rotate 104
     compress
     delaycompress
     notifempty
-    create 0640 bitcoin bitcoin
+    create 0640 bitcoind bitcoind
     sharedscripts
     postrotate
-        kill -HUP `cat /run/bitcoind/bitcoind.pid`
+        kill -HUP `cat /run/bitcoind/main.pid`
     endscript
 }
 ```
@@ -538,7 +557,7 @@ $SU rc-service bitcoind start
 * Check logs
 
 ```sh copy
-tail -f /var/log/bitcoind/debug.log
+tail -f /var/log/bitcoind/main/debug.log
 ```
 
 ```sh filename="output"
@@ -662,7 +681,7 @@ from source code):
     this book!
     * read it online on [GitHub](https://github.com/bitcoinbook/bitcoinbook)
 
-![Cover of the book 'Mastering Bitcoin'](/img/bitcoin/bitcoin-client/mastering-bitcoin.webp)
+![Cover of the book 'Mastering Bitcoin'](/img/bitcoin/client/mastering-bitcoin.webp)
 
 * [Learning Bitcoin from the Command
 Line](https://github.com/ChristopherA/Learning-Bitcoin-from-the-Command-Line)
@@ -679,7 +698,7 @@ consumption to allow the Lightning client and Electrum server to run in
 parallel. We also now want to enable the node to listen to and relay
 transactions.
 
-* Comment the following lines on `bitcoin.conf` file
+* Comment the following lines on `main.conf` file
 
 <Callout>
 {name} will then just use the default cache size of 450 MiB instead of your
@@ -688,10 +707,10 @@ Electrum Server from receiving RPC fee data and will not work.
 </Callout>
 
 ```sh copy
-$SU $EDITOR /etc/bitcoin/bitcoin.conf
+$SU $EDITOR /etc/bitcoind/main.conf
 ```
 
-```conf filename="/etc/bitcoin/bitcoin.conf"
+```conf filename="/etc/bitcoind/main.conf"
 #dbcache=2048
 #blocksonly=1
 #assumevalid=0

@@ -51,10 +51,10 @@ $SU adduser \
     electrs
 ```
 
-### Add {user} user to the bitcoin group
+### Add {user} user to the bitcoind group
 
 ```sh copy
-$SU adduser electrs bitcoin
+$SU adduser electrs bitcoind
 ```
 
 ### Add the user satoshi to the group {user} as well
@@ -74,15 +74,15 @@ to the {name}
 <Tabs items={['caddy', 'nginx']}>
     <Tabs.Tab>
 ```sh copy
-$SU $EDITOR /etc/caddy/streams/electrum.caddy
+$SU $EDITOR /etc/caddy/streams/electrs.caddy
 ```
 
-```nginx copy filename="/etc/caddy/streams/electrum.caddy"
-:50002 {
+```nginx copy filename="/etc/caddy/streams/electrs.caddy"
+:50012 {
         route {
                 tls
                 proxy {
-                        upstream 127.0.0.1:50001
+                        upstream 127.0.0.1:50011
                 }
         }
 }
@@ -96,25 +96,25 @@ $SU rc-service caddy reload
     </Tabs.Tab>
     <Tabs.Tab>
 ```sh copy
-$SU $EDITOR /etc/nginx/streams-available/electrum-reverse-proxy.conf
+$SU $EDITOR /etc/nginx/streams-available/electrs-reverse-proxy.conf
 ```
 
-```nginx copy filename="/etc/nginx/streams-available/electrum-reverse-proxy.conf"
-upstream electrum {
-  server 127.0.0.1:50001;
+```nginx copy filename="/etc/nginx/streams-available/electrs-reverse-proxy.conf"
+upstream electrs {
+  server 127.0.0.1:50011;
 }
 
 server {
-  listen 50002 ssl;
-  proxy_pass electrum;
+  listen 50012 ssl;
+  proxy_pass electrs;
 }
 ```
 
 ```sh copy
 $SU ln \
     -s \
-    ../streams-available/electrum-reverse-proxy.conf \
-    /etc/nginx/streams-enabled/electrum-reverse-proxy.conf
+    ../streams-available/electrs-reverse-proxy.conf \
+    /etc/nginx/streams-enabled/electrs-reverse-proxy.conf
 ```
 
 * Test and reload NGINX configuration
@@ -133,18 +133,18 @@ $SU rc-service nginx restart
 <Tabs items={['awall', 'ufw']}>
     <Tabs.Tab>
 ```sh copy
-$SU $EDITOR /etc/awall/optional/electrum.json
+$SU $EDITOR /etc/awall/optional/electrs.json
 ```
 
-```json copy filename="/etc/awall/optional/electrum.json"
+```json copy filename="/etc/awall/optional/electrs.json"
 {
-  "description": "Allow Electrum SSL",
+  "description": "Allow Electrs SSL",
 
   "filter": [
     {
       "in": "internet",
       "out": "_fw",
-      "service": "electrum",
+      "service": "electrs",
       "action": "accept",
       "conn-limit": { "count": 10, "interval": 60 }
     }
@@ -155,13 +155,13 @@ $SU $EDITOR /etc/awall/optional/electrum.json
 * Enable it
 
 ```sh copy
-$SU awall enable electrum
+$SU awall enable electrs
 $SU awall activate
 ```
     </Tabs.Tab>
     <Tabs.Tab>
 ```sh copy
-$SU ufw limit 50002/tcp comment 'Allow Electrum SSL'
+$SU ufw limit 50012/tcp comment 'Allow Electrs SSL'
 ```
     </Tabs.Tab>
 </Tabs>
@@ -188,7 +188,7 @@ cd /tmp
 ```
 
 ```sh copy
-VERSION=0.10.6
+VERSION=0.10.7
 ```
 
 ```sh copy
@@ -227,7 +227,7 @@ $SU install -m 0755 -o root -g root -t /usr/bin ./target/release/electrs
 ```
 
 ```sh copy
-$SU install -D -m 0660 -o electrs -g electrs ./doc/config_example.toml /etc/electrs/config.toml
+$SU install -D -m 0660 -o electrs -g electrs ./doc/config_example.toml /etc/electrs/main.toml
 ```
 
 ### Strip installed binaries
@@ -250,16 +250,18 @@ $SU apk del .build-deps
 * Modify the config file with the following content
 
 ```sh copy
-$SU $EDITOR /etc/electrs/config.toml
+$SU $EDITOR /etc/electrs/main.toml
 ```
 
-```toml filename="/etc/electrs/config.toml" {2,4,6,7}
+```toml filename="/etc/electrs/main.toml" {2,4,6,8}
 [...]
-cookie_file = "/var/lib/bitcoind/.cookie"
+cookie_file = "/run/bitcoind/main.authcookie"
 [...]
 #db_dir = "/some/fast/storage/with/big/size"
 [...]
-daemon_dir = "/var/lib/bitcoind"
+electrum_rpc_address = "127.0.0.1:50011"
+[...]
+daemon_dir = "/var/lib/bitcoind/main"
 ```
 
 <FAQBox title="Remote access over Tor">
@@ -276,18 +278,21 @@ $SU $EDITOR /etc/tor/torrc
 ```
 
 ```sh copy filename="/etc/tor/torrc"
-# Hidden Service Electrum
-HiddenServiceDir /var/lib/tor/electrum/
+# Hidden Service Electrs
+HiddenServiceDir /var/lib/tor/hsv3electrs/
 HiddenServiceVersion 3
 HiddenServicePoWDefensesEnabled 1
-HiddenServicePort 50002 127.0.0.1:50002
+HiddenServicePort 50012 127.0.0.1:50012
 ```
 
 * Reload Tor configuration and get your connection address.
 
 ```sh copy
 $SU rc-service tor reload
-$SU cat /var/lib/tor/electrum/hostname
+```
+
+```sh copy
+$SU cat /var/lib/tor/hsv3electrs/hostname
 ```
 
 ```sh filename="output"
@@ -295,7 +300,7 @@ abcdefg..............xyz.onion
 ```
 
 * You should now be able to connect to your {name} remotely via Tor using your
-hostname and port `50002`
+hostname and port `50012`
 </FAQBox>
 
 ### Autostart on boot
@@ -312,29 +317,28 @@ $SU $EDITOR /etc/init.d/electrs
 ```sh copy filename="/etc/init.d/electrs"
 #!/sbin/openrc-run
 
-: ${ELECTRS_CONFIGFILE:=/etc/electrs/config.toml}
-: ${ELECTRS_DATADIR:=/var/lib/electrs}
-: ${ELECTRS_LOGDIR:=/var/log/electrs}
+: ${ELECTRS_CHAIN:=main}
+: ${ELECTRS_CONFIGFILE:=/etc/electrs/${ELECTRS_CHAIN}.toml}
+: ${ELECTRS_DATADIR:=/var/lib/electrs/${ELECTRS_CHAIN}}
+: ${ELECTRS_LOGDIR:=/var/log/electrs/${ELECTRS_CHAIN}}
 : ${ELECTRS_USER:=electrs}
 : ${ELECTRS_GROUP:=electrs}
 : ${ELECTRS_BIN:=/usr/bin/electrs}
 : ${ELECTRS_OPTS=${ELECTRS_OPTS}}
 : ${ELECTRS_SIGTERM_TIMEOUT:=600}
 
-ELECTRS_PIDDIR="/run/electrs"
-
 required_files="${ELECTRS_CONFIGFILE}"
-pidfile="${ELECTRS_PIDDIR}/${SVCNAME}.pid"
+piddir="/run/electrs"
+pidfile="${piddir}/${ELECTRS_CHAIN}.pid"
 retry="${ELECTRS_SIGTERM_TIMEOUT}"
 
-name="Electrs"
+name="Electrs (${ELECTRS_CHAIN})"
 description="Efficient re-implementation of Electrum Server in Rust"
 
 command="${ELECTRS_BIN}"
 command_args="--conf ${ELECTRS_CONFIGFILE}
               --skip-default-conf-files
               --db-dir ${ELECTRS_DATADIR}
-              --timestamp
               --skip-block-download-wait
               ${ELECTRS_OPTS}"
 command_user="${ELECTRS_USER}:${ELECTRS_GROUP}"
@@ -350,10 +354,11 @@ depend() {
 }
 
 start_pre() {
+    mkdir -p "${ELECTRS_DATADIR}" "${ELECTRS_LOGDIR}"
     checkpath --file      --mode 0660 --owner "${command_user}" "${ELECTRS_CONFIGFILE}"
     checkpath --directory --mode 0750 --owner "${command_user}" "${ELECTRS_DATADIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${ELECTRS_LOGDIR}"
-    checkpath --directory --mode 0755 --owner "${command_user}" "${ELECTRS_PIDDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${piddir}"
     checkconfig
 }
 
@@ -388,7 +393,7 @@ $SU $EDITOR /etc/logrotate.d/electrs
 ```
 
 ```sh copy filename="/etc/logrotate.d/electrs"
-/var/log/electrs/*.log {
+/var/log/electrs/main/*.log {
     weekly
     missingok
     rotate 104
@@ -398,7 +403,7 @@ $SU $EDITOR /etc/logrotate.d/electrs
     create 0640 electrs electrs
     sharedscripts
     postrotate
-        kill -HUP `cat /run/electrs/electrs.pid`
+        kill -HUP `cat /run/electrs/main.pid`
     endscript
 }
 ```
@@ -422,7 +427,7 @@ $SU rc-service electrs start
 * Check the log to see {name} output. Exit with `Ctrl-C`
 
 ```sh copy
-tail -f /var/log/electrs/debug.log
+tail -f /var/log/electrs/main/debug.log
 ```
 
 {name} will now index the whole Bitcoin blockchain so that it can provide all
@@ -438,7 +443,7 @@ value for the latest if it has not been already changed in this guide.
 * Update the {name} configuration if necessary (see [release notes])
 
 ```sh copy
-$SU $EDITOR /etc/electrs/electrs.toml
+$SU $EDITOR /etc/electrs/main.toml
 ```
 
 * Restart the service to apply the changes

@@ -63,10 +63,10 @@ $SU adduser \
     public-pool
 ```
 
-### Add {user} user to the bitcoin group
+### Add {user} user to the bitcoind group
 
 ```sh copy
-$SU adduser public-pool bitcoin
+$SU adduser public-pool bitcoind
 ```
 
 ### Add satoshi user to the {user} group
@@ -274,7 +274,7 @@ chmod +x ./dist/bin/cli.sh
 ```
 
 ```sh copy
-$SU install -D -m 0660 -o public-pool -g public-pool ./.env.example /etc/public-pool/public-pool.env
+$SU install -D -m 0660 -o public-pool -g public-pool ./.env.example /etc/public-pool/main.env
 ```
 
 ```sh copy
@@ -369,14 +369,14 @@ $SU apk del .build-deps
 * Activate any setting by removing the `#` at the beginning of the line.
 
 ```sh copy
-$SU $EDITOR /etc/public-pool/public-pool.env
+$SU $EDITOR /etc/public-pool/main.env
 ```
 
-```sh filename="/etc/public-pool/public-pool.env" {2,4,6,8-9,11}
+```sh filename="/etc/public-pool/main.env" {2,4,6,8-9,11}
 [...]
 BITCOIN_RPC_URL=http://127.0.0.1
 [...]
-BITCOIN_RPC_COOKIEFILE="/var/lib/bitcoind/.cookie"
+BITCOIN_RPC_COOKIEFILE="/run/bitcoind/main.authcookie"
 [...]
 BITCOIN_ZMQ_HOST="tcp://127.0.0.1:28332"
 [...]
@@ -397,7 +397,7 @@ $SU $EDITOR /etc/tor/torrc
 
 ```sh copy filename="/etc/tor/torrc"
 # Hidden Service Public Pool
-HiddenServiceDir /var/lib/tor/public-pool/
+HiddenServiceDir /var/lib/tor/hsv3public-pool/
 HiddenServiceVersion 3
 HiddenServicePoWDefensesEnabled 1
 HiddenServicePort 443 127.0.0.1:4040
@@ -407,7 +407,10 @@ HiddenServicePort 443 127.0.0.1:4040
 
 ```sh copy
 $SU rc-service tor reload
-$SU cat /var/lib/tor/public-pool/hostname
+```
+
+```sh copy
+$SU cat /var/lib/tor/hsv3public-pool/hostname
 ```
 
 ```sh filename="output"
@@ -433,23 +436,23 @@ $SU $EDITOR /etc/init.d/public-pool
 ```sh copy filename="/etc/init.d/public-pool"
 #!/sbin/openrc-run
 
-: ${PUBLICPOOL_ENVFILE:=/etc/public-pool/public-pool.env}
+: ${PUBLICPOOL_CHAIN:=main}
+: ${PUBLICPOOL_ENVFILE:=/etc/public-pool/${PUBLICPOOL_CHAIN}.env}
 : ${PUBLICPOOL_WEBUI:=/var/www/public-pool-ui}
-: ${PUBLICPOOL_DATADIR:=/var/lib/public-pool}
-: ${PUBLICPOOL_LOGDIR:=/var/log/public-pool}
+: ${PUBLICPOOL_DATADIR:=/var/lib/public-pool/${PUBLICPOOL_CHAIN}}
+: ${PUBLICPOOL_LOGDIR:=/var/log/public-pool/${PUBLICPOOL_CHAIN}}
 : ${PUBLICPOOL_USER:=public-pool}
 : ${PUBLICPOOL_GROUP:=public-pool}
 : ${PUBLICPOOL_BIN:=/usr/bin/public-pool}
 : ${PUBLICPOOL_OPTS=${PUBLICPOOL_OPTS}}
 : ${PUBLICPOOL_SIGTERM_TIMEOUT:=600}
 
-PUBLICPOOL_PIDDIR="/run/public-pool"
-
 directory="${PUBLICPOOL_DATADIR}"
 required_files="${PUBLICPOOL_ENVFILE}"
-pidfile="${PUBLICPOOL_PIDDIR}/${SVCNAME}.pid"
+piddir="/run/public-pool"
+pidfile="${piddir}/${SVCNAME}.pid"
 
-name="Public Pool"
+name="Public Pool (${PUBLICPOOL_CHAIN})"
 description="Fully Open Source Solo Bitcoin Mining Pool"
 
 command="${PUBLICPOOL_BIN}"
@@ -466,10 +469,11 @@ depend() {
 }
 
 start_pre() {
+    mkdir -p "${PUBLICPOOL_DATADIR}" "${PUBLICPOOL_LOGDIR}"
     checkpath --file      --mode 0660 --owner "${command_user}" "${PUBLICPOOL_ENVFILE}"
     checkpath --directory --mode 0750 --owner "${command_user}" "${PUBLICPOOL_DATADIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${PUBLICPOOL_LOGDIR}"
-    checkpath --directory --mode 0755 --owner "${command_user}" "${PUBLICPOOL_PIDDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${piddir}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${PUBLICPOOL_WEBUI}"
     checkconfig
 }
@@ -513,7 +517,7 @@ $SU $EDITOR /etc/logrotate.d/public-pool
 ```
 
 ```sh copy filename="/etc/logrotate.d/public-pool"
-/var/log/public-pool/*.log {
+/var/log/public-pool/main/*.log {
     weekly
     missingok
     rotate 104
@@ -523,7 +527,7 @@ $SU $EDITOR /etc/logrotate.d/public-pool
     create 0640 public-pool public-pool
     sharedscripts
     postrotate
-        kill -HUP `cat /run/public-pool/public-pool.pid`
+        kill -HUP `cat /run/public-pool/main.pid`
     endscript
 }
 ```
@@ -551,7 +555,7 @@ $SU rc-service public-pool start
 * Check the log to see {name} output. Exit with `Ctrl-C`
 
 ```sh copy
-tail -f /var/log/public-pool/debug.log
+tail -f /var/log/public-pool/main/debug.log
 ```
 
 * You can now access your own {name} from within your local network by browsing
@@ -572,7 +576,7 @@ value for the latest if it has not been already changed in this guide.
 * Update the {name} configuration if necessary (see [release notes])
 
 ```sh copy
-$SU $EDITOR /etc/public-pool/.env
+$SU $EDITOR /etc/public-pool/main.env
 ```
 
 * Restart the service to apply the changes
