@@ -319,9 +319,9 @@ $SU adduser satoshi caddy
 
 ```sh copy
 cd /tmp
-LATEST=$(wget -qO- https://api.github.com/repos/caddyserver/caddy/releases/latest | grep "tag_name" | cut -d '"' -f 4 | sed 's/^v//')
-wget https://github.com/caddyserver/caddy/releases/download/v$LATEST/caddy_${LATEST}_linux_amd64.tar.gz \
-    https://github.com/caddyserver/caddy/releases/download/v$LATEST/caddy_${LATEST}_checksums.txt
+LATEST=$(curl https://api.github.com/repos/caddyserver/caddy/releases/latest | grep "tag_name" | cut -d '"' -f 4 | sed 's/^v//')
+curl -OL https://github.com/caddyserver/caddy/releases/download/v$LATEST/caddy_${LATEST}_linux_amd64.tar.gz \
+     -OL https://github.com/caddyserver/caddy/releases/download/v$LATEST/caddy_${LATEST}_checksums.txt
 ```
 
 * Checksum check
@@ -554,7 +554,7 @@ pid /run/nginx/nginx.pid;
 include /etc/nginx/modules-enabled/*.conf;
 
 events {
-  worker_connections 768;
+  worker_connections 1024;
 }
 
 http {
@@ -564,6 +564,9 @@ http {
   ssl_session_timeout 4h;
   ssl_protocols TLSv1.2 TLSv1.3;
   ssl_prefer_server_ciphers on;
+  access_log off;
+  server_tokens off;
+  sendfile on;
   include /etc/nginx/mime.types;
   include /etc/nginx/sites-enabled/*.conf;
 }
@@ -575,6 +578,7 @@ stream {
   ssl_session_timeout 4h;
   ssl_protocols TLSv1.2 TLSv1.3;
   ssl_prefer_server_ciphers on;
+  access_log off;
   include /etc/nginx/streams-enabled/*.conf;
 }
 ```
