@@ -36,7 +36,7 @@ const BACK_TO_TOP = l10n('BACK_TO_TOP')
 const EDIT_TEXT = l10n('EDIT_TEXT')
 const GIT_TIMESTAMP = l10n('GIT_TIMESTAMP')
 
-const BANNER_KEY = 'microbolt-2'
+const BANNER_KEY = 'microbolt-v2.1'
 const BANNER_LINK = 'https://t.me/microbolt_official'
 const TOC_L10N_LINK = 'https://l10n.microbolt.guide'
 // End of l10n strings
