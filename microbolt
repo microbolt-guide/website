@@ -36,6 +36,7 @@ stop
 status
 restart
 log
+mkuser
 listen
 publicip
 scb
@@ -69,7 +70,7 @@ usage: ${0##*/} [options ...]
 
 system aliases usage: <alias> [service ...] [runlevel ...] [options ...]
     possible service: tor, i2pd, bitcoind, electrs, fulcrum, btc-rpc-explorer,
-        lnd, thunderhub, scb-backup
+        lnd, albyhub, scb-backup
     possible runlevel: default, boot, sysinit, shutdown
         DEFAULT: default
 
@@ -81,7 +82,8 @@ system aliases usage: <alias> [service ...] [runlevel ...] [options ...]
        stop             <service>               stop a service
        status           <service>               show the status of a service
        restart          <service>               restart a service
-       log              <service>               show the log of a service
+       log              <service>  <network>    show the log of a service
+       mkuser           <username>              create a system user + group
 
 lightning aliases usage: <alias> [network ...] [address ...] [options ...]
     possible network: mainnet, testnet, regtest, simnet
@@ -148,6 +150,19 @@ remove() {
     )
 }
 
+mkuser() {
+    "$SU" addgroup -S "$1" 2>/dev/null
+    "$SU" adduser \
+        -S \
+        -D \
+        -H \
+        -h /dev/null \
+        -s /sbin/nologin \
+        -G "$1" \
+        -g "$1" \
+        "$1" 2>/dev/null
+}
+
 # int main()
 {
     cmd="${0##*/}"
@@ -167,21 +182,23 @@ remove() {
         start|stop|status|restart) "$SU" rc-service "$1" "$cmd" ;;
         log)
             case "$1" in
-                tor)               "$SU" tail -f /var/log/tor/notices.log ;;
-                i2pd)              "$SU" tail -f /var/log/i2pd/i2pd.log ;;
+                tor)               "$SU" tail -f "/var/log/$1/notices.log" ;;
+                i2pd)              "$SU" tail -f "/var/log/$1/$1.log" ;;
                 bitcoind|\
                 electrs|\
                 fulcrum|\
                 btc-rpc-explorer|\
+                mempool|\
                 public-pool|\
-                thunderhub)
-                                   tail -f "/var/log/$1/debug.log" ;;
-                lnd)               tail -f /var/log/lnd/**/**/lnd.log ;;
+                albyhub)
+                                   "$SU" tail -f "/var/log/$1/${2:-main}/debug.log" ;;
+                lnd)               "$SU" tail -f "/var/log/lnd/bitcoin/${2:-mainnet}/lnd.log" ;;
                 scbb)              tail -f /var/log/messages | grep scbb ;;
                 *)                 printf "invalid option: %s\n\n" "$1"
                                    usage; exit 1 ;;
             esac
         ;;
+        mkuser)                    mkuser "$1" ;;
         listen)                    listen "$@" ;;
         publicip)                  printf "%s%s\n" \
                                        "Your public real IP is: " \
