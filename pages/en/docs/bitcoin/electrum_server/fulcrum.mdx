@@ -1,9 +1,16 @@
 import { Steps, Tabs } from 'nextra/components'
 import { FAQBox } from '@components'
 
+export const name = "Fulcrum"
+export const user = "fulcrum"
+
+[security section]: ../../system/security#reverse-proxy
+[release notes]: https://github.com/cculianu/Fulcrum/releases
+[{name}]: ./fulcrum
+
 # Fulcrum
 
-[Fulcrum](https://github.com/cculianu/Fulcrum) is a fast & nimble SPV server for
+[{name}](https://github.com/cculianu/Fulcrum) is a fast & nimble SPV server for
 Bitcoin Cash, Bitcoin BTC, and Litecoin created by Calin Culianu. It can be used
 as an alternative to Electrs because of its performance, as we can see in Craig
 Raw's [comparison](https://www.sparrowwallet.com/docs/server-performance.html)
@@ -29,7 +36,7 @@ These are runtime dependencies
 $SU apk add jemalloc libzmq qt6-qtbase rocksdb
 ```
 
-### Create the `fulcrum` user/group
+### Create the {user} user/group
 
 ```sh copy
 $SU addgroup -S fulcrum
@@ -47,13 +54,13 @@ $SU adduser \
     fulcrum
 ```
 
-### Add `fulcrum` user to the `bitcoin` group
+### Add {user} user to the bitcoin group
 
 ```sh copy
 $SU adduser fulcrum bitcoin
 ```
 
-### Add the user `satoshi` to the group `fulcrum` as well
+### Add the user satoshi to the group {user} as well
 
 ```sh copy
 $SU adduser satoshi fulcrum
@@ -61,11 +68,11 @@ $SU adduser satoshi fulcrum
 
 ### Reverse proxy
 
-In the [Security section](../../system/security#reverse-proxy), we already set
-up a reverse proxy. Now we can add the Electrum server configuration.
+In the [security section], we set up a reverse proxy. Now we can add the {name}
+configuration.
 
-* Enable the reverse proxy to add SSL/TLS encryption to the Electrum server
-communication. Create the configuration file and paste the following content
+* Enable the reverse proxy to route external encrypted HTTPS traffic internally
+to the {name}
 
 <Tabs items={['caddy', 'nginx']}>
     <Tabs.Tab>
@@ -166,20 +173,19 @@ $SU ufw limit 50002/tcp comment 'Allow Electrum SSL'
 ## Installation
 
 An easy and performant way to run an Electrum server is to use
-[Fulcrum](https://github.com/cculianu/Fulcrum), the fast & nimble Electrum
+[{name}](https://github.com/cculianu/Fulcrum), the fast & nimble Electrum
 Server. There are no compatible binaries available, so we will compile the
 application ourselves.
 
 <Steps>
 ### Download source code
 
-We get the latest release of the Fulcrum source code, verify it, compile it to
+We get the latest release of the {name} source code, verify it, compile it to
 an executable binary and install it.
 
-* Download the source code for the latest Fulcrum release. You can check the
-[release page](https://github.com/cculianu/Fulcrum/releases) to see if a newer
-release is available. Other releases might not have been properly tested with
-the rest of the Microbolt configuration, though.
+* Download the source code for the latest {name} release. You can check the
+[release notes] to see if a newer release is available. Other releases might not
+have been properly tested with the rest of the Microbolt configuration, though.
 
 ```sh copy
 cd /tmp
@@ -235,7 +241,7 @@ $SU install -m 0755 -o root -g root -t /usr/bin ./FulcrumAdmin
 $SU install -D -m 0660 -o fulcrum -g fulcrum ./doc/fulcrum-example-config.conf /etc/fulcrum/fulcrum.conf
 ```
 
-* Download the custom Fulcrum banner based on Microbolt. Create your own if you
+* Download the custom {name} banner based on Microbolt. Create your own if you
 want [here](https://patorjk.com/software/taag/#p=display\&f=Slant\&t=Fulcrum)
 
 ```sh copy
@@ -304,8 +310,8 @@ worker_threads = 1
 </FAQBox>
 
 <FAQBox title = "Remote access over Tor">
-To use your Electrum server when you're on the go, you can easily create a Tor
-hidden service. This way, you can connect the BitBoxApp or Electrum wallet also
+To use your {name} when you're on the go, you can easily create a Tor hidden
+service. This way, you can connect the BitBoxApp or Electrum wallet also
 remotely, or even share the connection details with friends and family. Note
 that the remote device needs to have Tor installed as well.
 
@@ -335,15 +341,15 @@ $SU cat /var/lib/tor/electrum/hostname
 abcdefg..............xyz.onion
 ```
 
-* You should now be able to connect to your Electrum server remotely via Tor
-using your hostname and port `50002`
+* You should now be able to connect to your {name} remotely via Tor using your
+hostname and port `50002`
 </FAQBox>
 
 ### Autostart on boot
 
-Fulcrum needs to start automatically on system boot.
+{name} needs to start automatically on system boot.
 
-* Create the Fulcrum init.d unit and copy/paste the following configuration
+* Create the {name} init.d unit and copy/paste the following configuration
 
 ```sh copy
 $SU $EDITOR /etc/init.d/fulcrum
@@ -449,7 +455,7 @@ $SU $EDITOR /etc/logrotate.d/fulcrum
 $SU logrotate /etc/logrotate.d/fulcrum --debug
 ```
 
-## Enable and start Fulcrum
+## Enable and start {name}
 
 ```sh copy
 $SU rc-update add fulcrum
@@ -459,24 +465,23 @@ $SU rc-update add fulcrum
 $SU rc-service fulcrum start
 ```
 
-* Check the log to see Fulcrum output. Exit with `Ctrl-C`
+* Check the log to see {name} output. Exit with `Ctrl-C`
 
 ```sh copy
 tail -f /var/log/fulcrum/debug.log
 ```
 
-Fulcrum will now index the whole Bitcoin blockchain so that it can provide all
+{name} will now index the whole Bitcoin blockchain so that it can provide all
 necessary information to signing devices. With this, the signing devices you use
 no longer need to connect to any third-party server to communicate with the
 Bitcoin peer-to-peer network.
 
-## For the future: Fulcrum upgrade
+## For the future: {name} upgrade
 
-Follow again [Fulcrum](./fulcrum) page replacing the environment variable
-`VERSION=x.xx` value for the latest if it has not been already changed in this
-guide.
+Follow again [{name}] page replacing the environment variable `VERSION=x.xx`
+value for the latest if it has not been already changed in this guide.
 
-* Update the Fulcrum configuration if necessary (see release notes)
+* Update the {name} configuration if necessary (see [release notes])
 
 ```sh copy
 $SU $EDITOR /etc/fulcrum/fulcrum.conf

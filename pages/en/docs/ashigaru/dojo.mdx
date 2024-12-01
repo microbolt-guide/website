@@ -1,10 +1,17 @@
 import { Callout, Steps, Tabs } from 'nextra/components'
 import { FAQBox } from '@components'
 
+export const name = "Samourai Dojo"
+export const user = "samourai"
+
+[security section]: ../system/security#reverse-proxy
+[release notes]: https://github.com/Dojo-Open-Source-Project/samourai-dojo/releases
+[{name}]: ./dojo
+
 # Samourai Dojo
 
-[Samourai Dojo](https://github.com/Dojo-Open-Source-Project/samourai-dojo) is
-the backing server for Samourai Wallet. Provides HD account & loose addresses
+[{name}](https://github.com/Dojo-Open-Source-Project/samourai-dojo) is the
+backing server for Samourai Wallet. Provides HD account & loose addresses
 (BIP47) balances & transactions lists. Provides unspent output lists to the
 wallet. PushTX endpoint broadcasts transactions through the backing bitcoind
 node.
@@ -26,7 +33,7 @@ These are runtime dependencies
 $SU apk add mariadb mariadb-client nodejs-current
 ```
 
-### Create the `samourai` user/group
+### Create the {user} user/group
 
 ```sh copy
 $SU addgroup -S samourai
@@ -44,13 +51,13 @@ $SU adduser \
     samourai
 ```
 
-### Add `samourai` user to the `bitcoin` group
+### Add {user} user to the bitcoin group
 
 ```sh copy
 $SU adduser samourai bitcoin
 ```
 
-### Add the user `satoshi` to the group `samourai` as well
+### Add the user satoshi to the group {user} as well
 
 ```sh copy
 $SU adduser satoshi samourai
@@ -58,11 +65,11 @@ $SU adduser satoshi samourai
 
 ### Reverse proxy
 
-In the [Security section](../system/security#reverse-proxy), we set up a reverse
-proxy. Now we can add the Samourai Dojo configuration.
+In the [security section], we set up a reverse proxy. Now we can add the {name}
+configuration.
 
 * Enable the reverse proxy to route external encrypted HTTPS traffic internally
-to the Samourai Dojo
+to the {name}
 
 <Tabs items={['caddy', 'nginx']}>
     <Tabs.Tab>
@@ -518,9 +525,9 @@ $SU apk del .build-deps
 
 ### Remote access over Tor
 
-To use your Samourai Dojo when you're on the go, you can easily create a Tor
-hidden service on the Microbolt and accessing the Samourai Dojo with the Tor
-browser from any device.
+To use your {name} when you're on the go, you can easily create a Tor hidden
+service on the Microbolt and accessing the {name} with the Tor browser from any
+device.
 
 * Add the following three lines in the "location-hidden services" section in the
 `torrc` file.
@@ -548,10 +555,10 @@ $SU cat /var/lib/tor/hsv3dojo/hostname
 abcdefg..............xyz.onion
 ```
 
-* You should now be able to connect to your Samourai Dojo remotely via Tor using
-your hostname
+* You should now be able to connect to your {name} remotely via Tor using your
+hostname
 
-### Samourai Dojo configuration
+### {name} configuration
 
 * Add this values in the `mainnet.env` file
 
@@ -636,7 +643,7 @@ NODE_JWT_SECRET=#CHANGEME#
 EXPLORER_INSTALL="off"
 ```
 
-* Make the configuration file readable only by the `samourai` user
+* Make the configuration file readable only by the {user} user
 
 ```sh copy
 $SU chmod 600 /etc/samourai-dojo/mainnet.env
@@ -644,7 +651,7 @@ $SU chmod 600 /etc/samourai-dojo/mainnet.env
 
 <FAQBox title="Remove ban Bitcoin client Knots">
 If you are using the Bitcoin client Knots, you need to remove the ban check
-before starting the Samourai Dojo. Otherwise, the Dojo will not be able to
+before starting the {name}. Otherwise, the Dojo will not be able to
 connect to the Knots client.
 
 * Comment this line
@@ -673,7 +680,7 @@ $SU -u samourai mysql dojo < /var/lib/samourai-dojo/db-scripts/1_db.sql.tpl
 
 ### Autostart on boot
 
-Samourai Dojo needs to start automatically on system boot.
+{name} needs to start automatically on system boot.
 
 * Create the dojo init.d unit and copy/paste the following
 configuration
@@ -764,7 +771,7 @@ $SU $EDITOR /etc/logrotate.d/samourai-dojo
 $SU logrotate /etc/logrotate.d/samourai-dojo --debug
 ```
 
-## Enable and start Samourai Dojo
+## Enable and start {name}
 
 ```sh copy
 $SU rc-update add samourai-dojo
@@ -774,19 +781,18 @@ $SU rc-update add samourai-dojo
 $SU rc-service samourai-dojo start
 ```
 
-* Check the log to see Samourai Dojo output. Exit with Ctrl-C
+* Check the log to see {name} output. Exit with Ctrl-C
 
 ```sh copy
 tail -f /var/log/samourai-dojo/debug.log
 ```
 
-## For the future: Samourai Dojo upgrade
+## For the future: {name} upgrade
 
-Follow again [Samourai Dojo](./dojo) page replacing the environment variable
-`VERSION=x.xx` value for the latest if it has not been already changed in this
-guide.
+Follow again [{name}] page replacing the environment variable `VERSION=x.xx`
+value for the latest if it has not been already changed in this guide.
 
-* Update the Samourai Dojo configuration if necessary (see release notes)
+* Update the {name} configuration if necessary (see [release notes])
 
 ```sh copy
 $SU $EDITOR /etc/samourai-dojo/mainnet.env

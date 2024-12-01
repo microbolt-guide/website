@@ -1,15 +1,22 @@
 import { Callout, Steps } from 'nextra/components'
 import { FAQBox } from '@components'
 
-# Lightning client
+export const name = "LND"
+export const user = "lnd"
 
-We set up [LND](https://github.com/lightningnetwork/lnd), the Lightning Network
-Daemon by [Lightning Labs](https://lightning.engineering).
+[repository]: https://github.com/lightningnetwork/lnd
+[release notes]: https://github.com/lightningnetwork/lnd/releases
+[{name}]: ./lightning_client
+
+# Lightning Network Daemon
+
+We set up [{name}](https://github.com/lightningnetwork/lnd), the Lightning
+Network Daemon by [Lightning Labs](https://lightning.engineering).
 
 ## Preparations
 
 <Steps>
-### Create the `lnd` user/group
+### Create the {user} user/group
 
 ```sh copy
 $SU addgroup -S lnd
@@ -27,27 +34,27 @@ $SU adduser \
     lnd
 ```
 
-### Add `lnd` user to the `bitcoin` group
+### Add {user} user to the bitcoin group
 
 ```sh copy
 $SU adduser lnd bitcoin
 ```
 
-### Add the user `satoshi` to the group `lnd` as well
+### Add the user satoshi to the group {user} as well
 
 ```sh copy
 $SU adduser satoshi lnd
 ```
 
-### Add the user `lnd` to the group `tor`
+### Add the user {user} to the group tor
 
-This allow the user `lnd` to use the control port and configure Tor directly
+This allow the user {user} to use the control port and configure Tor directly
 
 ```sh copy
 $SU adduser lnd tor
 ```
 
-### Create a symbolic link lnd to `satoshi` home
+### Create a symbolic link lnd to satoshi home
 
 ```sh copy
 ln -s /var/lib/lnd "$HOME/.lnd"
@@ -56,15 +63,15 @@ ln -s /var/lib/lnd "$HOME/.lnd"
 
 ## Installation
 
-The installation of LND is straight-forward, but the application is quite
-powerful and capable of things not explained here. Check out their [GitHub
-repository](https://github.com/lightningnetwork/lnd) for a wealth of information
-about their open-source project and Lightning in general.
+The installation of {name} is straight-forward, but the application is quite
+powerful and capable of things not explained here. Check out their
+[repository] for a wealth of information about their open-source project and
+Lightning in general.
 
 <Steps>
 ### Download binaries
 
-We'll download, verify and install LND.
+We'll download, verify and install {name}.
 
 * Download the application and the checksums file (.txt) with its signature
 (.sig) and timestamp (.ots)
@@ -108,7 +115,7 @@ the authenticity of the manifest file we just used, starting with its signature.
 $SU apk add gnupg
 ```
 
-* Get the public key from the LND developer who signed the manifest file; and
+* Get the public key from the {name} developer who signed the manifest file; and
 add it to your GPG keyring
 
 ```sh copy
@@ -156,15 +163,15 @@ ots --no-cache verify manifest-roasbeef-v$VERSION.sig.ots -f manifest-roasbeef-v
 Success! Bitcoin block 829257 attests existence as of 2024-02-06 CET
 ```
 
-* Check that the date of the timestamp is close to the [release
-date](https://github.com/lightningnetwork/lnd/releases) of the LND binary.
+* Check that the date of the timestamp is close to the [release notes] date of
+the {name} binary.
 
 ### Installation
 
 Having verified the integrity and authenticity of the release binary, we can
 safely proceed to install it!
 
-* Install LND
+* Install {name}
 
 ```sh copy
 $SU tar xzf lnd-linux-${ARCH}-v$VERSION.tar.gz -C /usr/bin --strip-components=1
@@ -276,7 +283,7 @@ db.bolt.auto-compact-min-age=168h
 </FAQBox>
 
 <Callout>
-Check the LND sample
+Check the {name} sample
 [config](https://github.com/lightningnetwork/lnd/blob/master/sample-lnd.conf)
 on web browser, and visit the [Lightning Node
 Management](https://www.lightningnode.info/) site by Openoms to learn more.
@@ -284,9 +291,9 @@ Management](https://www.lightningnode.info/) site by Openoms to learn more.
 
 ### Autostart on boot
 
-Now, let's set up LND to start automatically on system startup.
+Now, let's set up {name} to start automatically on system startup.
 
-* Create LND init.d unit with the following content. Save and exit.
+* Create {name} init.d unit with the following content. Save and exit.
 
 ```sh copy
 $SU $EDITOR /etc/init.d/lnd
@@ -366,22 +373,22 @@ checkconfig() {
 $SU chmod +x /etc/init.d/lnd
 ```
 
-## LND in action
+## {name} in action
 
 ### Wallet password
 
-LND includes a Bitcoin wallet that manages your on-chain and Lightning coins.
-It is password protected and must be unlocked when LND starts.
-This creates the dilemma that you either manually unlock LND after each restart
-of your computer, or you store the password somewhere on the node.
+{name} includes a Bitcoin wallet that manages your on-chain and Lightning coins.
+It is password protected and must be unlocked when {name} starts. This creates
+the dilemma that you either manually unlock {name} after each restart of your
+computer, or you store the password somewhere on the node.
 
 For this initial setup, we choose the easy route: we store the password in a
-file that allows LND to unlock the wallet automatically.
-This is not the most secure setup, but you can improve it later if you want.
-To give some perspective: other Lightning implementations like c-lightning or
-Eclair don't even have a password.
+file that allows {name} to unlock the wallet automatically. This is not the most
+secure setup, but you can improve it later if you want. To give some
+perspective: other Lightning implementations like c-lightning or Eclair don't
+even have a password.
 
-* Create a text file and enter your LND wallet `password [C]`. Save and exit.
+* Create a text file and enter your {name} wallet `password [C]`. Save and exit.
 
 ```sh copy
 $EDITOR /etc/lnd/passwd.txt
@@ -389,10 +396,10 @@ $EDITOR /etc/lnd/passwd.txt
 
 To improve the security of your wallet, check out these more advanced methods:
 
-* Example by LND: [using a password manager with named
+* Example by {name}: [using a password manager with named
 pipe](https://github.com/lightningnetwork/lnd/blob/master/docs/wallet.md#more-secure-example-with-password-manager-and-using-a-named-pipe)
 
-### Enable and start LND
+### Enable and start {name}
 
 ```sh copy
 $SU rc-update add lnd
@@ -402,10 +409,10 @@ $SU rc-service lnd start
 
 ### Wallet setup
 
-Once LND is started, the process waits for us to create the integrated Bitcoin
-wallet.
+Once {name} is started, the process waits for us to create the integrated
+Bitcoin wallet.
 
-* Create the LND wallet
+* Create the {name} wallet
 
 ```sh copy
 lncli create
@@ -472,13 +479,13 @@ Do not take a picture with your mobile phone.
 **This information should never be stored anywhere in digital form.**
 </Callout>
 
-### Restart LND
+### Restart {name}
 
 ```sh copy
 $SU rc-service lnd restart
 ```
 
-* Check the log to see LND output. Exit with `Ctrl-C`
+* Check the log to see {name} output. Exit with `Ctrl-C`
 
 ```sh copy
 tail -f /var/log/lnd/**/**/lnd.log
@@ -506,7 +513,7 @@ lncli newaddress p2tr
 }
 ```
 
-* Check your LND wallet balance
+* Check your {name} wallet balance
 
 [`walletbalance`](https://api.lightning.community/api/lnd/lightning/wallet-balance)
 
@@ -530,8 +537,8 @@ lncli walletbalance
 }
 ```
 
-As soon as your funding transaction is mined (1 confirmation), LND will show its
-amount as "confirmed_balance".
+As soon as your funding transaction is mined (1 confirmation), {name} will show
+its amount as "confirmed_balance".
 
 <Callout>
 If you want to open a few channels, you might want to send a few transactions.
@@ -541,7 +548,8 @@ wallet after every new channel opening.
 </FAQBox>
 
 <FAQBox title="Opening channels">
-Although LND features an optional "autopilot", we manually open some channels.
+Although {name} features an optional "autopilot", we manually open some
+channels.
 
 We recommend to go on [Amboss.Space](https://www.amboss.space) or
 [1ML.com](https://1ml.com) and look for a mix of big and small nodes with decent
@@ -629,7 +637,7 @@ better for them.
 Watchtowers are other Lightning nodes that can monitor your channels for you. If
 they detect such bad behavior, they can react on your behalf, and send a
 punishing transaction to close this channel. In this case, all channel funds
-will be sent to your LND on-chain wallet.
+will be sent to your {name} on-chain wallet.
 
 A watchtower can only send such a punishing transaction to your wallet, so you
 don't have to trust them. It's good practice to add a few watchtowers, just to
@@ -821,16 +829,15 @@ lncli closechannel --force [FUNDING_TXID] [OUTPUT_INDEX]
 ```
 
 <Callout>
-More: full [LND API reference](https://api.lightning.community)
+More: full [{name} API reference](https://api.lightning.community)
 </Callout>
 </FAQBox>
 
-## For the future: upgrade LND
+## For the future: upgrade {name}
 
-Upgrading LND can lead to a number of issues. **Always** read the [LND release
-notes](https://github.com/lightningnetwork/lnd/releases) completely to
-understand the changes. These also cover a lot of additional topics and many new
-features not mentioned here.
+Upgrading {name} can lead to a number of issues. **Always** read the {name}
+[release notes] completely to understand the changes. These also cover a lot of
+additional topics and many new features not mentioned here.
 
 * Check your lnd version
 
@@ -838,14 +845,14 @@ features not mentioned here.
 lnd --version
 ```
 
-* Stop the LND service
+* Stop the {name} service
 
 ```sh copy
 $SU rc-service lnd stop
 ```
 
-* Download, verify and install the latest LND binaries as described in the [LND
-section](lightning_client#installation) of this guide.
+* Download, verify and install the latest {name} binaries as described in the
+[{name} section](lightning_client#installation) of this guide.
 
 * Restart the services with the new configuration
 

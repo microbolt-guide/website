@@ -1,16 +1,23 @@
 import { Callout, Steps } from 'nextra/components'
 import { FAQBox } from '@components'
 
+export const name = "Bitcoin Knots"
+export const user = "bitcoin"
+
+[repository]: https://github.com/bitcoinknots/guix.sigs
+[release page]: https://github.com/bitcoinknots/bitcoin/releases/latest
+[release notes]: https://github.com/bitcoinknots/bitcoin/tree/master/doc/release-notes
+[{name}]: https://bitcoinknots.org
+
 # Bitcoin Knots
 
-We install [Bitcoin Knots](https://bitcoinknots.org/), an alternative client
-implementation of the Bitcoin network.
+We install [{name}], a client implementation of the Bitcoin network.
 
 ## Preparations
 
-The Bitcoin Knots application will run in the background as a daemon and use the
-separate user `bitcoin` for security reasons. This user does not have admin
-rights and cannot change the system configuration.
+The {name} application will run in the background as a daemon and use the
+separate user {user} for security reasons. This user does not have admin rights
+and cannot change the system configuration.
 
 <Steps>
 ### Install dependencies
@@ -28,7 +35,7 @@ These are runtime dependencies
 $SU apk add libevent libsodium libstdc++ libzmq
 ```
 
-### Create the `bitcoin` user/group
+### Create the {user} user/group
 
 ```sh copy
 $SU addgroup -S bitcoin
@@ -46,21 +53,21 @@ $SU adduser \
     bitcoin
 ```
 
-### Add the user `satoshi` to the group `bitcoin` as well
+### Add the user satoshi to the group {user} as well
 
 ```sh copy
 $SU adduser satoshi bitcoin
 ```
 
-### Add the user `bitcoin` to the group `tor`
+### Add the user {user} to the group tor
 
-This allow the user `bitcoin` to use the control port and configure Tor directly
+This allow the user {user} to use the control port and configure Tor directly
 
 ```sh copy
 $SU adduser bitcoin tor
 ```
 
-### Create a symbolic link bitcoin to `satoshi` home
+### Create a symbolic link bitcoin to satoshi home
 
 ```sh copy
 ln -s /var/lib/bitcoind "$HOME/.bitcoin"
@@ -70,19 +77,19 @@ ln -s /var/lib/bitcoind "$HOME/.bitcoin"
 ## Installation
 
 <Callout type="info">
-In Bitcoin Knots >25.1 all spam filters are up to date
+In {name} >25.1 all spam filters are up to date
 </Callout>
 
 ![GIF of Linus Torvalds saying "fuck you ordinals"](/img/bitcoin/bitcoin-client/urinals.gif)
 
-We download the latest Bitcoin Knots source code and compare this file with the
-signed and timestamped checksum. This is a precaution to make sure that this is
-an official release and not a malicious version trying to steal our money.
+We download the latest {name} source code and compare this file with the signed
+and timestamped checksum. This is a precaution to make sure that this is an
+official release and not a malicious version trying to steal our money.
 
 <Steps>
 ### Download source code
 
-* Login as `satoshi` and change to a temporary directory which is cleared on
+* Login as satoshi and change to a temporary directory which is cleared on
 reboot
 
 ```sh copy
@@ -123,8 +130,7 @@ verify the validity of these signatures, you must first import the corresponding
 public keys into your GPG key database.
 
 * The next command downloads and imports automatically all signatures from the
-Bitcoin Core release attestations (Guix)
-[repository](https://github.com/bitcoin-core/guix.sigs)
+{name} release attestations (Guix) [repository]
 
 ```sh copy
 curl -sL \
@@ -154,8 +160,8 @@ Primary key fingerprint:...
 
 ### Extract source
 
-If you're satisfied with the checksum, and signature, extract the Bitcoin Knots
-source code
+If you're satisfied with the checksum, and signature, extract the {name} source
+code
 
 ```sh copy
 tar xzf bitcoin-$VERSION.tar.gz && cd bitcoin-$VERSION
@@ -234,18 +240,18 @@ $SU apk del .build-deps
 
 ## Generate access credentials
 
-For other programs to query Bitcoin Knots they need the proper access
-credentials. To avoid storing the username and password in a configuration file
-in plaintext, the password is hashed. This allows Bitcoin Knots to accept a
-password, hash it, and compare it to the stored hash, while it is not possible
-to retrieve the original password.
+For other programs to query {name} they need the proper access credentials. To
+avoid storing the username and password in a configuration file in plaintext,
+the password is hashed. This allows {name} to accept a password, hash it, and
+compare it to the stored hash, while it is not possible to retrieve the original
+password.
 
 Another option to get access credentials is through the `.cookie` file in the
 Bitcoin data directory. This is created automatically and can be read by all
 users who are members of the "bitcoin" group.
 
-Bitcoin Knots provides a simple `python` script to generate the configuration
-line for the config file.
+{name} provides a simple `python` script to generate the configuration line for
+the config file.
 
 But we prefer to do it our way, much more simple
 
@@ -337,7 +343,7 @@ server=1
 ```
 
 <Callout>
-Check this Bitcoin Knots sample
+Check this {name} sample
 [config](https://gist.github.com/doitwithnotepad/7fc0fb95fed99ca6c6a288dbf73d18fa)
 on web browser
 </Callout>
@@ -577,8 +583,8 @@ Monitor the log file for a few minutes to see if it works fine (it may stop at
 `dnsseed thread exit`, that's ok)
 </Callout>
 
-* Wait a few minutes until Bitcoin Core starts, and enter the next command to
-obtain your Tor and I2P addresses. Take note of them, later you might need it
+* Wait a few minutes until {name} starts, and enter the next command to obtain
+your Tor and I2P addresses. Take note of them, later you might need it
 
 ```sh copy
 bitcoin-cli getnetworkinfo | grep 'address.*\.onion\|address.*\.i2p'
@@ -634,7 +640,7 @@ Please note:
 almost 1 (0.99999…), the blockchain is up-to-date and fully validated.
 </Callout>
 
-## Bitcoin Knots is syncing
+## {name} is syncing
 
 This can take between one day and a week, depending mostly on your PC
 performance. It's best to wait until the synchronization is complete before
@@ -643,8 +649,8 @@ going ahead.
 ### Explore bitcoin-cli
 
 If everything is running smoothly, this is the perfect time to familiarize
-yourself with Bitcoin, the technical aspects of Bitcoin Core, and play around
-with `bitcoin-cli` until the blockchain is up-to-date.
+yourself with Bitcoin, the technical aspects of {name}, and play around with
+`bitcoin-cli` until the blockchain is up-to-date.
 
 * [The Little Bitcoin Book](https://littlebitcoinbook.com) is a fantastic
 introduction to Bitcoin, focusing on the "why" and less on the "how".
@@ -667,17 +673,17 @@ reference](https://bitcoin.it/wiki/Original\_Bitcoin\_client/API\_calls\_list)
 
 ## Activate mempool & reduce 'dbcache' after a full sync
 
-Once Bitcoin Knots **is fully synced**, we can reduce the size of the database
-cache. A bigger cache speeds up the initial block download, now we want to
-reduce memory consumption to allow the Lightning client and Electrum server to
-run in parallel. We also now want to enable the node to listen to and relay
+Once {name} **is fully synced**, we can reduce the size of the database cache. A
+bigger cache speeds up the initial block download, now we want to reduce memory
+consumption to allow the Lightning client and Electrum server to run in
+parallel. We also now want to enable the node to listen to and relay
 transactions.
 
 * Comment the following lines on `bitcoin.conf` file
 
 <Callout>
-Bitcoin Knots will then just use the default cache size of 450 MiB instead of
-your setting RAM setup. If `blocksonly=1` is left uncommented it will prevent
+{name} will then just use the default cache size of 450 MiB instead of your
+setting RAM setup. If `blocksonly=1` is left uncommented it will prevent
 Electrum Server from receiving RPC fee data and will not work.
 </Callout>
 
@@ -691,7 +697,7 @@ $SU $EDITOR /etc/bitcoin/bitcoin.conf
 #assumevalid=0
 ```
 
-* Restart Bitcoin Knots for the settings to take effect
+* Restart {name} for the settings to take effect
 
 ```sh copy
 $SU rc-service bitcoind restart
@@ -699,11 +705,8 @@ $SU rc-service bitcoind restart
 
 ## Upgrade
 
-The latest release can be found on the [GitHub
-page](https://github.com/bitcoinknots/bitcoin/releases/latest) of the Bitcoin
-Knots project. Always read the [RELEASE
-NOTES](https://github.com/bitcoinknots/bitcoin/tree/master/doc/release-notes)
-first! When upgrading, there might be breaking changes or changes in the data
-structure that need special attention. Replace the environment variable
-`VERSION=x.xx` value for the latest version if it has not been already changed
-in this guide.
+The latest release can be found on the [release page] of the {name} project.
+Always read the [release notes] first! When upgrading, there might be breaking
+changes or changes in the data structure that need special attention. Replace
+the environment variable `VERSION=x.xx` value for the latest version if it has
+not been already changed in this guide.

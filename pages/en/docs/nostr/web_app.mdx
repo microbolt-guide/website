@@ -1,10 +1,17 @@
 import { Callout, Steps, Tabs } from 'nextra/components'
 import { FAQBox } from '@components'
 
-# Web app
+export const name = "Umbrel Nostr Relay"
+export const user = "umbrel"
+
+[security section]: ../system/security#reverse-proxy
+[release notes]: https://github.com/getumbrel/umbrel-nostr-relay/tags
+[{name}]: ./web_app
+
+# Umbrel Nostr Relay
 
 Run your private WebGUI Nostr relay to backup all your activity on Nostr. An
-official app by [Umbrel](https://github.com/getumbrel/umbrel-nostr-relay).
+official app by [{name}](https://github.com/getumbrel/umbrel-nostr-relay).
 Powered by [nostr-rs-relay](https://sr.ht/~gheartsfield/nostr-rs-relay).
 
 ![Umbrel Nostr Relay webapp](/img/nostr/umbrel-nostr-relay-webapp.webp)
@@ -26,7 +33,7 @@ $SU apk add --virtual .build-deps git npm
 $SU apk add nodejs-current
 ```
 
-### Create the `umbrel` user/group
+### Create the {user} user/group
 
 ```sh copy
 $SU addgroup -S umbrel
@@ -44,7 +51,7 @@ $SU adduser \
     umbrel
 ```
 
-### Add the user `satoshi` to the group `umbrel` as well
+### Add the user satoshi to the group {user} as well
 
 ```sh copy
 $SU adduser satoshi umbrel
@@ -52,11 +59,11 @@ $SU adduser satoshi umbrel
 
 ### Reverse proxy
 
-In the [Security section](../system/security#reverse-proxy), we set up a reverse
-proxy. Now we can add the Umbrel Nostr Relay configuration.
+In the [security section], we set up a reverse proxy. Now we can add the {name}
+configuration.
 
 * Enable the reverse proxy to route external encrypted HTTPS traffic internally
-to the Umbrel Nostr Relay
+to the {name}
 
 <Tabs items={['caddy', 'nginx']}>
     <Tabs.Tab>
@@ -195,13 +202,12 @@ $SU ufw limit 8881/tcp comment 'Allow Umbrel Nostr Relay webGUI SSL'
 <Steps>
 ### Clone the source code
 
-We get the latest release of the umbrel-nostr-relay source code, compile it to
-an executable binary and install it.
+We get the latest release of the {name} source code, compile it to an executable
+binary and install it.
 
-* Download the source code for the latest umbrel-nostr-relay release. You can
-check the [release page](https://github.com/getumbrel/umbrel-nostr-relay/tags)
-to see if a newer release is available. Other releases might not have been
-properly tested with the rest of the Microbolt configuration, though.
+* Download the source code for the latest {name} release. You can check the
+[release notes] to see if a newer release is available. Other releases might not
+have been properly tested with the rest of the Microbolt configuration, though.
 
 ```sh copy
 cd /tmp
@@ -376,8 +382,8 @@ RELAY_DATA_STORE=/etc/umbrel-nostr-relay/store.json
 
 <FAQBox title="Remote access over Tor">
 To use your nostr relay when you're on the go, you can easily create a Tor
-hidden service on the Microbolt and accessing the Umbrel Nostr Relay with the
-Tor browser from any device.
+hidden service on the Microbolt and accessing the {name} with the Tor browser
+from any device.
 
 * Add the following three lines in the "location-hidden services" section in the
 `torrc` file.
@@ -405,16 +411,15 @@ $SU cat /var/lib/tor/umbrel-nostr-relay/hostname
 abcdefg..............xyz.onion
 ```
 
-* You should now be able to connect to your Umbrel Nostr Relay remotely via Tor
-using your hostname
+* You should now be able to connect to your {name} remotely via Tor using your
+hostname
 </FAQBox>
 
 ### Autostart on boot
 
 Nostr Relay needs to start automatically on system boot.
 
-* Create the umbrel-nostr-relay init.d unit and copy/paste the following
-configuration
+* Create the {name} init.d unit and copy/paste the following configuration
 
 ```sh copy
 $SU $EDITOR /etc/init.d/umbrel-nostr-relay
@@ -518,7 +523,7 @@ $SU rc-update add umbrel-nostr-relay
 $SU rc-service umbrel-nostr-relay start
 ```
 
-* Check the log to see Umbrel Nostr Relay output. Exit with Ctrl-C
+* Check the log to see {name} output. Exit with Ctrl-C
 
 ```sh copy
 tail -f /var/log/umbrel-nostr-relay/debug.log
@@ -534,13 +539,12 @@ $SU netstat -lntup | grep LISTEN | grep umbrel
 tcp        0      0 0.0.0.0:8881            0.0.0.0:*               LISTEN      7140/umbrel-nostr-relay
 ```
 
-## For the future: Umbrel Nostr Relay upgrade
+## For the future: {name} upgrade
 
-Follow again [Umbrel Nostr Relay](./web_app) page replacing the environment
-variable `VERSION=x.xx` value for the latest if it has not been already changed
-in this guide.
+Follow again [{name}] page replacing the environment variable `VERSION=x.xx`
+value for the latest if it has not been already changed in this guide.
 
-* Update the Umbrel Nostr Relay configuration if necessary (see release notes)
+* Update the {name} configuration if necessary (see [release notes])
 
 ```sh copy
 $SU $EDITOR /etc/umbrel-nostr-relay/umbrel.env

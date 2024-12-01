@@ -1,10 +1,17 @@
 import { Callout, Steps, Tabs } from 'nextra/components'
 import { FAQBox } from '@components'
 
-# Web app
+export const name = "ThunderHub"
+export const user = "thunderhub"
 
-[ThunderHub](https://thunderhub.io) is an open source LND node manager where you
-can manage and monitor your node on any device or browser. It allows you to take
+[security section]: ../system/security#reverse-proxy
+[release notes]: https://github.com/apotdevin/thunderhub/releases
+[{name}]: ./web_app
+
+# ThunderHub
+
+[{name}](https://thunderhub.io) is an open source LND node manager where you can
+manage and monitor your node on any device or browser. It allows you to take
 control of the lightning network with a simple and intuitive UX and the most
 up-to-date tech stack.
 
@@ -29,7 +36,7 @@ These are runtime dependencies
 $SU apk add nodejs-current
 ```
 
-### Create the `thunderhub` user/group
+### Create the {user} user/group
 
 ```sh copy
 $SU addgroup -S thunderhub
@@ -47,13 +54,13 @@ $SU adduser \
     thunderhub
 ```
 
-### Add `thunderhub` user to the `lnd` group
+### Add {user} user to the lnd group
 
 ```sh copy
 $SU adduser thunderhub lnd
 ```
 
-### Add `satoshi` user to the `thunderhub` group
+### Add satoshi user to the {user} group
 
 ```sh copy
 $SU adduser satoshi thunderhub
@@ -61,11 +68,11 @@ $SU adduser satoshi thunderhub
 
 ### Reverse proxy
 
-In the [Security section](../system/security#reverse-proxy), we set up a reverse
-proxy. Now we can add the ThunderHub configuration.
+In the [security section], we set up a reverse proxy. Now we can add the {name}
+configuration.
 
-* Enable the reverse proxy to route external encrypted HTTPS traffic
-internally to the ThunderHub.
+* Enable the reverse proxy to route external encrypted HTTPS traffic internally
+to the {name}.
 
 <Tabs items={['caddy', 'nginx']}>
     <Tabs.Tab>
@@ -168,18 +175,17 @@ $SU ufw limit 4002/tcp comment 'Allow ThunderHub SSL'
 
 ## Installation
 
-[ThunderHub](https://thunderhub.io) provides a lightweight and easy to use web
+[{name}](https://thunderhub.io) provides a lightweight and easy to use web
 interface to accomplish a great node management.
 
 <Steps>
 ### Download source code
 
-We get the latest release of the ThunderHub source code and install it.
+We get the latest release of the {name} source code and install it.
 
-* Download the source code for the latest ThunderHub release. You can check the
-[release page](https://github.com/apotdevin/thunderhub/releases) to see if a
-newer release is available. Other releases might not have been properly tested
-with the rest of the Microbolt configuration, though.
+* Download the source code for the latest {name} release. You can check the
+[release notes] to see if a newer release is available. Other releases might not
+have been properly tested with the rest of the Microbolt configuration, though.
 
 ```sh copy
 cd /tmp
@@ -340,9 +346,9 @@ healthCheckPingEnabled: true
 
 <FAQBox title="Auto-backups to Amboss">
 <Callout type="info">
-Keep in mind that if you stop ThunderHub, Amboss will interpret that your node
-is offline because the connection is established between ThunderHub \<-> Amboss
-to send healthchecks pings
+Keep in mind that if you stop {name}, Amboss will interpret that your node is
+offline because the connection is established between {name} \<-> Amboss to send
+healthchecks pings
 </Callout>
 
 ```yaml copy filename="/etc/thunderhub/thubConfig.yaml" {8}
@@ -397,7 +403,7 @@ your hostname
 Now we'll make sure our lightning node manager starts as a service on the
 computer so that it's always running.
 
-* Create the ThunderHub init.d unit and copy/paste the following configuration.
+* Create the {name} init.d unit and copy/paste the following configuration.
 Save and exit.
 
 ```sh copy
@@ -530,7 +536,7 @@ $SU rc-service thunderhub start
 tail -f /var/log/thunderhub/debug.log
 ```
 
-You can now access ThunderHub from within your local network by browsing to
+You can now access {name} from within your local network by browsing to
 https://nakamoto01:4002, https://nakamoto01.local:4002 (or your equivalent ip
 address).
 
@@ -597,14 +603,12 @@ channels. Your funds will become available on-chain at varying speeds.
 </Callout>
 </FAQBox>
 
-## For the future: ThunderHub update
+## For the future: {name} update
 
-Follow again [Web app](./web_app) page replacing the environment variable
-`VERSION=x.xx` value for the latest if it has not been already changed in this
-guide.
+Follow again [{name}] page replacing the environment variable `VERSION=x.xx`
+value for the latest if it has not been already changed in this guide.
 
-* Update the ThunderHub configuration if necessary (see [release
-notes](https://github.com/apotdevin/thunderhub/releases))
+* Update the {name} configuration if necessary (see [release notes])
 
 ```sh copy
 $SU $EDITOR /etc/thunderhub/thubConfig.yaml

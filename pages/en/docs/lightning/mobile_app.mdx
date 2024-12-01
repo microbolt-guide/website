@@ -1,6 +1,10 @@
 import { Callout, Tabs } from 'nextra/components'
 import { FAQBox } from '@components'
 
+export const name = "LND rest"
+
+[security section]: ../system/security#reverse-proxy
+
 # Mobile app
 
 We install [Zeus](https://zeusln.app), a cross-platform mobile app that connect
@@ -27,11 +31,11 @@ restlisten=localhost:8080
 
 ### Reverse proxy
 
-In the [Security section](../system/security#reverse-proxy), we set up a reverse
-proxy. Now we can add the LND rest configuration.
+In the [security section], we set up a reverse proxy. Now we can add the {name}
+configuration.
 
 * Enable the reverse proxy to route external encrypted HTTPS traffic internally
-to the LND rest.
+to the {name}.
 
 <Tabs items={['caddy', 'nginx']}>
     <Tabs.Tab>
@@ -159,7 +163,7 @@ abcdefg..............xyz.onion
 ```
 
 * Save the onion address in a safe place (e.g., password manager). You should
-now be able to connect to your LND rest remotely via Tor using your hostname and
+now be able to connect to your {name} remotely via Tor using your hostname and
 port `8081`
 </FAQBox>
 
