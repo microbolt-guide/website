@@ -6,5 +6,9 @@ export default {
   },
   channel_backup: "Channel backup",
   web_app: "Web app",
+  thunderhub: {
+    title: "ThunderHub",
+    display: "hidden"
+  },
   mobile_app: "Mobile app"
 }

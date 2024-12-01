@@ -16,6 +16,14 @@ Network Daemon by [Lightning Labs](https://lightning.engineering).
 ## Preparations
 
 <Steps>
+### Install dependencies
+
+These are build dependencies (safe to remove after installation, if you want)
+
+```sh copy
+$SU apk add --virtual .build-deps clang git go gnupg make patch
+```
+
 ### Create the {user} user/group
 
 ```sh copy
@@ -27,17 +35,17 @@ $SU adduser \
     -S \
     -D \
     -H \
-    -h /var/lib/lnd \
+    -h /dev/null \
     -s /sbin/nologin \
     -G lnd \
     -g lnd \
     lnd
 ```
 
-### Add {user} user to the bitcoin group
+### Add {user} user to the bitcoind group
 
 ```sh copy
-$SU adduser lnd bitcoin
+$SU adduser lnd bitcoind
 ```
 
 ### Add the user satoshi to the group {user} as well
@@ -57,7 +65,7 @@ $SU adduser lnd tor
 ### Create a symbolic link lnd to satoshi home
 
 ```sh copy
-ln -s /var/lib/lnd "$HOME/.lnd"
+ln -s /var/lib/lnd/main "$HOME/.lnd"
 ```
 </Steps>
 
@@ -69,12 +77,14 @@ powerful and capable of things not explained here. Check out their
 Lightning in general.
 
 <Steps>
-### Download binaries
+### Download source code
 
-We'll download, verify and install {name}.
+We get the latest release of the {name} source code, verify it, compile it to an
+executable binary and install it.
 
-* Download the application and the checksums file (.txt) with its signature
-(.sig) and timestamp (.ots)
+* Download the source code for the latest {name} release. You can check the
+[release notes] to see if a newer release is available. Other releases might not
+have been properly tested with the rest of the Microbolt configuration, though.
 
 ```sh copy
 cd /tmp
@@ -85,35 +95,10 @@ VERSION=0.18.3-beta
 ```
 
 ```sh copy
-curl -OL https://github.com/lightningnetwork/lnd/releases/download/v$VERSION/lnd-linux-${ARCH}-v$VERSION.tar.gz \
-     -OL https://github.com/lightningnetwork/lnd/releases/download/v$VERSION/manifest-v$VERSION.txt \
-     -OL https://github.com/lightningnetwork/lnd/releases/download/v$VERSION/manifest-roasbeef-v$VERSION.sig \
-     -OL https://github.com/lightningnetwork/lnd/releases/download/v$VERSION/manifest-roasbeef-v$VERSION.sig.ots \
-     -OL https://raw.githubusercontent.com/lightningnetwork/lnd/master/sample-lnd.conf
-```
-
-### Checksum check
-
-* Verify the signed checksum against the actual checksum of your download
-
-```sh copy
-grep lnd-linux-${ARCH}-v$VERSION.tar.gz manifest-v$VERSION.txt | sha256sum -c
-```
-
-```sh filename="output"
-lnd-linux-${ARCH}-v${VERSION}.tar.gz: OK
+git clone --branch v$VERSION https://github.com/lightningnetwork/lnd.git && cd lnd
 ```
 
 ### Signature check
-
-Now that we've verified the integrity of the downloaded binary, we need to check
-the authenticity of the manifest file we just used, starting with its signature.
-
-* Install `gnupg`
-
-```sh copy
-$SU apk add gnupg
-```
 
 * Get the public key from the {name} developer who signed the manifest file; and
 add it to your GPG keyring
@@ -134,59 +119,88 @@ gpg: key 372CBD7633C61696: public key "Olaoluwa Osuntokun <laolu32@gmail.com>" i
 application
 
 ```sh copy
-gpg --verify manifest-roasbeef-v$VERSION.sig manifest-v$VERSION.txt
+git verify-tag v$VERSION
 ```
 
-```sh filename="output"
-gpg: Signature made Tue Feb  6 20:39:45 2024 CET
-gpg:                using RSA key 60A1FA7DA5BFF08BDCBBE7903BBD59E99B280306
-gpg: Good signature from "Olaoluwa Osuntokun <laolu32@gmail.com>" [unknown]
-gpg: WARNING: This key is not certified with a trusted signature!
-gpg:          There is no indication that the signature belongs to the owner.
-Primary key fingerprint: E4D8 5299 674B 2D31 FAA1  892E 372C BD76 33C6 1696
-     Subkey fingerprint: 60A1 FA7D A5BF F08B DCBB  E790 3BBD 59E9 9B28 0306
-```
+### Patch it
 
-### Timestamp check
-
-We can also check that the manifest file was in existence around the time of the
-release using its timestamp.
-
-* Let's verify the timestamp of the file matches the release date.
+* Modify the source code to prevent `--lnddir` from overriding other directory values
 
 ```sh copy
-ots --no-cache verify manifest-roasbeef-v$VERSION.sig.ots -f manifest-roasbeef-v$VERSION.sig
+$EDITOR lnddir-override.patch
 ```
 
-```sh filename="output"
-[...]
-Success! Bitcoin block 829257 attests existence as of 2024-02-06 CET
+```diff copy
+diff --git a/config.go b/config.go
+index 34d8472..684803c 100644
+--- a/config.go
++++ b/config.go
+@@ -875,13 +875,23 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
+        // path to all of the files and directories that will live within it.
+        lndDir := CleanAndExpandPath(cfg.LndDir)
+        if lndDir != DefaultLndDir {
+-               cfg.DataDir = filepath.Join(lndDir, defaultDataDirname)
+-               cfg.LetsEncryptDir = filepath.Join(
+-                       lndDir, defaultLetsEncryptDirname,
+-               )
+-               cfg.TLSCertPath = filepath.Join(lndDir, defaultTLSCertFilename)
+-               cfg.TLSKeyPath = filepath.Join(lndDir, defaultTLSKeyFilename)
+-               cfg.LogDir = filepath.Join(lndDir, defaultLogDirname)
++               if cfg.DataDir == "" {
++                       cfg.DataDir = filepath.Join(lndDir, defaultDataDirname)
++               }
++               if cfg.LetsEncryptDir == "" {
++                       cfg.LetsEncryptDir = filepath.Join(
++                               lndDir, defaultLetsEncryptDirname,
++                       )
++               }
++               if cfg.TLSCertPath == "" {
++                       cfg.TLSCertPath = filepath.Join(lndDir, defaultTLSCertFilename)
++               }
++               if cfg.TLSKeyPath == "" {
++                       cfg.TLSKeyPath = filepath.Join(lndDir, defaultTLSKeyFilename)
++               }
++               if cfg.LogDir == "" {
++                       cfg.LogDir = filepath.Join(lndDir, defaultLogDirname)
++               }
+
+                // If the watchtower's directory is set to the default, i.e. the
+                // user has not requested a different location, we'll move the
 ```
-
-* Check that the date of the timestamp is close to the [release notes] date of
-the {name} binary.
-
-### Installation
-
-Having verified the integrity and authenticity of the release binary, we can
-safely proceed to install it!
-
-* Install {name}
 
 ```sh copy
-$SU tar xzf lnd-linux-${ARCH}-v$VERSION.tar.gz -C /usr/bin --strip-components=1
+patch -lp1 < lnddir-override.patch
+```
+
+### Configure, compile and install
+
+* Now compile the source code into an executable binary and install it.
+
+```sh copy
+NO_PROXY="*" make release-install
 ```
 
 ```sh copy
-$SU install -D -m 0660 -o lnd -g lnd ./sample-lnd.conf /etc/lnd/lnd.conf
+$SU install -D -m 0755 /tmp/go/bin/lncli /usr/bin/lncli
+$SU install -D -m 0755 /tmp/go/bin/lnd   /usr/bin/lnd
 ```
 
 ```sh copy
-lnd --version
+$SU install -D -m 0660 -o lnd -g lnd ./sample-lnd.conf /etc/lnd/main.conf
 ```
 
-```sh filename="output"
-lnd version ${VERSION} commit=v${VERSION}
+### Strip installed binaries
+
+```sh copy
+$SU strip /usr/bin/lncli /usr/bin/lnd
+```
+
+### Cleanup
+
+```sh copy
+cd
+$SU rm -rf /tmp/lnd
+$SU apk del .build-deps
 ```
 </Steps>
 
@@ -195,10 +209,10 @@ lnd version ${VERSION} commit=v${VERSION}
 * Modify/uncomment these lines. Save and exit.
 
 ```sh copy
-$SU $EDITOR /etc/lnd/lnd.conf
+$SU $EDITOR /etc/lnd/main.conf
 ```
 
-```conf filename="/etc/lnd/lnd.conf" {2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,68,70,72}
+```conf filename="/etc/lnd/main.conf" {2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,68,70}
 [...]
 tlsautorefresh=true
 [...]
@@ -210,7 +224,7 @@ debuglevel=info
 [...]
 maxpendingchannels=5
 [...]
-wallet-unlock-password-file=/etc/lnd/passwd.txt
+wallet-unlock-password-file=/etc/lnd/main-passwd.txt
 [...]
 wallet-unlock-allow-create=true
 [...]
@@ -232,9 +246,7 @@ gc-canceled-invoices-on-the-fly=true
 [...]
 alias=YOUR_FANCY_ALIAS
 [...]
-bitcoin.active=true
-[...]
-bitcoin.chaindir=/var/lib/lnd/chain/bitcoin
+bitcoin.chaindir=/var/lib/lnd
 [...]
 bitcoin.mainnet=true
 [...]
@@ -244,11 +256,11 @@ bitcoin.basefee=1000
 [...]
 bitcoin.feerate=1
 [...]
-bitcoind.dir=/var/lib/bitcoind
+bitcoind.dir=/var/lib/bitcoind/main
 [...]
-bitcoind.config=/etc/bitcoin/bitcoin.conf
+bitcoind.config=/etc/bitcoind/main.conf
 [...]
-bitcoind.rpccookie=/var/lib/bitcoind/.cookie
+bitcoind.rpccookie=/run/bitcoind/main.authcookie
 [...]
 bitcoind.zmqpubrawblock=tcp://127.0.0.1:28332
 [...]
@@ -275,7 +287,7 @@ db.bolt.auto-compact-min-age=168h
 ```
 
 <FAQBox title="Slow device mode">
-```conf filename="/etc/lnd/lnd.conf" {2}
+```conf filename="/etc/lnd/main.conf" {2}
 [...]
 ; watchtower.active=true
 [...]
@@ -284,7 +296,7 @@ db.bolt.auto-compact-min-age=168h
 
 <Callout>
 Check the {name} sample
-[config](https://github.com/lightningnetwork/lnd/blob/master/sample-lnd.conf)
+[config](https://github.com/lightningnetwork/lnd/blob/master/sample-main.conf)
 on web browser, and visit the [Lightning Node
 Management](https://www.lightningnode.info/) site by Openoms to learn more.
 </Callout>
@@ -302,8 +314,9 @@ $SU $EDITOR /etc/init.d/lnd
 ```sh copy filename="/etc/init.d/lnd"
 #!/sbin/openrc-run
 
-: ${LND_CONFIGFILE:=/etc/lnd/lnd.conf}
-: ${LND_PASSWDFILE:=/etc/lnd/passwd.txt}
+: ${LND_CHAIN:=main}
+: ${LND_CONFIGFILE:=/etc/lnd/${LND_CHAIN}.conf}
+: ${LND_PASSWDFILE:=/etc/lnd/main-passwd.txt}
 : ${LND_DATADIR:=/var/lib/lnd}
 : ${LND_LOGDIR:=/var/log/lnd}
 : ${LND_USER:=lnd}
@@ -318,12 +331,18 @@ name="LND"
 description="Lightning Network Daemon"
 
 required_files="${LND_CONFIGFILE}"
-pidfile="${LND_PIDDIR}/${SVCNAME}.pid"
+piddir="/run/lnd"
+pidfile="${piddir}/${LND_CHAIN}.pid"
 retry="${LND_SIGTERM_TIMEOUT}"
 
 command="${LND_BIN}"
 command_args="--lnddir=${LND_DATADIR}
               --configfile=${LND_CONFIGFILE}
+              --datadir=${LND_DATADIR}
+              --tlscertpath=${LND_DATADIR}/tls.cert
+              --tlskeypath=${LND_DATADIR}/tls.key
+              --logdir=${LND_LOGDIR}
+              --letsencryptdir=${LND_DATADIR}/letsencrypt
               ${LND_OPTS}"
 command_user="${LND_USER}:${LND_GROUP}"
 command_background="true"
@@ -344,15 +363,8 @@ start_pre() {
     checkpath --file      --mode 0600 --owner "${command_user}" "${LND_PASSWDFILE}"
     checkpath --directory --mode 0750 --owner "${command_user}" "${LND_DATADIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${LND_LOGDIR}"
-    checkpath --directory --mode 0755 --owner "${command_user}" "${LND_PIDDIR}"
-
-    [ -e "${LND_DATADIR}/logs" ] || ln -s "${LND_LOGDIR}" "${LND_DATADIR}/logs"
-
+    checkpath --directory --mode 0755 --owner "${command_user}" "${piddir}"
     checkconfig
-}
-
-start_post() {
-    chmod -R u=rwX,g=rX,o= "${LND_DATADIR}" "${LND_LOGDIR}"
 }
 
 checkconfig() {
@@ -391,7 +403,7 @@ even have a password.
 * Create a text file and enter your {name} wallet `password [C]`. Save and exit.
 
 ```sh copy
-$EDITOR /etc/lnd/passwd.txt
+$SU $EDITOR /etc/lnd/main-passwd.txt
 ```
 
 To improve the security of your wallet, check out these more advanced methods:
@@ -403,8 +415,10 @@ pipe](https://github.com/lightningnetwork/lnd/blob/master/docs/wallet.md#more-se
 
 ```sh copy
 $SU rc-update add lnd
-$SU rc-service lnd start
+```
 
+```sh copy
+$SU rc-service lnd start
 ```
 
 ### Wallet setup
@@ -419,10 +433,10 @@ lncli create
 ```
 
 * Enter your `password [C]` as wallet password (it must be exactly the same you
-stored in `passwd.txt`). To create a a new wallet, select `n` when asked if you
-have an existing cipher seed. Just press enter if asked about an additional seed
-passphrase, unless you know what you're doing. A new cipher seed consisting of
-24 words is created.
+stored in `main-passwd.txt`). To create a a new wallet, select `n` when asked if
+you have an existing cipher seed. Just press enter if asked about an additional
+seed passphrase, unless you know what you're doing. A new cipher seed consisting
+of 24 words is created.
 
 ```sh filename="output"
 Input wallet password:
@@ -456,7 +470,7 @@ lnd successfully initialized!
 These 24 words is all that you need to restore the Bitcoin on-chain wallet. The
 current state of your channels, however, cannot be recreated from this seed. For
 this, the Static Channel Backup stored at
-`/var/lib/lnd/data/chain/**/**/channel.backup` is updated continuously.
+`/var/lib/lnd/**/**/channel.backup` is updated continuously.
 
 <Callout type="warning">
 This information must be kept secret at all times.
@@ -702,7 +716,7 @@ lncli wtclient remove <pubkey>
 
 Same as you can connect as a watchtower client to other watchtower servers, you
 could give the same service running an altruist watchtower server. This was
-previously activated in the `lnd.conf`, and you can see the information about it
+previously activated in the `main.conf`, and you can see the information about it
 by typing the following command and sharing it with your peers.
 
 ```sh copy
