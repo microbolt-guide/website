@@ -55,7 +55,7 @@ $SU adduser electrs bitcoin
 ### Afegiu també l'usuari `satoshi` al grup `electrs`
 
 ```sh copy
-$SU adduser satoshi electrs
+$SU adduser satoshi electrs && exec su -l satoshi
 ```
 
 ### Servidor intermediari invers

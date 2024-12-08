@@ -313,12 +313,6 @@ $SU adduser \
     caddy
 ```
 
-* Afegiu també l'usuari satoshi al grup caddy
-
-```sh copy
-$SU adduser satoshi caddy
-```
-
 {<h3>Baixa l'última versió</h3>}
 
 ```sh copy
@@ -512,7 +506,7 @@ $SU rc-service caddy start
 `Ctrl + C`
 
 ```sh copy
-tail -f /var/log/caddy/debug.log
+$SU tail -f /var/log/caddy/debug.log
 ```
     </Tabs.Tab>
     <Tabs.Tab>

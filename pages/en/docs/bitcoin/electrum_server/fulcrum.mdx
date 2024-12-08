@@ -56,7 +56,7 @@ $SU adduser fulcrum bitcoin
 ### Add the user `satoshi` to the group `fulcrum` as well
 
 ```sh copy
-$SU adduser satoshi fulcrum
+$SU adduser satoshi fulcrum && exec su -l satoshi
 ```
 
 ### Reverse proxy

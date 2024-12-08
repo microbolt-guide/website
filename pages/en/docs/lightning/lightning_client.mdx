@@ -36,7 +36,7 @@ $SU adduser lnd bitcoin
 ### Add the user `satoshi` to the group `lnd` as well
 
 ```sh copy
-$SU adduser satoshi lnd
+$SU adduser satoshi lnd && exec su -l satoshi
 ```
 
 ### Add the user `lnd` to the group `tor`

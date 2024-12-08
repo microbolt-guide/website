@@ -80,7 +80,7 @@ $SU adduser btc-rpc-explorer bitcoin
 ### Afegiu també l'usuari `satoshi` al grup `btc-rpc-explorer`
 
 ```sh copy
-$SU adduser satoshi btc-rpc-explorer
+$SU adduser satoshi btc-rpc-explorer && exec su -l satoshi
 ```
 
 ### Servidor intermediari invers

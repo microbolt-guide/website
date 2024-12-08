@@ -79,7 +79,7 @@ $SU adduser btc-rpc-explorer bitcoin
 ### Add `satoshi` user to the `btc-rpc-explorer` group
 
 ```sh copy
-$SU adduser satoshi btc-rpc-explorer
+$SU adduser satoshi btc-rpc-explorer && exec su -l satoshi
 ```
 
 ### Reverse proxy

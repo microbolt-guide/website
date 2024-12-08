@@ -49,7 +49,7 @@ $SU adduser \
 ### Afegiu també l'usuari `satoshi` al grup `umbrel`
   
 ```sh copy
-$SU adduser satoshi umbrel
+$SU adduser satoshi umbrel && exec su -l satoshi
 ```
 
 ### Servidor intermediari invers

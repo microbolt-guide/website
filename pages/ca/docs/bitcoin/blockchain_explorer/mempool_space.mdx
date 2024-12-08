@@ -81,7 +81,7 @@ $SU adduser mempool bitcoin
 ### Afegiu també l'usuari `satoshi` al grup `mempool`
 
 ```sh copy
-$SU adduser satoshi mempool
+$SU adduser satoshi mempool && exec su -l satoshi
 ```
 
 ### Servidor intermediari invers

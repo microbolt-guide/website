@@ -47,7 +47,7 @@ $SU adduser \
 ### Add the user `satoshi` to the group `umbrel` as well
 
 ```sh copy
-$SU adduser satoshi umbrel
+$SU adduser satoshi umbrel && exec su -l satoshi
 ```
 
 ### Reverse proxy

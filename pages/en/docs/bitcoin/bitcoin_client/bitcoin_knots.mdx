@@ -49,7 +49,7 @@ $SU adduser \
 ### Add the user `satoshi` to the group `bitcoin` as well
 
 ```sh copy
-$SU adduser satoshi bitcoin
+$SU adduser satoshi bitcoin && exec su -l satoshi
 ```
 
 ### Add the user `bitcoin` to the group `tor`

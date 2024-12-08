@@ -67,7 +67,7 @@ $SU adduser public-pool bitcoin
 ### Afegiu també l'usuari `satoshi` al grup `public-pool`
 
 ```sh copy
-$SU adduser satoshi public-pool
+$SU adduser satoshi public-pool && exec su -l satoshi
 ```
 
 ### Servidor intermediari invers

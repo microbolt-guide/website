@@ -79,7 +79,7 @@ $SU adduser mempool bitcoin
 ### Add `satoshi` user to the `mempool` group
 
 ```sh copy
-$SU adduser satoshi mempool
+$SU adduser satoshi mempool && exec su -l satoshi
 ```
 
 ### Reverse proxy

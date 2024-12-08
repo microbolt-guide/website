@@ -56,7 +56,7 @@ $SU adduser thunderhub lnd
 ### Add `satoshi` user to the `thunderhub` group
 
 ```sh copy
-$SU adduser satoshi thunderhub
+$SU adduser satoshi thunderhub && exec su -l satoshi
 ```
 
 ### Reverse proxy

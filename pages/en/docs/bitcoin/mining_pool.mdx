@@ -65,7 +65,7 @@ $SU adduser public-pool bitcoin
 ### Add `satoshi` user to the `public-pool` group
 
 ```sh copy
-$SU adduser satoshi public-pool
+$SU adduser satoshi public-pool && exec su -l satoshi
 ```
 
 ### Reverse proxy
