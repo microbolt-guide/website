@@ -1,6 +1,6 @@
 # Nostr
 
-![Nostr Logo](/img/nostr/nostr-logo.webp)
+![Nostr Logo](/images/nostr/nostr-logo.webp)
 
 ## Què és Nostr?
 

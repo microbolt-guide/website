@@ -4,7 +4,7 @@ title: Introducció
 
 # Microbolt
 
-![](/img/microbolt-banner.webp)
+![](/images/microbolt-banner.webp)
 
 Construeix el teu propi node complet de Bitcoin "fes-ho tot tu mateix" que et
 convertirà en un parell sobirà a la xarxa de Bitcoin i Lightning.
