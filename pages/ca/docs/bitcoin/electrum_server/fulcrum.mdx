@@ -57,7 +57,7 @@ $SU adduser fulcrum bitcoin
 ### Afegiu també l'usuari `satoshi` al grup `fulcrum`
 
 ```sh copy
-$SU adduser satoshi fulcrum
+$SU adduser satoshi fulcrum && exec su -l satoshi
 ```
 
 ### Servidor intermediari invers

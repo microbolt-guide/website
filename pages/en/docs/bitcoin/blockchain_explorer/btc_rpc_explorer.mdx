@@ -81,7 +81,7 @@ $SU adduser explorer bitcoind
 ### Add satoshi user to the {user} group
 
 ```sh copy
-$SU adduser satoshi explorer
+$SU adduser satoshi explorer && exec su -l satoshi
 ```
 
 ### Reverse proxy

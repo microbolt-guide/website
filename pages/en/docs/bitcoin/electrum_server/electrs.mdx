@@ -60,7 +60,7 @@ $SU adduser electrs bitcoind
 ### Add the user satoshi to the group {user} as well
 
 ```sh copy
-$SU adduser satoshi electrs
+$SU adduser satoshi electrs && exec su -l satoshi
 ```
 
 ### Reverse proxy

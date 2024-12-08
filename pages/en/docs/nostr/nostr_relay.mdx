@@ -46,7 +46,7 @@ $SU adduser \
 ### Add the user `satoshi` to the group `nostr` as well
   
 ```sh copy
-$SU adduser satoshi nostr
+$SU adduser satoshi nostr && exec su -l satoshi
 ```
 </Steps>
 

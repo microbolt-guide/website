@@ -53,7 +53,7 @@ $SU adduser \
 ### Afegiu també l'usuari `satoshi` al grup `bitcoin`
 
 ```sh copy
-$SU adduser satoshi bitcoin
+$SU adduser satoshi bitcoin && exec su -l satoshi
 ```
 
 ### Afegiu l'usuari `bitcoin` al grup `tor`

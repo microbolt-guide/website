@@ -57,7 +57,7 @@ $SU adduser thunderhub lnd
 ### Afegiu també l'usuari `satoshi` al grup `thunderhub`
 
 ```sh copy
-$SU adduser satoshi thunderhub
+$SU adduser satoshi thunderhub && exec su -l satoshi
 ```
 
 ### Servidor intermediari invers

@@ -357,12 +357,6 @@ $SU adduser \
     caddy
 ```
 
-* Add the user satoshi to the group caddy
-
-```sh copy
-$SU adduser satoshi caddy
-```
-
 {<h3>Download latest release</h3>}
 
 ```sh copy
@@ -561,7 +555,7 @@ $SU rc-update add caddy
 * You can monitor the Caddy logs by entering this command. Exit with `Ctrl + C`
 
 ```sh copy
-tail -f /var/log/caddy/debug.log
+$SU tail -f /var/log/caddy/debug.log
 ```
     </Tabs.Tab>
     <Tabs.Tab>
