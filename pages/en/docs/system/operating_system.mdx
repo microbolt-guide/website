@@ -1,5 +1,7 @@
 import { Callout, Steps, Tabs } from 'nextra/components'
 
+import { FAQBox } from '@components'
+
 export const VERSION = "3.20"
 
 # Operating system
@@ -153,14 +155,14 @@ on them
 
 https://alpinelinux.org/downloads/
 
-| Usually      | PC         | Raspberry Pi \{3,4,5\} |
-| :----------- | :--------: | :--------------------: |
-| version      | `standard` | `raspberry pi`         |
-| architecture | `x86_64`   | `aarch64`              |
+| Usually      | PC         | VM        | Raspberry Pi \{3,4,5\} |
+| :----------- | :--------: | :-------: | :--------------------: |
+| version      | `standard` | `virtual` | `raspberry pi`         |
+| architecture | `x86_64`   | `x86_64`  | `aarch64`              |
 
 <Callout type="info">
-There's also official cloud images [here](https://alpinelinux.org/cloud/), use
-at your own risk
+There's also official cloud images [here](https://alpinelinux.org/cloud), use
+at your own risk. Best suited for the [Ansible](/ansible) guide.
 </Callout>
 
 ### Connect the USB/SD to your host computer
@@ -209,10 +211,10 @@ as possible in your absence
 <Callout type="info">
 Alpine Linux can be used in any of the following three modes
 
-**Diskless mode**
+❌ **Diskless mode** (not suitable for a bitcoin full-node)
 
-You'll boot from read-only medium such as the installation CD, a USB drive, or a
-Compact Flash card.
+You'll `boot from read-only medium` such as the installation CD, a USB drive, or
+a Compact Flash card.
 
 When you use Alpine in this mode, you need to use
 [Alpine Local Backup](https://wiki.alpinelinux.org/wiki/Alpine_local_backup)
@@ -221,18 +223,20 @@ medium, usually removable. (If your boot medium is, for example, a USB drive,
 you can save modifications there; you don't need a separate partition or drive.)
 See also [Local APK cache](https://wiki.alpinelinux.org/wiki/Local_APK_cache).
 
-**Data mode**
+🚀 **Data mode**
 
-As in diskless mode, your OS is run from a read-only medium. However, here a
-writable partition (usually on a hard disk) is used to store the data in /var.
+As in diskless mode, `your OS is run from a read-only medium`. However, here a
+writable partition (usually on a hard disk) is used to store the data in `/var`.
 That partition is accessed directly, rather than copied into a tmpfs; so this is
 better-suited to uses where large amounts of data need to be preserved between
 reboots.
 
-**Sys mode**
+✅ **Sys mode**
 
-This is a traditional hard-disk install. Both the boot system and your
+This is a `traditional hard-disk install`. Both the boot system and your
 modifications are written to the hard disk, in a standard Linux hierarchy.
+
+![Alpine Linux installation modes](/images/system/alpine-modes.webp)
 </Callout>
 
 * Login with `root` user (no password needed)
@@ -304,6 +308,8 @@ Enter where to store configs `none`
 Enter apk cache directory `none`
 </Steps>
 
+### Installation mode
+
 <Tabs items={['sys', 'data']}>
     <Tabs.Tab>
 * Setup installation disk
@@ -322,6 +328,35 @@ WARNING: Erase the above disk(s) and continue? `y`
 Your installation is done when you see this:
 `Installation is complete. Please reboot.`
 </Callout>
+
+* Reboot
+
+```sh copy
+reboot
+```
+
+<FAQBox title="Secondary disk">
+If you have a secondary disk, you can use it to store your data. You can use the
+`data` mode alongside `sys` mode to install `/var` on the secondary disk.
+
+<Steps>
+{<h3>Setup environment variables</h3>}
+As shown above, these variables are used to customize the disk installation.
+
+{<h3>Secondary disk installation</h3>}
+```sh copy
+DEFAULT_DISK=none setup-disk -q
+```
+
+Which disk would you like to use: `sdX` (choose your secondary hard disk, usually sdb)
+
+How would you like to use it? `data`
+
+WARNING: Erase the above disk(s) and continue? `y`
+</Steps>
+
+{<h2>DONE 🎉</h2>}
+</FAQBox>
     </Tabs.Tab>
     <Tabs.Tab>
 * Copy modloop and umount `USB/SD`
@@ -432,19 +467,21 @@ lbu status
 ```sh copy
 lbu commit
 ```
-    </Tabs.Tab>
-</Tabs>
 
 * Reboot
 
 ```sh copy
 reboot
 ```
+    </Tabs.Tab>
+</Tabs>
 
-<Callout>
-If you exported `SWAP_SIZE=0` you can create a `swapfile` on next boot
+<FAQBox title="Swapfile">
+If you exported `SWAP_SIZE=0` duriong installation you can create a `swapfile`
+on next boot
 
-* Allocate swapfile
+<Steps>
+{<h3>Allocate swapfile</h3>}
 
 ```sh copy
 dd if=/dev/zero of=/var/swapfile bs=1K count=4M
@@ -452,7 +489,7 @@ mkswap /var/swapfile
 chmod 600 /var/swapfile
 ```
 
-* Put swapfile on fstab
+{<h3>Put swapfile on fstab</h3>}
 
 ```sh copy
 printf "%s\n" \
@@ -460,10 +497,13 @@ printf "%s\n" \
     >> /etc/fstab
 ```
 
-* Start and enable swapfile on boot
+{<h3>Start and enable swapfile on boot</h3>}
 
 ```sh copy
 rc-service swap start
 rc-update add swap default
 ```
-</Callout>
+</Steps>
+
+{<h2>DONE 🎉</h2>}
+</FAQBox>
