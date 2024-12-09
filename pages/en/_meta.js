@@ -25,5 +25,11 @@ export default {
   faq: {
     type: "page",
     title: "FAQ"
+  },
+  blog: {
+    type: "page",
+    title: "Blog \u2B67",
+    href: "https://bloc.microbolt.guide",
+    newWindow: true
   }
 }
