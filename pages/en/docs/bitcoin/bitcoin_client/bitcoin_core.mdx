@@ -543,6 +543,10 @@ start_pre() {
     checkconfig
 }
 
+start_post() {
+    chmod -R u=rwX,g=rX,o= "${BITCOIND_DATADIR}" "${BITCOIND_LOGDIR}"
+}
+
 checkconfig() {
     if ! grep -qs '^rpcauth=' "${BITCOIND_CONFIGFILE}"
     then
