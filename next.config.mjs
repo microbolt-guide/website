@@ -26,5 +26,18 @@ export default withNextra({
       }
     ]
   },
-  reactStrictMode: true
+  reactStrictMode: true,
+  async headers() {
+    return [
+      {
+        source: '/:path*\\.(conf|init\\.d|conf\\.d|logrotate|caddy|nginx)',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'text/plain; charset=utf-8',
+          },
+        ],
+      },
+    ];
+  }
 })

@@ -1,0 +1,15 @@
+/var/log/bitcoind/**/*.log {
+    weekly
+    missingok
+    rotate 104
+    compress
+    delaycompress
+    notifempty
+    create 0640 bitcoind bitcoind
+    sharedscripts
+    postrotate
+        for pidfile in /run/bitcoind/*.pid; do
+            kill -HUP `cat $pidfile`
+        done
+    endscript
+}
