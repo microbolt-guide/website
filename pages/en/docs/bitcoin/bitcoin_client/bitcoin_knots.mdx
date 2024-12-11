@@ -9,6 +9,20 @@ export const user = "bitcoind"
 [release notes]: https://github.com/bitcoinknots/bitcoin/tree/master/doc/release-notes
 [{name}]: https://bitcoinknots.org
 
+[config]: /config/bitcoin/client/bitcoin-knots-v27.1-main.conf
+[init.d]: /config/bitcoin/client/bitcoin-knots-v27.1-main.init.d
+[logrotate]: /config/bitcoin/client/bitcoin-knots-v27.1-main.logrotate
+
+[OpenRC]: https://github.com/OpenRC/openrc/blob/master/user-guide.md
+[BBO]: https://bitcoinbarcelona.xyz
+[logrotate(8)]: https://linux.die.net/man/8/logrotate
+[The Little Bitcoin Book]: https://littlebitcoinbook.com
+[Mastering Bitcoin]: https://bitcoinbook.info
+[real copy]: https://bitcoinbook.info
+[GitHub]: https://github.com/bitcoinbook/bitcoinbook
+[Learning Bitcoin from the Command Line]: https://github.com/ChristopherA/Learning-Bitcoin-from-the-Command-Line
+[bitcoin-cli reference]: https://bitcoin.it/wiki/Original\_Bitcoin\_client/API\_calls\_list
+
 # Bitcoin Knots
 
 We install [{name}], a client implementation of the Bitcoin network.
@@ -56,7 +70,7 @@ $SU adduser \
 ### Add the user satoshi to the group {user} as well
 
 ```sh copy
-$SU adduser satoshi bitcoin && exec su -l satoshi
+$SU adduser satoshi bitcoind && exec su -l satoshi
 ```
 
 ### Add the user {user} to the group tor
@@ -74,7 +88,7 @@ $SU adduser bitcoind tor
 In {name} >25.1 all spam filters are up to date
 </Callout>
 
-![GIF of Linus Torvalds saying "fuck you ordinals"](/img/bitcoin/client/urinals.gif)
+![GIF of Linus Torvalds saying "fuck you ordinals"](/images/bitcoin/client/urinals.gif)
 
 We download the latest {name} source code and compare this file with the signed
 and timestamped checksum. This is a precaution to make sure that this is an
@@ -232,55 +246,6 @@ $SU apk del .build-deps
 ```
 </Steps>
 
-## Generate access credentials
-
-For other programs to query {name} they need the proper access credentials. To
-avoid storing the username and password in a configuration file in plaintext,
-the password is hashed. This allows {name} to accept a password, hash it, and
-compare it to the stored hash, while it is not possible to retrieve the original
-password.
-
-Another option to get access credentials is through the `.cookie` file in the
-Bitcoin data directory. This is created automatically and can be read by all
-users who are members of the "bitcoin" group.
-
-{name} provides a simple `python` script to generate the configuration line for
-the config file.
-
-But we prefer to do it our way, much more simple
-
-<Callout type="info">
-The following command will ask for the RPC username and password. The password
-will be hashed and stored in the `bitcoin.conf` file.
-Copy and paste the following command into your terminal and press `Enter`
-</Callout>
-
-```sh copy
-clear && \
-printf "Enter the RPC username: " && \
-read -r username; \
-[ ! "$username" ] && { 
-    printf "\033[38;5;1m%s\033[m\n" "Error, must provide username"; kill -SIGINT $$
-} || \
-printf "Enter the [ B ] RPC password: " && \
-stty -echo && \
-read -r password; \
-stty echo && \
-[ ! "$password" ] && { 
-    printf "\033[38;5;1m%s\033[m\n" "Error, must provide password"; kill -SIGINT $$
-} || {
-    $SU sed "s/^#*rpcauth=.*$/rpcauth=${username}:${salt=$(openssl rand -hex 16)}\$$(\
-            printf "%s" "${password}" | \
-            openssl dgst -sha256 -hmac "$salt" | \
-            awk '{print $2}' \
-        )/" /etc/bitcoind/main.conf | $SU tee _; \
-    unset salt; \
-    $SU mv -f _ /etc/bitcoind/main.conf && \
-    printf "\n\033[38;5;34m%s\033[m\n" \
-        "Done! The password hash is stored in the main.conf file" 
-}
-```
-
 ## Configuration
 
 <Callout type="warning">
@@ -293,7 +258,7 @@ stty echo && \
 $SU $EDITOR /etc/bitcoind/main.conf
 ```
 
-```nginx filename="/etc/bitcoind/main.conf" {2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32-33,35,37,39,41}
+```sh filename="/etc/bitcoind/main.conf" {2,4,6,8,10,12,14,16,18,20,22-23,25,27,29,31,35-36,40,44,48}
 [...]
 assumevalid=0
 [...]
@@ -303,11 +268,7 @@ blocksonly=1
 [...]
 coinstatsindex=1
 [...]
-dbcache=8192
-[...]
 txindex=1
-[...]
-bind=127.0.0.1
 [...]
 i2psam=127.0.0.1:7656
 [...]
@@ -318,12 +279,6 @@ peerblockfilters=1
 peerbloomfilters=1
 [...]
 proxy=127.0.0.1:9050
-[...]
-zmqpubhashblock=tcp://127.0.0.1:8433
-[...]
-zmqpubrawblock=tcp://127.0.0.1:28332
-[...]
-zmqpubrawtx=tcp://127.0.0.1:28333
 [...]
 debug=i2p
 debug=tor
@@ -336,12 +291,26 @@ permitbaremultisig=0
 [...]
 server=1
 [...]
+# Options for mainnet
+[main]
+bind=127.0.0.1
+dbcache=8192
+
+# Options for testnet
+[test]
+bind=127.0.0.1
+
+# Options for signet
+[signet]
+bind=127.0.0.1
+
+# Options for regtest
+[regtest]
+bind=127.0.0.1
 ```
 
 <Callout>
-Check this {name} sample
-[config](https://gist.github.com/doitwithnotepad/7fc0fb95fed99ca6c6a288dbf73d18fa)
-on web browser
+Check this {name} sample [config] on web browser
 </Callout>
 
 <FAQBox title="Slow device mode">
@@ -375,7 +344,56 @@ the connection to Electrs and Bisq by adding these parameter to `main.conf`:
 </Callout>
 </FAQBox>
 
-### Use bitcoind and bitcoin-cli with satoshi user
+### Generate access credentials
+
+For other programs to query {name} they need the proper access credentials. To
+avoid storing the username and password in a configuration file in plaintext,
+the password is hashed. This allows {name} to accept a password, hash it, and
+compare it to the stored hash, while it is not possible to retrieve the original
+password.
+
+Another option to get access credentials is through the `.cookie` file in the
+Bitcoin data directory. This is created automatically and can be read by all
+users who are members of the "bitcoin" group.
+
+{name} provides a simple `python` script to generate the configuration line for
+the config file.
+
+But we prefer to do it our way, much more simple
+
+<Callout type="info">
+The following command will ask for the RPC username and password. The password
+will be hashed and stored in the `main.conf` file.
+Copy and paste the following command into your terminal and press `Enter`
+</Callout>
+
+```sh copy
+clear && \
+printf "Enter the RPC username: " && \
+read -r username; \
+[ ! "$username" ] && { 
+    printf "\033[38;5;1m%s\033[m\n" "Error, must provide username"; kill -SIGINT $$
+} || \
+printf "Enter the [ B ] RPC password: " && \
+stty -echo && \
+read -r password; \
+stty echo && \
+[ ! "$password" ] && { 
+    printf "\033[38;5;1m%s\033[m\n" "Error, must provide password"; kill -SIGINT $$
+} || {
+    sed "s/^#*rpcauth=.*$/rpcauth=${username}:${salt=$(openssl rand -hex 16)}\$$(\
+            printf "%s" "${password}" | \
+            openssl dgst -sha256 -hmac "$salt" | \
+            awk '{print $2}' \
+        )/" /etc/bitcoind/main.conf > _; \
+    unset salt; \
+    mv -f _ /etc/bitcoind/main.conf && \
+    printf "\n\033[38;5;34m%s\033[m\n" \
+        "Done! The password hash is stored in the main.conf file" 
+}
+```
+
+### Use bitcoind and bitcoin-cli with satoshi user (mainnet)
 
 * Create the directory for the configuration file
 
@@ -393,7 +411,7 @@ printf "%s\n" \
     > "$HOME/.bitcoin/bitcoin.conf"
 ```
 
-## Create init.d service
+### Create init.d service
 
 The system needs to run the bitcoin daemon automatically in the background, even
 when nobody is logged in. We use `openrc`, a daemon that controls the startup
@@ -435,8 +453,6 @@ command_args="-chain=${BITCOIND_CHAIN}
               -conf=${BITCOIND_CONFIGFILE}
               -datadir=${BITCOIND_DATADIR}
               -debuglogfile=${BITCOIND_LOGDIR}/debug.log
-              -rpccookiefile=${authcookie}
-              -rpccookieperms=group
               ${BITCOIND_OPTS}"
 command_args_background="-daemonwait"
 command_user="${BITCOIND_USER}:${BITCOIND_GROUP}"
@@ -464,10 +480,6 @@ start_pre() {
     checkconfig
 }
 
-start_post() {
-    chmod -R u=rwX,g=rX,o= "${BITCOIND_DATADIR}" "${BITCOIND_LOGDIR}"
-}
-
 checkconfig() {
     if ! grep -qs '^rpcauth=' "${BITCOIND_CONFIGFILE}"
     then
@@ -489,10 +501,38 @@ checkconfig() {
 }
 ```
 
+<Callout>
+Check this {name} sample [init.d] on web browser
+</Callout>
+
 * Enable execution permission
 
 ```sh copy
 $SU chmod +x /etc/init.d/bitcoind
+```
+
+<Callout type="info">
+The following instructions explain how to configure for use with mainnet,
+testnet, and BBO's signet. You can choose one, several, or all the available
+options. The configurations are prepared to work simultaneously.
+
+More: [OpenRC]
+</Callout>
+
+<Tabs items={['mainnet', 'testnet', 'signet BBO']}>
+    <Tabs.Tab>
+* Create the init configuration file `conf.d/bitcoind` and add the following
+
+```sh copy
+$SU $EDITOR /etc/conf.d/bitcoind
+```
+
+```sh copy filename="/etc/conf.d/bitcoind"
+BITCOIND_OPTS='-rpccookieperms=group
+               -rpccookiefile=${authcookie}
+               -zmqpubhashblock=unix:${piddir}/${BITCOIND_CHAIN}.hash.block.sock
+               -zmqpubrawblock=unix:${piddir}/${BITCOIND_CHAIN}.raw.block.sock
+               -zmqpubrawtx=unix:${piddir}/${BITCOIND_CHAIN}.raw.tx.sock'
 ```
 
 * Enable autoboot
@@ -500,8 +540,83 @@ $SU chmod +x /etc/init.d/bitcoind
 ```sh copy
 $SU rc-update add bitcoind default
 ```
+    </Tabs.Tab>
+    <Tabs.Tab>
+* Make a symlink of the default config and the init.d configuration file
 
-## Create logrotate config
+```sh copy
+$SU ln -s main.conf /etc/bitcoind/test.conf
+```
+
+```sh copy
+$SU ln -s bitcoind /etc/init.d/bitcoind.testnet
+```
+
+* Create the init configuration file `conf.d/bitcoind.testnet` and add the
+following
+
+```sh copy
+$SU $EDITOR /etc/conf.d/bitcoind.testnet
+```
+
+```sh copy filename="/etc/conf.d/bitcoind.testnet"
+BITCOIND_CHAIN=test
+BITCOIND_OPTS='-rpccookieperms=group
+               -rpccookiefile=${authcookie}
+               -zmqpubhashblock=unix:${piddir}/${BITCOIND_CHAIN}.hash.block.sock
+               -zmqpubrawblock=unix:${piddir}/${BITCOIND_CHAIN}.raw.block.sock
+               -zmqpubrawtx=unix:${piddir}/${BITCOIND_CHAIN}.raw.tx.sock'
+```
+
+* Enable autoboot (optional)
+
+```sh copy
+$SU rc-update add bitcoind.testnet default
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+<Callout>
+BBO means `Barcelona Bitcoin Only`, a signet network for testing purposes from
+the ❤️ Barcelona Bitcoin Community. More info at [BBO]
+</Callout>
+
+* Make a symlink of the default config and the init.d configuration file
+
+```sh copy
+$SU ln -s main.conf /etc/bitcoind/signet.bbo.conf
+```
+
+```sh copy
+$SU ln -s bitcoind /etc/init.d/bitcoind.signet.bbo
+```
+
+* Create the init configuration file `conf.d/bitcoind.signet.bbo` and add the following
+
+```sh copy
+$SU $EDITOR /etc/conf.d/bitcoind.signet.bbo
+```
+
+```sh copy filename="/etc/conf.d/bitcoind.signet.bbo"
+BITCOIND_CHAIN=signet
+BITCOIND_CONFIGFILE=/etc/bitcoind/signet.bbo.conf
+BITCOIND_OPTS='-rpccookieperms=group
+               -rpccookiefile=${authcookie}
+               -zmqpubhashblock=unix:${piddir}/${BITCOIND_CHAIN}.bbo.hash.block.sock
+               -zmqpubrawblock=unix:${piddir}/${BITCOIND_CHAIN}.bbo.raw.block.sock
+               -zmqpubrawtx=unix:${piddir}/${BITCOIND_CHAIN}.bbo.raw.tx.sock
+               -addnode=89.147.108.149:38333
+               -signetchallenge=00144b4ef981ad360b21e2a758954e5152d8390e6598'
+```
+
+* Enable autoboot (optional)
+
+```sh copy
+$SU rc-update add bitcoind.signet.bbo default
+```
+    </Tabs.Tab>
+</Tabs>
+
+### Create logrotate config
 
 Logrotate is a system utility that manages the compression and rotation of log
 files on Linux systems. If logs are not rotated, compressed, and purged
@@ -521,7 +636,7 @@ $SU $EDITOR /etc/logrotate.d/bitcoind
 * Enter the complete next configuration. Save and exit
 
 ```sh copy filename="/etc/logrotate.d/bitcoind"
-/var/log/bitcoind/main/*.log {
+/var/log/bitcoind/**/*.log {
     weekly
     missingok
     rotate 104
@@ -531,10 +646,16 @@ $SU $EDITOR /etc/logrotate.d/bitcoind
     create 0640 bitcoind bitcoind
     sharedscripts
     postrotate
-        kill -HUP `cat /run/bitcoind/main.pid`
+        for pidfile in /run/bitcoind/*.pid; do
+            kill -HUP `cat $pidfile`
+        done
     endscript
 }
 ```
+
+<Callout>
+Check this {name} sample [logrotate] on web browser
+</Callout>
 
 * Test
 
@@ -543,10 +664,10 @@ $SU logrotate /etc/logrotate.d/bitcoind --debug
 ```
 
 <Callout>
-More: [logrotate(8) - Linux man page](https://linux.die.net/man/8/logrotate)
+More: [logrotate(8)]
 </Callout>
 
-## Run
+## Run (mainnet)
 
 * Start the service
 
@@ -671,24 +792,19 @@ If everything is running smoothly, this is the perfect time to familiarize
 yourself with Bitcoin, the technical aspects of {name}, and play around with
 `bitcoin-cli` until the blockchain is up-to-date.
 
-* [The Little Bitcoin Book](https://littlebitcoinbook.com) is a fantastic
-introduction to Bitcoin, focusing on the "why" and less on the "how".
-* [Mastering Bitcoin](https://bitcoinbook.info) by Andreas Antonopoulos is a
-great point to start, especially chapter 3 (ignore the first part how to compile
-from source code):
+* [The Little Bitcoin Book] is a fantastic introduction to Bitcoin, focusing on
+the "why" and less on the "how".
+* [Mastering Bitcoin] by Andreas Antonopoulos is a great point to start,
+especially chapter 3 (ignore the first part how to compile from source code):
 
-    * you definitely need to have a [real copy](https://bitcoinbook.info/) of
-    this book!
-    * read it online on [GitHub](https://github.com/bitcoinbook/bitcoinbook)
+    * you definitely need to have a [real copy] of this book!
+    * read it online on [GitHub]
 
-![Cover of the book 'Mastering Bitcoin'](/img/bitcoin/client/mastering-bitcoin.webp)
+![Cover of the book 'Mastering Bitcoin'](/images/bitcoin/client/mastering-bitcoin.webp)
 
-* [Learning Bitcoin from the Command
-Line](https://github.com/ChristopherA/Learning-Bitcoin-from-the-Command-Line)
-by Christopher Allen gives a thorough deep dive into understanding the technical
-aspects of Bitcoin.
-* Also, check out the [bitcoin-cli
-reference](https://bitcoin.it/wiki/Original\_Bitcoin\_client/API\_calls\_list)
+* [Learning Bitcoin from the Command Line] by Christopher Allen gives a thorough
+deep dive into understanding the technical aspects of Bitcoin.
+* Also, check out the [bitcoin-cli reference]
 
 ## Activate mempool & reduce 'dbcache' after a full sync
 
