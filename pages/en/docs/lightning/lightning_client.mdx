@@ -224,7 +224,7 @@ debuglevel=info
 [...]
 maxpendingchannels=5
 [...]
-wallet-unlock-password-file=/etc/lnd/main-passwd.txt
+wallet-unlock-password-file=/etc/lnd/main.pass
 [...]
 wallet-unlock-allow-create=true
 [...]
@@ -316,7 +316,7 @@ $SU $EDITOR /etc/init.d/lnd
 
 : ${LND_CHAIN:=main}
 : ${LND_CONFIGFILE:=/etc/lnd/${LND_CHAIN}.conf}
-: ${LND_PASSWDFILE:=/etc/lnd/main-passwd.txt}
+: ${LND_PASSWDFILE:=/etc/lnd/${LND_CHAIN}.pass}
 : ${LND_DATADIR:=/var/lib/lnd}
 : ${LND_LOGDIR:=/var/log/lnd}
 : ${LND_USER:=lnd}
@@ -324,8 +324,6 @@ $SU $EDITOR /etc/init.d/lnd
 : ${LND_BIN:=/usr/bin/lnd}
 : ${LND_OPTS=${LND_OPTS}}
 : ${LND_SIGTERM_TIMEOUT:=600}
-
-LND_PIDDIR="/run/lnd"
 
 name="LND"
 description="Lightning Network Daemon"
@@ -403,7 +401,7 @@ even have a password.
 * Create a text file and enter your {name} wallet `password [C]`. Save and exit.
 
 ```sh copy
-$SU $EDITOR /etc/lnd/main-passwd.txt
+$SU $EDITOR /etc/lnd/main.pass
 ```
 
 To improve the security of your wallet, check out these more advanced methods:
@@ -433,8 +431,8 @@ lncli create
 ```
 
 * Enter your `password [C]` as wallet password (it must be exactly the same you
-stored in `main-passwd.txt`). To create a a new wallet, select `n` when asked if
-you have an existing cipher seed. Just press enter if asked about an additional
+stored in `main.pass`). To create a a new wallet, select `n` when asked if you
+have an existing cipher seed. Just press enter if asked about an additional
 seed passphrase, unless you know what you're doing. A new cipher seed consisting
 of 24 words is created.
 

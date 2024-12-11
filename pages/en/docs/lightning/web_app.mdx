@@ -1,45 +1,41 @@
 import { Callout, Steps, Tabs } from 'nextra/components'
 import { FAQBox } from '@components'
 
-export const name = "ThunderHub"
-export const user = "thunderhub"
+export const name = "Alby Hub"
+export const user = "albyhub"
 
 [security section]: ../system/security#reverse-proxy
-[release notes]: https://github.com/apotdevin/thunderhub/releases
+[release notes]: https://github.com/getAlby/hub/releases
 [{name}]: ./web_app
 
-# ThunderHub
+# Alby Hub
 
-[{name}](https://thunderhub.io) is an open source LND node manager where you can
-manage and monitor your node on any device or browser. It allows you to take
-control of the lightning network with a simple and intuitive UX and the most
-up-to-date tech stack.
+[{name}](https://albyhub.com) is a self-custodial, open source lightning wallet
+that connects to apps
 
-![ThunderHub homepage](/img/lightning/webapp/thunderhub.webp)
+![AlbyHub homepage](/images/lightning/webapp/albyHub.webp)
 
 ## Preparations
 
 <Steps>
 ### Install dependencies
 
-* Install Node.js using the apk package manager.
-
 These are build dependencies (safe to remove after installation, if you want)
 
 ```sh copy
-$SU apk add --virtual .build-deps git gnupg npm
+$SU apk add --virtual .build-deps cargo cargo-auditable clang git go yarn
 ```
 
 These are runtime dependencies
 
 ```sh copy
-$SU apk add nodejs-current
+$SU apk add sqlite
 ```
 
 ### Create the {user} user/group
 
 ```sh copy
-$SU addgroup -S thunderhub
+$SU addgroup -S alby
 ```
 
 ```sh copy
@@ -49,21 +45,21 @@ $SU adduser \
     -H \
     -h /dev/null \
     -s /sbin/nologin \
-    -G thunderhub \
-    -g thunderhub \
-    thunderhub
+    -G albyhub \
+    -g albyhub \
+    albyhub
 ```
 
 ### Add {user} user to the lnd group
 
 ```sh copy
-$SU adduser thunderhub lnd
+$SU adduser albyhub lnd
 ```
 
 ### Add satoshi user to the {user} group
 
 ```sh copy
-$SU adduser satoshi thunderhub && exec su -l satoshi
+$SU adduser satoshi albyhub && exec su -l satoshi
 ```
 
 ### Reverse proxy
@@ -77,20 +73,13 @@ to the {name}.
 <Tabs items={['caddy', 'nginx']}>
     <Tabs.Tab>
 ```sh copy
-$SU $EDITOR /etc/caddy/sites/thunderhub.caddy
+$SU $EDITOR /etc/caddy/sites/albyhub.caddy
 ```
 
-```nginx copy filename="/etc/caddy/sites/thunderhub.caddy"
-:4002 {
+```nginx copy filename="/etc/caddy/sites/albyhub.caddy"
+:8030 {
         import tls
-
-        handle_errors 497 {
-                redir https://{host}:{port}{uri} 301
-        }
-
-        handle {
-                reverse_proxy 127.0.0.1:3000
-        }
+        reverse_proxy :8029
 }
 ```
 
@@ -102,25 +91,28 @@ $SU rc-service caddy reload
     </Tabs.Tab>
     <Tabs.Tab>
 ```sh copy
-$SU $EDITOR /etc/nginx/sites-available/thunderhub-reverse-proxy.conf
+$SU $EDITOR /etc/nginx/sites-available/albyhub-reverse-proxy.conf
 ```
 
-```nginx copy filename="/etc/nginx/sites-available/thunderhub-reverse-proxy.conf"
+```nginx copy filename="/etc/nginx/sites-available/albyhub-reverse-proxy.conf"
 server {
-  listen 4002 ssl;
-  error_page 497 =301 https://$host:$server_port$request_uri;
+    listen 8030 ssl;
 
-  location / {
-    proxy_pass http://127.0.0.1:3000;
-  }
+    location / {
+        proxy_pass http://127.0.0.1:8029;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 }
 ```
 
 ```sh copy
 $SU ln \
     -s \
-    ../sites-available/thunderhub-reverse-proxy.conf \
-    /etc/nginx/sites-enabled/thunderhub-reverse-proxy.conf
+    ../sites-available/albyhub-reverse-proxy.conf \
+    /etc/nginx/sites-enabled/albyhub-reverse-proxy.conf
 ```
 
 * Test and reload NGINX configuration
@@ -139,18 +131,18 @@ $SU rc-service nginx restart
 <Tabs items={['awall', 'ufw']}>
     <Tabs.Tab>
 ```sh copy
-$SU $EDITOR /etc/awall/optional/thunderhub.json
+$SU $EDITOR /etc/awall/optional/albyhub.json
 ```
 
-```json copy filename="/etc/awall/optional/thunderhub.json"
+```json copy filename="/etc/awall/optional/albyhub.json"
 {
-  "description": "Allow ThunderHub SSL",
+  "description": "Allow Alby Hub SSL",
 
   "filter": [
     {
       "in": "internet",
       "out": "_fw",
-      "service": "thunderhub",
+      "service": "albyhub",
       "action": "accept",
       "conn-limit": { "count": 10, "interval": 60 }
     }
@@ -161,13 +153,13 @@ $SU $EDITOR /etc/awall/optional/thunderhub.json
 * Enable it
 
 ```sh copy
-$SU awall enable thunderhub
+$SU awall enable albyhub
 $SU awall activate
 ```
     </Tabs.Tab>
     <Tabs.Tab>
 ```sh copy
-$SU ufw limit 4002/tcp comment 'Allow ThunderHub SSL'
+$SU ufw limit 8030/tcp comment 'Allow Alby Hub SSL'
 ```
     </Tabs.Tab>
 </Tabs>
@@ -175,10 +167,153 @@ $SU ufw limit 4002/tcp comment 'Allow ThunderHub SSL'
 
 ## Installation
 
-[{name}](https://thunderhub.io) provides a lightweight and easy to use web
+[{name}](https://albyhub.com) provides a lightweight and easy to use web
 interface to accomplish a great node management.
 
 <Steps>
+### Increase tmpfs size
+
+```sh copy
+$SU mount -o remount,size=8G /tmp
+```
+
+### uniffi-bindgen-go
+
+```sh copy
+cd /tmp
+```
+
+```sh copy
+VERSION=v0.2.2+v0.25.0
+```
+
+```sh copy
+git clone \
+    --recurse-submodules \
+    --branch $VERSION \
+    https://github.com/NordSecurity/uniffi-bindgen-go && \
+cd uniffi-bindgen-go
+```
+
+```sh copy
+cargo auditable build \
+    --bin uniffi-bindgen-go \
+    --release \
+    --locked \
+    --jobs "$(nproc)"
+```
+  
+```sh copy
+install -Dm755 target/release/uniffi-bindgen-go /tmp/bin/uniffi-bindgen-go
+```
+
+```sh copy
+cd /tmp
+rm -rf uniffi-bindgen-go
+```
+
+### breez-sdk-go
+
+```sh copy
+cd /tmp
+```
+
+```sh copy
+VERSION=0.5.2
+```
+
+```sh copy
+git clone --branch $VERSION https://github.com/breez/breez-sdk-greenlight.git && cd breez-sdk-greenlight/libs/sdk-bindings
+```
+  
+```sh copy
+/tmp/bin/uniffi-bindgen-go src/breez_sdk.udl \
+    --out-dir ffi/golang \
+    --config ./uniffi.toml
+```
+
+```sh copy
+cargo build \
+    --release \
+    --jobs "$(nproc)"
+```
+  
+```sh copy
+install -Dm444 ../target/release/libbreez_sdk_bindings.so /tmp/nwc/libbreez_sdk_bindings.so
+```
+
+```sh copy
+cd /tmp
+rm -rf breez-sdk-greenlight
+```
+
+### glalby-go
+
+```sh copy
+cd /tmp
+```
+
+```sh copy
+git clone https://github.com/getAlby/glalby.git && cd glalby
+```
+
+```sh copy
+/tmp/bin/uniffi-bindgen-go src/glalby.udl \
+    --out-dir . \
+    --config ./uniffi.toml
+```
+
+```sh copy
+cargo build \
+    --release \
+    --jobs "$(nproc)"
+```
+
+```sh copy
+install -Dm444 ./target/release/libglalby_bindings.so /tmp/nwc/libglalby_bindings.so
+```
+
+```sh copy
+cd /tmp
+rm -rf glalby
+```
+
+### ldk-node-go
+
+```sh copy
+cd /tmp
+```
+
+```sh copy
+git clone https://github.com/getAlby/ldk-node.git && cd ldk-node
+```
+
+```sh copy
+git checkout 9c1e2aa3536f5b8e034e6567a6ba6d3eb1c41667
+```
+
+```sh copy
+/tmp/bin/uniffi-bindgen-go bindings/ldk_node.udl \
+    --out-dir ffi/golang \
+    --config ./uniffi.toml
+```
+
+```sh copy
+cargo build \
+    --release \
+    --features uniffi \
+    --jobs "$(nproc)"
+```
+
+```sh copy
+install -Dm444 ./target/release/libldk_node.so /tmp/nwc/libldk_node.so
+```
+
+```sh copy
+cd /tmp
+rm -rf ldk-node
+```
+
 ### Download source code
 
 We get the latest release of the {name} source code and install it.
@@ -192,119 +327,86 @@ cd /tmp
 ```
 
 ```sh copy
-VERSION=0.13.31
+VERSION=1.10.4
 ```
 
 ```sh copy
-git clone --branch v$VERSION https://github.com/apotdevin/thunderhub.git && cd thunderhub
+git clone --branch v$VERSION https://github.com/getAlby/hub.git && cd hub
 ```
 
-### Signature check
+### Build, compile and install
 
-* To avoid using bad source code, verify that the release has been properly
-signed by the main developer [Anthony Potdevin](https://github.com/apotdevin).
-
-```sh copy
-curl -s https://github.com/apotdevin.gpg | gpg --import
-```
+* Install all frontend dependencies using Yarn Package Manager (yarn).
 
 ```sh copy
-git verify-commit v$VERSION
-```
-
-### Install and build
-
-* Install all dependencies using the Node Package Manager (NPM).
-
-```sh copy
-npm ci
+yarn --cwd ./frontend install
 ```
 
 Installation can take some time. There might be a lot of confusing output, but
 if you see something similar to the following, the installation was successful:
 
-<Callout type="warning">
-At `2024-09-01` there is at least **26 vulnerabilities** not addressable
-without breaking changes
-
-```sh copy
-npm audit fix
-```
-</Callout>
-
 ```sh filename="output"
-26 vulnerabilities (1 low, 10 moderate, 15 high)
+[...]
+✓ built in 10.20s
 
-To address issues that do not require attention, run:
-  npm audit fix
-
-To address all issues (including breaking changes), run:
-  npm audit fix --force
-
-Run `npm audit` for details.
+PWA v0.20.1
+mode      generateSW
+precache  10 entries (2201.53 KiB)
 ```
-
-<Callout type="info">
-Improve your privacy by opt-out of Next.js
-[telemetry](https://nextjs.org/telemetry)
 
 ```sh copy
-npx next telemetry disable
+yarn --cwd ./frontend build:http
 ```
-</Callout>
 
 * Make it a global permanent installation
 
 ```sh copy
-npm run build
+go mod download
 ```
 
 ```sh copy
-mkdir ./dist/bin
+install -Dm444 /tmp/breez-sdk-greenlight/libs/target/release/libbreez_sdk_bindings.so \
+    "/tmp/go/pkg/mod/github.com/breez/breez-sdk-go@v0.5.2/breez_sdk/lib/linux-${ARCH//arm64/aarch64}/libbreez_sdk_bindings.so"
 ```
 
 ```sh copy
-printf "%s\n" \
-    "#!/bin/sh" \
-    "npm_package_version='$VERSION' \\" \
-    "node \$@ /var/lib/thunderhub/main" \
-    > ./dist/bin/cli.sh
+install -Dm444 /tmp/glalby/target/release/libglalby_bindings.so \
+    "/tmp/go/pkg/mod/github.com/get!alby/glalby-go@v0.0.0-20240621192717-95673c864d59/glalby/${ARCH//amd64/x86_64}-unknown-linux-gnu/libglalby_bindings.so"
 ```
 
 ```sh copy
-chmod +x ./dist/bin/cli.sh
-```
-
-* Install backend and dependencies files
-
-```sh copy
-$SU mv -f /tmp/thunderhub/dist /var/lib/thunderhub
-$SU cp -R node_modules /var/lib/thunderhub
-```
-
-* Install frontend files
-
-```sh copy
-$SU mkdir -p /var/lib/thunderhub/src/client
-$SU cp -R /tmp/thunderhub/src/client/public         /var/lib/thunderhub/src/client/public
-$SU cp    /tmp/thunderhub/src/client/next.config.js /var/lib/thunderhub/src/client/next.config.js
-$SU mv -f /tmp/thunderhub/src/client/.next          /var/lib/thunderhub/src/client/.next
+install -Dm444 /tmp/ldk-node/target/release/libldk_node.so \
+    "/tmp/go/pkg/mod/github.com/get!alby/ldk-node-go@v0.0.0-20240924080718-27f0fdd2a75d/ldk_node/${ARCH//amd64/x86_64}-unknown-linux-gnu/libldk_node.so"
 ```
 
 ```sh copy
-$SU chown -R thunderhub:thunderhub /var/lib/thunderhub
+go build \
+    -ldflags="-X 'github.com/getAlby/hub/version.Tag=v$VERSION'" \
+    -o albyhub \
+    cmd/http/main.go
+```
+
+* Install {name} files
+
+```sh copy
+$SU install -Dm0755 albyhub /usr/bin/albyhub
 ```
 
 ```sh copy
-$SU ln -s /var/lib/thunderhub /usr/lib/node_modules/thunderhub
-$SU ln -s ../lib/node_modules/thunderhub/bin/cli.sh /usr/bin/thunderhub
+$SU install -Dm0755 /tmp/nwc/libbreez_sdk_bindings.so /usr/lib/nwc/libbreez_sdk_bindings.so
+$SU install -Dm0755 /tmp/nwc/libglalby_bindings.so    /usr/lib/nwc/libglalby_bindings.so
+$SU install -Dm0755 /tmp/nwc/libldk_node.so           /usr/lib/nwc/libldk_node.so
+```
+
+```sh copy
+$SU install -Dm0660 -u albyhub -g albyhub ./.env.example /etc/albyhub/mainnet.env
 ```
 
 ### Cleanup
 
 ```sh copy
 cd
-rm -rf /tmp/thunderhub
+rm -rf /tmp/*
 $SU apk del .build-deps
 ```
 </Steps>
@@ -314,58 +416,14 @@ $SU apk del .build-deps
 * Edit the configuration file
 
 ```sh copy
-$SU $EDITOR /etc/thunderhub/thubConfig.yaml
+$SU $EDITOR /etc/albyhub/mainnet.env
 ```
 
-```yaml copy filename="/etc/thunderhub/thubConfig.yaml"
-masterPassword: 'PASSWORD' # Default password unless defined in account
-accounts:
-  - name: 'Microbolt'
-    serverUrl: '127.0.0.1:10009'
-    macaroonPath: '/var/lib/lnd/data/chain/bitcoin/mainnet/admin.macaroon'
-    certificatePath: '/var/lib/lnd/tls.cert'
-    password: '[E] ThunderHub password'
+```sh filename="/etc/albyhub/mainnet.env"
+[...]
+things
+[...]
 ```
-
-<Callout>
-Replace the `[E] ThunderHub password` to yours
-</Callout>
-
-<FAQBox title="Enable auto-healthchecks">
-```yaml copy filename="/etc/thunderhub/thubConfig.yaml" {8}
-masterPassword: 'PASSWORD' # Default password unless defined in account
-accounts:
-  - name: 'Microbolt'
-    serverUrl: '127.0.0.1:10009'
-    macaroonPath: '/var/lib/lnd/data/chain/bitcoin/mainnet/admin.macaroon'
-    certificatePath: '/var/lib/lnd/tls.cert'
-    password: '[E] ThunderHub password'
-healthCheckPingEnabled: true
-```
-</FAQBox>
-
-<FAQBox title="Auto-backups to Amboss">
-<Callout type="info">
-Keep in mind that if you stop {name}, Amboss will interpret that your node is
-offline because the connection is established between {name} \<-> Amboss to send
-healthchecks pings
-</Callout>
-
-```yaml copy filename="/etc/thunderhub/thubConfig.yaml" {8}
-masterPassword: 'PASSWORD' # Default password unless defined in account
-accounts:
-  - name: 'Microbolt'
-    serverUrl: '127.0.0.1:10009'
-    macaroonPath: '/var/lib/lnd/data/chain/bitcoin/mainnet/admin.macaroon'
-    certificatePath: '/var/lib/lnd/tls.cert'
-    password: '[E] ThunderHub password'
-backupsEnabled: true
-```
-</FAQBox>
-
-<Callout type="info">
-These last optional features are not available for a testnet node
-</Callout>
 
 <FAQBox title="Remote access over Tor">
 * Add the following lines in the section "location hidden services" in the
@@ -376,25 +434,25 @@ $SU $EDITOR /etc/tor/torrc
 ```
 
 ```conf copy filename="/etc/tor/torrc"
-# Hidden Service Thunderhub
-HiddenServiceDir /var/lib/tor/thunderhub/
+# Hidden Service Alby Hub
+HiddenServiceDir /var/lib/tor/albyhub/
 HiddenServiceVersion 3
 HiddenServicePoWDefensesEnabled 1
-HiddenServicePort 443 127.0.0.1:3000
+HiddenServicePort 443 127.0.0.1:8029
 ```
 
 * Reload Tor configuration and get your connection address.
 
 ```sh copy
 $SU rc-service tor reload
-$SU cat /var/lib/tor/thunderhub/hostname
+$SU cat /var/lib/tor/albyhub/hostname
 ```
 
 ```sh filename="output"
 abcdefg..............xyz.onion
 ```
 
-* You should now be able to connect to your Thunderhub remotely via Tor using
+* You should now be able to connect to your Alby Hub remotely via Tor using
 your hostname
 </FAQBox>
 
@@ -407,83 +465,68 @@ computer so that it's always running.
 Save and exit.
 
 ```sh copy
-$SU $EDITOR /etc/init.d/thunderhub
+$SU $EDITOR /etc/init.d/albyhub
 ```
 
-```sh copy filename="/etc/init.d/thunderhub"
+```sh copy filename="/etc/init.d/albyhub"
 #!/sbin/openrc-run
 
-: ${THUNDERHUB_CONFIGFILE:=/etc/thunderhub/thubConfig.yaml}
-: ${THUNDERHUB_DATADIR:=/var/lib/thunderhub}
-: ${THUNDERHUB_LOGDIR:=/var/log/thunderhub}
-: ${THUNDERHUB_USER:=thunderhub}
-: ${THUNDERHUB_GROUP:=thunderhub}
-: ${THUNDERHUB_BIN:=/usr/bin/thunderhub}
-: ${THUNDERHUB_OPTS=${THUNDERHUB_OPTS}}
-: ${THUNDERHUB_SIGTERM_TIMEOUT:=600}
+: ${ALBYHUB_CONFIGFILE:=/etc/albyhub/mainnet.env}
+: ${ALBYHUB_DATADIR:=/var/lib/albyhub}
+: ${ALBYHUB_LOGDIR:=/var/log/albyhub}
+: ${ALBYHUB_USER:=albyhub}
+: ${ALBYHUB_GROUP:=albyhub}
+: ${ALBYHUB_BIN:=/usr/bin/albyhub}
+: ${ALBYHUB_OPTS=${ALBYHUB_OPTS}}
+: ${ALBYHUB_SIGTERM_TIMEOUT:=600}
 
-THUNDERHUB_PIDDIR="/run/thunderhub"
+ALBYHUB_PIDDIR="/run/albyhub"
 
-name="ThunderHub"
-description="Monitor and manage your node from any browser and any device"
+name="Alby Hub"
+description="A self-custodial, open source lightning wallet that connects to apps"
 
-directory="${THUNDERHUB_DATADIR}"
-required_files="${THUNDERHUB_CONFIGFILE}"
-pidfile="${THUNDERHUB_PIDDIR}/${SVCNAME}.pid"
-retry="${THUNDERHUB_SIGTERM_TIMEOUT}"
+directory="${ALBYHUB_DATADIR}"
+required_files="${ALBYHUB_CONFIGFILE}"
+pidfile="${ALBYHUB_PIDDIR}/${SVCNAME}.pid"
+retry="${ALBYHUB_SIGTERM_TIMEOUT}"
 
-command="${THUNDERHUB_BIN}"
-command_args="${THUNDERHUB_OPTS}"
-command_user="${THUNDERHUB_USER}:${THUNDERHUB_GROUP}"
+command="${ALBYHUB_BIN}"
+command_args="${ALBYHUB_OPTS}"
+command_user="${ALBYHUB_USER}:${ALBYHUB_GROUP}"
 command_background="true"
 
-start_stop_daemon_args="--env BASE_PATH=''
-                        --env COOKIE_PATH=''
-                        --env ACCOUNT_CONFIG_PATH='${THUNDERHUB_CONFIGFILE}'
-                        --env NODE_ENV='production'
-                        --env NEXT_TELEMETRY_DISABLED=1
-                        --stdout ${THUNDERHUB_LOGDIR}/debug.log
-                        --stderr ${THUNDERHUB_LOGDIR}/debug.log"
+start_stop_daemon_args="--stdout ${ALBYHUB_LOGDIR}/debug.log
+                        --stderr ${ALBYHUB_LOGDIR}/debug.log"
 
 depend() {
-    need lnd tor
+    after net
+    need lnd
 }
 
 start_pre() {
-    checkpath --file      --mode 0660 --owner "${command_user}" "${THUNDERHUB_CONFIGFILE}"
-    checkpath --directory --mode 0750 --owner "${command_user}" "${THUNDERHUB_DATADIR}"
-    checkpath --directory --mode 0755 --owner "${command_user}" "${THUNDERHUB_LOGDIR}"
-    checkpath --directory --mode 0755 --owner "${command_user}" "${THUNDERHUB_PIDDIR}"
+    checkpath --file      --mode 0660 --owner "${command_user}" "${ALBYHUB_CONFIGFILE}"
+    checkpath --directory --mode 0750 --owner "${command_user}" "${ALBYHUB_DATADIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${ALBYHUB_LOGDIR}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${ALBYHUB_PIDDIR}"
     checkconfig
 }
 
 checkconfig() {
-    if ! grep -qs '^    macaroonPath: ' "${THUNDERHUB_CONFIGFILE}"
+    if ! grep -qs '^    macaroonPath: ' "${ALBYHUB_CONFIGFILE}"
     then
         eerror ""
-        eerror "ERROR: You must set a macaroonPath path to run ThunderHub"
-        eerror "The setting must appear in ${THUNDERHUB_CONFIGFILE}"
+        eerror "ERROR: You must set a macaroonPath path to run AlbyHub"
+        eerror "The setting must appear in ${ALBYHUB_CONFIGFILE}"
         eerror ""
         return 1
     fi
-}
-
-stop() {
-    ebegin "Stopping ${SVCNAME}"
-    pkill -TERM -P "$(cat ${pidfile})"
-    start-stop-daemon \
-        --stop \
-        --pidfile="${pidfile}" \
-        --retry="${THUNDERHUB_SIGTERM_TIMEOUT}" \
-        --exec="${THUNDERHUB_BIN}"
-    eend $?
 }
 ```
 
 * Enable execution permission
 
 ```sh copy
-$SU chmod +x /etc/init.d/thunderhub
+$SU chmod +x /etc/init.d/albyhub
 ```
 
 ### Enable logrotate
@@ -491,21 +534,21 @@ $SU chmod +x /etc/init.d/thunderhub
 * Enter the complete next configuration. Save and exit
 
 ```sh copy
-$SU $EDITOR /etc/logrotate.d/thunderhub
+$SU $EDITOR /etc/logrotate.d/albyhub
 ```
 
-```sh copy filename="/etc/logrotate.d/thunderhub"
-/var/log/thunderhub/*.log {
+```sh copy filename="/etc/logrotate.d/albyhub"
+/var/log/albyhub/*.log {
     weekly
     missingok
     rotate 104
     compress
     delaycompress
     notifempty
-    create 0640 thunderhub thunderhub
+    create 0640 albyhub albyhub
     sharedscripts
     postrotate
-        kill -HUP `cat /run/thunderhub/thunderhub.pid`
+        kill -HUP `cat /run/albyhub/albyhub.pid`
     endscript
 }
 ```
@@ -513,95 +556,32 @@ $SU $EDITOR /etc/logrotate.d/thunderhub
 * Test
 
 ```sh copy
-$SU logrotate /etc/logrotate.d/thunderhub --debug
+$SU logrotate /etc/logrotate.d/albyhub --debug
 ```
 
-## Enable and start BTC RPC Explorer
+## Enable and start {name}
 
 ```sh copy
-$SU rc-update add thunderhub
+$SU rc-update add albyhub
 ```
 
 ```sh copy
-$SU rc-service thunderhub start
+$SU rc-service albyhub start
 ```
 
 <Callout emoji="🎉">
-**Congratulations!** You now have Thunderhub up and running
+**Congratulations!** You now have Albyhub up and running
 </Callout>
 
-* Check the log to see Thunderhub output. Exit with `Ctrl-C`
+* Check the log to see Albyhub output. Exit with `Ctrl-C`
 
 ```sh copy
-tail -f /var/log/thunderhub/debug.log
+tail -f /var/log/albyhub/debug.log
 ```
 
 You can now access {name} from within your local network by browsing to
 https://nakamoto01:4002, https://nakamoto01.local:4002 (or your equivalent ip
 address).
-
-<FAQBox title="Access to your Amboss node account">
-* In the "**Home**" screen - "**Quick Actions**" section, click on the Amboss
-icon "**Login**", wait for the top right corner notification to show you
-"**Logged in**" and click again on the Amboss icon "**Go to**". This will open a
-secondary tab in your browser to access your Amboss account node
-
-<Callout type="warning">
-If you can't do "**Login**", maybe the cause is that you don't have a **public**
-channel opened yet. **You'll need at least one public channel that has been open
-for a few days.** Planning to open a public small-size channel to be connected
-with some Lightning Network peers or directly to the [Amboss
-node](https://amboss.space/es/node/03006fcf3312dae8d068ea297f58e2bd00ec1ffe214b793eda46966b6294a53ce6).
-More info on [Amboss docs](https://amboss.tech/docs)
-</Callout>
-
-* Making sure we are connected to the [Amboss
-account](https://amboss.space/settings?page=account), now back to Thunderhub for
-the next steps
-</FAQBox>
-
-<FAQBox title="Enable auto backups and healthcheck notifications to Amboss account">
-1. Open the “Settings” by pressing the cogwheel in the top right corner of the
-Thunderhub
-1. Switch to “Yes” -> Amboss: “Auto backups” and “Healthcheck Pings”
-1. Test pushing a backup to Amboss by entering in the “Tools” section, to the
-left main menu
-1. Press to “Push” button to test the correct working
-1. Go back to Amboss website and access “Account” in the main menu
-1. Access to “Backup” and ensure that the last date of the backup is the same as
-before done. It is recommended to download the backup file and store it in a
-safe place for future recovers. The backup file will be updated automatically in
-Amboss for every channel opening and closing. You could do this too in the
-“Tools” section in Thunderhub, “Backups” -> “Backup all channels” -> “Download”
-button.
-1. In Amboss, access “Monitoring” to configure “Healthcheck Settings”.
-
-<Callout type="info">
-Feel free to link to Telegram bot notifications, enable different notifications,
-complete your public node profile in Amboss, and other things in the different
-sections of your account.
-</Callout>
-</FAQBox>
-
-<FAQBox title="Recovering channels using the ThunderHub method">
-After possible data corruption of your LND node, ensure that this old node is
-completely off before starting the recovery. Once you have synced the new node,
-on-chain recovered with seeds, full on-chain re-scan complete, and Thunderhub
-installed and running, go to the Thunderhub dashboard.
-
-1. From the left sidebar, click on "**Tools**", and go to the "Backups" section
--> "**Recover Funds from Channels**" -> push the "**Recover**" button.
-1. Enter the complete string text of your previously downloaded channels backup
-file in the step before and push the “Recover” button. All of the channels that
-you had opened in your old node will be forced closed and they will appear in
-the “Pending” tab in the “Channels” section until closings are confirmed
-
-<Callout type="warning">
-Use this guide as a last resort if you have lost access to your node or are
-unable to start LND due to a fatal error. This guide will close all your
-channels. Your funds will become available on-chain at varying speeds.
-</Callout>
-</FAQBox>
 
 ## For the future: {name} update
 
@@ -611,11 +591,11 @@ value for the latest if it has not been already changed in this guide.
 * Update the {name} configuration if necessary (see [release notes])
 
 ```sh copy
-$SU $EDITOR /etc/thunderhub/thubConfig.yaml
+$SU $EDITOR /etc/albyhub/mainnet.env
 ```
 
 * Restart the service to apply the changes
 
 ```sh copy
-$SU rc-service thunderhub restart
+$SU rc-service albyhub restart
 ```

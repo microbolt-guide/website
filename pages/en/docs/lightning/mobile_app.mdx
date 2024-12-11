@@ -11,7 +11,7 @@ We install [Zeus](https://zeusln.app), a cross-platform mobile app that connect
 to your LN node over local network or over Tor. Make payments with lightning or
 on-chain and manage your channels while you're on the go.
 
-![Zeus mockup](/img/lightning/mobileapp/zeus.webp)
+![Zeus mockup](/images/lightning/mobileapp/zeus.webp)
 
 ## Preparations
 
@@ -145,7 +145,7 @@ $SU $EDITOR /etc/tor/torrc
 
 ```sh copy filename="/etc/tor/torrc"
 # Hidden Service LND REST
-HiddenServiceDir /var/lib/tor/lnd-rest/
+HiddenServiceDir /var/lib/tor/hsv3lnd/
 HiddenServiceVersion 3
 HiddenServicePoWDefensesEnabled 1
 HiddenServicePort 8081 127.0.0.1:8081
@@ -155,7 +155,7 @@ HiddenServicePort 8081 127.0.0.1:8081
 
 ```sh copy
 $SU rc-service tor reload
-$SU cat /var/lib/tor/lnd-rest/hostname
+$SU cat /var/lib/tor/hsv3lnd/hostname
 ```
 
 ```sh filename="output"
@@ -214,7 +214,7 @@ qrencode -t ansiutf8 -o -
 ```sh copy
 printf "%s" \
     "lndconnect://" \
-    "$($SU cat /var/lib/tor/lnd-rest/hostname)" \
+    "$($SU cat /var/lib/tor/hsv3lnd/hostname)" \
     ":8081" \
     "?cert=" \
     "$(
@@ -282,7 +282,7 @@ password or PIN
 
 Below is a list of Zeus existing and planned features at 2024-03-16:
 
-![Zeus features](/img/lightning/mobileapp/zeus-features.webp)
+![Zeus features](/images/lightning/mobileapp/zeus-features.webp)
 
 ## Update
 
