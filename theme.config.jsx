@@ -1,6 +1,8 @@
 import { useRouter } from 'nextra/hooks'
 import { useConfig } from 'nextra-theme-docs'
 
+import CustomLink from '@components/CustomLink'
+
 // Start of l10n strings on /locales/*.js
 // Dynamically import all locale files
 const locales = require.context('./locales', false, /\.js$/)
@@ -92,6 +94,9 @@ export default {
       return FEEDBACK[locale]
     },
     labels: 'feedback'
+  },
+  components: {
+    a: (props) => <CustomLink {...props} />,
   },
   head: function useHead() {
     const config = useConfig()
