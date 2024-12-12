@@ -1,4 +1,4 @@
-export function Crowdjet() {
+function Crowdjet() {
   return (
     <>
       <script
@@ -16,3 +16,5 @@ export function Crowdjet() {
     </>
   )
 }
+
+export default Crowdjet

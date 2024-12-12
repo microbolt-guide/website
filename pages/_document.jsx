@@ -1,7 +1,7 @@
 import Document, { Head, Html, Main, NextScript } from 'next/document'
 import { SkipNavLink } from 'nextra-theme-docs'
 
-import { Crowdjet } from '@components'
+import Crowdjet from '@components/Crowdjet'
 
 export default class MyDocument extends Document {
   render() {
