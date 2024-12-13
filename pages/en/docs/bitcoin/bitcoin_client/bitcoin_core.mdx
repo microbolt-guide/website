@@ -1,8 +1,8 @@
 import { Callout, Cards, Steps, Tabs } from 'nextra/components'
-import { FAQBox } from '@components'
 
-import { TbSum } from "react-icons/tb"
-import { FaStamp } from "react-icons/fa"
+import { Sigma, Stamp } from 'lucide-react'
+
+import FAQBox from '@components/FAQBox'
 
 export const name = "Bitcoin Core"
 export const user = "bitcoind"
@@ -184,12 +184,12 @@ checksums file and its timestamp proof:
 
 <Cards>
     <Cards.Card
-        icon={<TbSum />}
+        icon={<Sigma />}
         title="Checksum file"
         href="https://bitcoincore.org/bin/bitcoin-core-26.0/SHA256SUMS.ots"
     />
     <Cards.Card
-        icon={<FaStamp />}
+        icon={<Stamp />}
         title="Timestamp proof"
         href="https://bitcoincore.org/bin/bitcoin-core-26.0/SHA256SUMS"
     />

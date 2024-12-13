@@ -1,5 +1,16 @@
 import { Callout, Steps, Tabs } from 'nextra/components'
-import { FAQBox } from '@components'
+import FAQBox from '@components/FAQBox'
+
+[iplocation.net]: https://www.iplocation.net
+[Tor Project]: https://www.torproject.org
+[chocolatey]: https://chocolatey.org/install
+[homebrew]: https://brew.sh
+[I2P]: https://geti2p.net
+[i2pd]: https://i2pd.readthedocs.io/en/latest
+[DNSCrypt]: https://www.dnscrypt.info
+[official documentation]: https://github.com/DNSCrypt/dnscrypt-proxy/wiki/Configuration
+[here]: https://github.com/DNSCrypt/dnscrypt-proxy/wiki/Anonymized-DNS
+[available relays]: https://github.com/DNSCrypt/dnscrypt-resolvers/blob/master/v3/relays.md
 
 # Privacy
 
@@ -14,16 +25,15 @@ We'll also make it easy to connect to your node from outside your home network
 as an added benefit.
 
 True, it's only your IP address that is revealed, but using services like
-[iplocation.net](https://www.iplocation.net), your physical address can be
-determined quite accurately. Especially with Lightning, your IP address would be
-widely used. We need to make sure that you keep your privacy.
+[iplocation.net], your physical address can be determined quite accurately.
+Especially with Lightning, your IP address would be widely used. We need to make
+sure that you keep your privacy.
 
 ## Tor Project
 
-We use Tor, a free software built by the
-[Tor Project](https://www.torproject.org). It allows you to anonymize internet
-traffic by routing it through a network of nodes, hiding your location and usage
-profile.
+We use Tor, a free software built by the [Tor Project]. It allows you to
+anonymize internet traffic by routing it through a network of nodes, hiding your
+location and usage profile.
 
 It is called "Tor" for "The Onion Router": information is routed through many
 hops and encrypted multiple times. Each node decrypts only the layer of
@@ -230,7 +240,7 @@ To work around this, first, make sure Tor is installed and running on your
 Windows. Run as admin:
 
 <Callout type="warning">
-First you need to install [chocolatey](https://chocolatey.org/install)
+First you need to install [chocolatey]
 </Callout>
 
 ```sh copy
@@ -293,7 +303,7 @@ _System Integrity Protection (SIP)_ which will deny access to `/usr/bin/ssh`.
 To work around this, first, make sure Tor is installed and running on your Mac:
 
 <Callout type="warning">
-First you need to install [homebrew](https://brew.sh/)
+First you need to install [homebrew]
 </Callout>
 
 ```sh copy
@@ -353,18 +363,18 @@ torsocks ssh admin@abcdefg..............xyz.onion -p 2222
 
 ## I2P Project
 
-[I2P](https://geti2p.net) is a universal anonymous network layer. All
-communications over I2P are anonymous and end-to-end encrypted, participants
-don't reveal their real IP addresses. I2P allows people from all around the
-world to communicate and share information without restrictions.
+[I2P] is a universal anonymous network layer. All communications over I2P are
+anonymous and end-to-end encrypted, participants don't reveal their real IP
+addresses. I2P allows people from all around the world to communicate and share
+information without restrictions.
 
 I2P client is software used for building and using anonymous I2P networks. Such
 networks are commonly used for anonymous peer-to-peer applications (filesharing,
 cryptocurrencies) and anonymous client-server applications (websites, instant
 messengers, chat-servers).
 
-We are to use [i2pd](https://i2pd.readthedocs.io/en/latest/) (I2P Daemon), a
-full-featured C++ implementation of the I2P client, as a Tor network complement.
+We are to use [i2pd] (I2P Daemon), a full-featured C++ implementation of the I2P
+client, as a Tor network complement.
 
 ### I2P installation
 
@@ -421,10 +431,10 @@ $SU tail -f /var/log/i2pd/i2pd.log
 
 ## DNSCrypt proxy
 
-[DNSCrypt](https://www.dnscrypt.info) is a protocol that authenticates
-communications between a DNS client and a DNS resolver. It prevents DNS
-spoofing. It uses cryptographic signatures to verify that responses originate
-from the chosen DNS resolver and haven't been tampered with.
+[DNSCrypt] is a protocol that authenticates communications between a DNS client
+and a DNS resolver. It prevents DNS spoofing. It uses cryptographic signatures
+to verify that responses originate from the chosen DNS resolver and haven't been
+tampered with.
 
 <Callout type="error">
 This is not recommended if DNS queries to external servers are blocked at the
@@ -564,18 +574,15 @@ skip_incompatible = false
 ```
 
 <Callout type="info">
-You can learn more about the configuration options in the [official
-documentation](https://github.com/DNSCrypt/dnscrypt-proxy/wiki/Configuration)
+You can learn more about the configuration options in the
+[official documentation]
 </Callout>
 
 <FAQBox title="Anonymized DNS">
 If you want to anonymize your DNS queries, you can use the `[anonymized_dns]`
-option. This will route your DNS queries through anonymous relays. Read more
-about this
-[here](https://github.com/DNSCrypt/dnscrypt-proxy/wiki/Anonymized-DNS).
+option. This will route your DNS queries through anonymous relays. More [here].
 
-You can find a complete list of available relays
-[here](https://github.com/DNSCrypt/dnscrypt-resolvers/blob/master/v3/relays.md).
+You can find a complete list of [available relays].
 
 You need to disable the servers you use as relays by adding them to
 `disabled_server_names` using the `via=[...]` option. These are just examples;

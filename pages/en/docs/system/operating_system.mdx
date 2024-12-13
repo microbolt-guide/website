@@ -1,8 +1,15 @@
 import { Callout, Steps, Tabs } from 'nextra/components'
 
-import { FAQBox } from '@components'
+import FAQBox from '@components/FAQBox'
 
 export const VERSION = "3.20"
+
+[Alpine Linux]: https://docs.alpinelinux.org/user-handbook/0.1a/index.html
+[here]: https://alpinelinux.org/cloud
+[Ansible]: /ansible
+[Rufus]: https://rufus.ie
+[Alpine Local Backup]: https://wiki.alpinelinux.org/wiki/Alpine_local_backup
+[Local APK cache]: https://wiki.alpinelinux.org/wiki/Local_APK_cache
 
 # Operating system
 
@@ -23,9 +30,8 @@ a POSIX compliant shell.
 We use Alpine Linux. This provides the best stability for the PC and makes the
 initial setup a breeze.
 
-[Alpine Linux](https://docs.alpinelinux.org/user-handbook/0.1a/index.html) is
-available for most hardware platforms. There is so little need for hardware that
-can run in a router.
+[Alpine Linux] is available for most hardware platforms. There is so little need
+for hardware that can run in a router.
 
 ### Requirements
 
@@ -161,8 +167,8 @@ https://alpinelinux.org/downloads/
 | architecture | `x86_64`   | `x86_64`  | `aarch64`              |
 
 <Callout type="info">
-There's also official cloud images [here](https://alpinelinux.org/cloud), use
-at your own risk. Best suited for the [Ansible](/ansible) guide.
+There's also official cloud images [here], use at your own risk. Best suited for
+the [Ansible] guide.
 </Callout>
 
 ### Connect the USB/SD to your host computer
@@ -176,7 +182,7 @@ dd if=<iso-file> of=<target-device> bs=4M; eject <target-device>
 ```
     </Tabs.Tab>
     <Tabs.Tab>
-For example, there is the [Rufus](https://rufus.ie/) program.
+For example, there is the [Rufus] program.
 
 Use it with the following settings:
 
@@ -216,12 +222,11 @@ Alpine Linux can be used in any of the following three modes
 You'll `boot from read-only medium` such as the installation CD, a USB drive, or
 a Compact Flash card.
 
-When you use Alpine in this mode, you need to use
-[Alpine Local Backup](https://wiki.alpinelinux.org/wiki/Alpine_local_backup)
-(lbu) to save your modifications between reboots. That requires some writable
-medium, usually removable. (If your boot medium is, for example, a USB drive,
-you can save modifications there; you don't need a separate partition or drive.)
-See also [Local APK cache](https://wiki.alpinelinux.org/wiki/Local_APK_cache).
+When you use Alpine in this mode, you need to use [Alpine Local Backup] (lbu) to
+save your modifications between reboots. That requires some writable medium,
+usually removable. (If your boot medium is, for example, a USB drive, you can
+save modifications there; you don't need a separate partition or drive.) See
+also [Local APK cache].
 
 🚀 **Data mode**
 

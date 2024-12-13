@@ -1,5 +1,13 @@
 import { Callout } from 'nextra/components'
-import { FAQBox } from '@components'
+
+import FAQBox from '@components/FAQBox'
+
+[this section of 'Mastering the Lighning Network']: https://github.com/lnbook/lnbook/blob/ec806916edd6f4d1b2f9da2fef08684f80acb671/05_node_operations.asciidoc#node-and-channel-backups
+[GitHub]: https://github.com
+[Tor Browser]: https://www.torproject.org/download
+[remote section]: #remote-backup
+[fstab guide]: https://wiki.gentoo.org/wiki//etc/fstab
+[test section]: #test
 
 # Channel backup
 
@@ -45,8 +53,8 @@ although this is less important)
 * Stores the SCB file to a different backup location to ensure that it is
 available in case of a failing SSD.
 
-You can read more about SCBs in [this section of 'Mastering the Lighning
-Network'](https://github.com/lnbook/lnbook/blob/ec806916edd6f4d1b2f9da2fef08684f80acb671/05_node_operations.asciidoc#node-and-channel-backups).
+You can read more about SCBs in
+[this section of 'Mastering the Lighning Network'].
 
 ## Choose your preferred backup method
 
@@ -276,7 +284,7 @@ $SU chmod +x /etc/init.d/scbb
 ## Local backup
 
 Follow this section if you want a local backup. If you only want a remote
-backup, skip to the [next section](#remote-backup).
+backup, skip to the [remote section].
 
 ### Formatting
 
@@ -374,7 +382,7 @@ printf "%s\n" \
 ```
 
 <Callout>
-More: [fstab guide](https://wiki.gentoo.org/wiki//etc/fstab)
+More: [fstab guide]
 </Callout>
 
 * Mount the drive and check the file system is “/mnt/scb-local”
@@ -418,15 +426,14 @@ $SU rc-service scbb status
 ## Remote backup
 
 Follow this section if you want a remote backup. If you already set up a local
-backup, and don't want a remote backup, skip to the [next section](#test).
+backup, and don't want a remote backup, skip to the [test section].
 
 ### Create a GitHub repository
 
-* Go to [GitHub](https://github.com), sign up for a new user account, or log in
-with an existing one. If you don't want for GitHub to know your identity and IP
-address in relation to your Lightning node, it is recommended to create new
-account even if you have existing one, and use [Tor
-Browser](https://www.torproject.org/download) for this and following steps.
+* Go to [GitHub], sign up for a new user account, or log in with an existing
+one. If you don't want for GitHub to know your identity and IP address in
+relation to your Lightning node, it is recommended to create new account even if
+you have existing one, and use [Tor Browser] for this and following steps.
 
 * Create a new repository: https://github.com/new
 * Type the following repository name: `remote-lnd-backup`

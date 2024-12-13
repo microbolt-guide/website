@@ -1,11 +1,13 @@
 import { Callout, Steps, Tabs } from 'nextra/components'
-import { FAQBox } from '@components'
+
+import FAQBox from '@components/FAQBox'
 
 export const name = "Samourai Dojo"
 export const user = "samourai"
 
 [security section]: ../system/security#reverse-proxy
 [release notes]: https://github.com/Dojo-Open-Source-Project/samourai-dojo/releases
+[MariaDB]: https://mariadb.org
 [{name}]: ./dojo
 
 # Samourai Dojo
@@ -308,7 +310,7 @@ tar xzf samourai-dojo-$VERSION.tar.gz && cd samourai-dojo-$VERSION
 
 ### MariaDB
 
-[MariaDB](https://mariadb.org) is an open source relational database.
+[MariaDB] is an open source relational database.
 
 <Callout type="warning">
 If you have followed the Mempool Space guide, you can skip the MariaDB setup

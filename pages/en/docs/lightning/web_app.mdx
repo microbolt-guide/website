@@ -1,17 +1,19 @@
 import { Callout, Steps, Tabs } from 'nextra/components'
-import { FAQBox } from '@components'
 
+import FAQBox from '@components/FAQBox'
+
+export const app = "AlbyHub"
 export const name = "Alby Hub"
 export const user = "albyhub"
 
+[{name}]: https://albyhub.com
 [security section]: ../system/security#reverse-proxy
 [release notes]: https://github.com/getAlby/hub/releases
-[{name}]: ./web_app
+[{app}]: ./web_app
 
 # Alby Hub
 
-[{name}](https://albyhub.com) is a self-custodial, open source lightning wallet
-that connects to apps
+[{name}] is a self-custodial, open source lightning wallet that connects to apps
 
 ![AlbyHub homepage](/images/lightning/webapp/albyHub.webp)
 
@@ -167,8 +169,8 @@ $SU ufw limit 8030/tcp comment 'Allow Alby Hub SSL'
 
 ## Installation
 
-[{name}](https://albyhub.com) provides a lightweight and easy to use web
-interface to accomplish a great node management.
+[{name}] provides a lightweight and easy to use web interface to accomplish a
+great node management.
 
 <Steps>
 ### Increase tmpfs size
@@ -585,7 +587,7 @@ address).
 
 ## For the future: {name} update
 
-Follow again [{name}] page replacing the environment variable `VERSION=x.xx`
+Follow again [{app}] page replacing the environment variable `VERSION=x.xx`
 value for the latest if it has not been already changed in this guide.
 
 * Update the {name} configuration if necessary (see [release notes])

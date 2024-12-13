@@ -1,9 +1,16 @@
 import { Steps } from 'nextra/components'
 
+export const name = "Nostr Relay"
+export const user = "nostr"
+
+[nostr relay written in Rust]: https://sr.ht/~gheartsfield/nostr-rs-relay
+[release notes]: https://git.sr.ht/~gheartsfield/nostr-rs-relay/refs
+[{name}]: ./nostr_relay
+
 # Nostr Relay
 
-A [nostr relay written in Rust](https://sr.ht/~gheartsfield/nostr-rs-relay) with
-support for the entire relay protocol and data persistence using SQLite.
+A [nostr relay written in Rust] with support for the entire relay protocol and
+data persistence using SQLite.
 
 ![Nostr Relay](/images/nostr/nostr-relay.webp)
 
@@ -25,7 +32,7 @@ These are runtime dependencies
 $SU apk add sqlite
 ```
 
-### Create the `nostr` user/group
+### Create the {user} user/group
 
 ```sh copy
 $SU addgroup -S nostr
@@ -43,7 +50,7 @@ $SU adduser \
     nostr
 ```
 
-### Add the user `satoshi` to the group `nostr` as well
+### Add the user satoshi to the group {user} as well
   
 ```sh copy
 $SU adduser satoshi nostr && exec su -l satoshi
@@ -55,13 +62,12 @@ $SU adduser satoshi nostr && exec su -l satoshi
 <Steps>
 ### Clone the source code
 
-We get the latest release of the nostr-rs-relay source code, compile it to an
-executable binary and install it.
+We get the latest release of the {name} source code, compile it to an executable
+binary and install it.
 
-* Download the source code for the latest nostr-rs-relay release. You can check
-the [release page](https://git.sr.ht/~gheartsfield/nostr-rs-relay/refs) to see
-if a newer release is available. Other releases might not have been properly
-tested with the rest of the Microbolt configuration, though.
+* Download the source code for the latest {name} release. You can check the
+[release notes] to see if a newer release is available. Other releases might not
+have been properly tested with the rest of the Microbolt configuration, though.
 
 ```sh copy
 cd /tmp
@@ -134,7 +140,7 @@ port = 8880
 
 ### Autostart on boot
 
-Nostr Relay needs to start automatically on system boot.
+{name} needs to start automatically on system boot.
 
 * Create the nostr-rs-relay init.d unit and copy/paste the following configuration
 
@@ -259,11 +265,10 @@ tcp        0      0 0.0.0.0:8880            0.0.0.0:*               LISTEN      
 
 ## For the future: Nostr relay update
 
-Follow again [Nostr relay](./nostr_relay) page replacing the environment
-variable `VERSION=x.xx` value for the latest if it has not been already changed
-in this guide.
+Follow again [{name}] page replacing the environment variable `VERSION=x.xx`
+value for the latest if it has not been already changed in this guide.
 
-* Update the Nostr relay configuration if necessary (see release notes)
+* Update the Nostr relay configuration if necessary (see [release notes])
 
 ```sh copy
 $SU $EDITOR /etc/nostr-rs-relay/config.toml

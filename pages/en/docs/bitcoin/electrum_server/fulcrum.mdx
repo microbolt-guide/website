@@ -1,5 +1,5 @@
 import { Steps, Tabs } from 'nextra/components'
-import { FAQBox } from '@components'
+import FAQBox from '@components/FAQBox'
 
 export const name = "Fulcrum"
 export const user = "fulcrum"
@@ -23,17 +23,35 @@ of servers.
 <Steps>
 ### Install dependencies
 
+* `rocksdb`
+
+```sh copy
+$SU apk add --virtual .build-dep-rocksdb bash bzip2-dev clang gflags-dev git libc++-dev liburing-dev linux-headers lld llvm-libunwind-dev llvm-dev lz4-dev make perl snappy-dev zlib-dev zstd-dev
+$SU apk add --virtual .runtime-dep-rocksdb libbz2 liburing lz4-libs snappy
+cd /tmp
+VERSION=9.8.4
+git clone --branch v$VERSION https://github.com/facebook/rocksdb.git && cd rocksdb
+sed 's/install -C/install -c/g' Makefile > _
+mv -f _ Makefile
+PORTABLE=1 DEBUG_LEVEL=0 USE_RTTI=1 make static_lib V=1
+$SU make install-static PREFIX=/usr
+cd /tmp
+rm -rf rocksdb
+$SU apk del .build-dep-rocksdb
+```
+
 These are build dependencies (safe to remove after installation, if you want)
 
 ```sh copy
-$SU apk add --virtual .build-deps autoconf g++ git gnupg jemalloc-dev lz4-dev \
-    make pkgconf qt6-qtbase-dev rocksdb-dev zeromq-dev
+$SU apk add --virtual .build-deps autoconf clang git gnupg jemalloc-dev \
+    libc++-dev lld llvm-libunwind-dev llvm-dev lz4-dev make pkgconf \
+    qt6-qtbase-dev zeromq-dev
 ```
 
 These are runtime dependencies
 
 ```sh copy
-$SU apk add jemalloc libzmq qt6-qtbase rocksdb
+$SU apk add jemalloc libzmq qt6-qtbase
 ```
 
 ### Create the {user} user/group
@@ -218,15 +236,14 @@ git verify-commit v$VERSION
 * Now compile the source code into an executable binary and install it.
 
 ```sh copy
-qmake6 \
-    Fulcrum.pro \
+qmake6 Fulcrum.pro \
+    "CONFIG-=debug" \
+    "CONFIG+=release" \
     -o build/
 ```
 
 ```sh copy
-CC=gcc \
-CXX=g++ \
-make -C build
+make -C build LIBS="$(pkg-config --cflags --libs Qt6Core Qt6Network Qt6Gui rocksdb jemalloc libzmq)"
 ```
 
 ```sh copy

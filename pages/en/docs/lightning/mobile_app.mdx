@@ -1,15 +1,23 @@
 import { Callout, Tabs } from 'nextra/components'
-import { FAQBox } from '@components'
 
+import FAQBox from '@components/FAQBox'
+
+export const app = "Zeus"
 export const name = "LND rest"
 
+[{app}]: https://zeusln.app
+[{app} website]: https://zeusln.app
 [security section]: ../system/security#reverse-proxy
+[Obtanium]: https://github.com/ImranR98/Obtainium
+[how-to add app]: https://github.com/ImranR98/Obtainium/wiki#add-app-page
+[F-Droid store]: https://f-droid.org/en/packages/app.zeusln.zeus
+[download the APK]: https://zeusln.app
 
 # Mobile app
 
-We install [Zeus](https://zeusln.app), a cross-platform mobile app that connect
-to your LN node over local network or over Tor. Make payments with lightning or
-on-chain and manage your channels while you're on the go.
+We install [{app}], a cross-platform mobile app that connect to your LN node
+over local network or over Tor. Make payments with lightning or on-chain and
+manage your channels while you're on the go.
 
 ![Zeus mockup](/images/lightning/mobileapp/zeus.webp)
 
@@ -241,49 +249,46 @@ to shrink the code further to fit the screen
 
 ## Installation
 
-### Install the Zeus app
+### Install the {app} app
 
-Download the Zeus app for your mobile phone. Check the [Zeus
-website](https://zeusln.app) for the direct download links to the Apple App
-Store or Google Play.  
+Download the {app} app for your mobile phone. Check the [{app} website] for the
+direct download links to the Apple App Store or Google Play.  
 
 On Android, if you can't or do not want to use Google Play, you can use
-[Obtanium](https://github.com/ImranR98/Obtainium) [how-to add
-app](https://github.com/ImranR98/Obtainium/wiki#add-app-page), the [F-Droid
-store](https://f-droid.org/en/packages/app.zeusln.zeus) or simply [download the
-APK](https://zeusln.app), tap it and install it. If it's the first time you
-install an APK on your phone you will be asked to authorize the app to install
-unknown apps, simply follow the on-screen instructions to do so.
+[Obtanium] [how-to add app], the [F-Droid store] or simply [download the APK],
+tap it and install it. If it's the first time you install an APK on your phone
+you will be asked to authorize the app to install unknown apps, simply follow
+the on-screen instructions to do so.
 
 ## Configuration
 
-### Connect Zeus to your node
+### Connect {app} to your node
 
-* Open Zeus and tap on `ADVANCED SET-UP`
+* Open {app} and tap on `ADVANCED SET-UP`
 * Tap on `+ Connect a node`
 * Enter a Nickname for your node (e.g., "Microbolt")
-* Click on "scan button" at the top right and, if prompted, allow Zeus to use
+* Click on "scan button" at the top right and, if prompted, allow {app} to use
 the camera
 * Scan the QR code generated earlier
-* Click on `SAVE NODE CONFIG`. Zeus is now connecting to your node, and it might
-take a while the first time.
+* Click on `SAVE NODE CONFIG`. {app} is now connecting to your node, and it
+might take a while the first time.
 
 ### Security
 
-Anyone using Zeus on your phone has control over your node and all its funds. It
-is strongly recommended to set up a password for the app.
+Anyone using {app} on your phone has control over your node and all its funds.
+It is strongly recommended to set up a password for the app.
 
 * In the app, tap on the `node icon` in the top-left corner
 * Click on `Security` and `Set/Change Password` or `Set/Change PIN` to enter a
 password or PIN
 * Save your password or PIN somewhere safe, e.g., in your password manager
 
-## Zeus in action
+## {app} in action
 
-Below is a list of Zeus existing and planned features at 2024-03-16:
+Below is a list of {app} existing and planned features at 2024-03-16:
 
 ![Zeus features](/images/lightning/mobileapp/zeus-features.webp)
 
 ## Update
 
-To update Zeus, update the app using the same method you used to install it.
+To update {app}, update the app using the same method you used to install it.

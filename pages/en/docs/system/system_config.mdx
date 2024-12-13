@@ -30,7 +30,7 @@ export ARCH="amd64" # or arm64 for raspberry pi 3, 4 or 5 (not ready yet)
 # Compile flags
 export CC="clang"
 export CXX="${CC}++"
-export CFLAGS="-O3 -pipe -march=native -fPIE"
+export CFLAGS="-O3 -pipe -march=native -fPIE -fPIC"
 export CXXFLAGS="$CFLAGS"
 export LDFLAGS="-pie -Wl,--as-needed"
 export MAKEFLAGS="-j$(nproc)"
@@ -76,18 +76,6 @@ apk add $EDITOR $SU
 
 ```sh copy
 apk add curl logrotate
-```
-
-### Install other necessary tools
-
-```sh copy
-apk add logrotate
-```
-
-### Install other necessary tools
-
-```sh copy
-apk add logrotate
 ```
 </Steps>
 

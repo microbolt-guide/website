@@ -1,5 +1,11 @@
 import { Callout, Steps, Tabs } from 'nextra/components'
-import { FAQBox } from '@components'
+import FAQBox from '@components/FAQBox'
+
+[installation guide]: https://docs.ansible.com/ansible/latest/installation_guide/installation_distros.html
+[installation instructions]: https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html
+[Homebrew]: https://brew.sh
+[Windows FAQ]: https://docs.ansible.com/ansible/latest/os_guide/windows_faq.html#windows-faq-ansible
+[here]: https://blog.rolpdog.com/2020/03/why-no-ansible-controller-for-windows.html
 
 # Microbolt ❤️ Cloud
 
@@ -181,15 +187,13 @@ apk add ansible
     </Tabs.Tab>
     <Tabs.Tab>
 <Callout type="info">
-For some Linux distributions, refer to the [installation
-guide](https://docs.ansible.com/ansible/latest/installation_guide/installation_distros.html).
-Other Unix-like systems can also check the [installation
-instructions](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html).
+For some Linux distributions, refer to the [installation guide]. Other Unix-like
+systems can also check the [installation instructions].
 </Callout>
     </Tabs.Tab>
     <Tabs.Tab>
 <Callout type="warning">
-First, install [Homebrew](https://brew.sh).
+First, install [Homebrew].
 </Callout>
 
 ```sh copy
@@ -199,9 +203,8 @@ brew install ansible
     <Tabs.Tab>
 <Callout type="error">
 Ansible does not support Windows natively. For more information, refer to the
-[Windows FAQ](https://docs.ansible.com/ansible/latest/os_guide/windows_faq.html#windows-faq-ansible).
-To use Ansible on Windows, consider using WSL. Learn more about the reasons
-[here](https://blog.rolpdog.com/2020/03/why-no-ansible-controller-for-windows.html).
+[Windows FAQ]. To use Ansible on Windows, consider using WSL. Learn more about
+the reasons [here].
 </Callout>
     </Tabs.Tab>
 </Tabs>

@@ -30,7 +30,7 @@ export default withNextra({
   async headers() {
     return [
       {
-        source: '/:path*\\.(conf|init\\.d|conf\\.d|logrotate|caddy|nginx)',
+        source: '/:path*\\.(conf|init\\.d|conf\\.d|logrotate|caddy|nginx|sh)',
         headers: [
           {
             key: 'Content-Type',

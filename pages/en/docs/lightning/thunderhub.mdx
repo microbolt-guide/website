@@ -1,19 +1,26 @@
 import { Callout, Steps, Tabs } from 'nextra/components'
-import { FAQBox } from '@components'
+import FAQBox from '@components/FAQBox'
 
-export const name = "ThunderHub"
+export const app = "ThunderHub"
+export const name = "Thunderhub"
 export const user = "thunderhub"
 
+[{name}]: https://thunderhub.io
 [security section]: ../system/security#reverse-proxy
 [release notes]: https://github.com/apotdevin/thunderhub/releases
-[{name}]: ./web_app
+[Anthony Potdevin]: https://github.com/apotdevin
+[telemetry]: https://nextjs.org/telemetry
+[Amboss node]: https://amboss.space/es/node/03006fcf3312dae8d068ea297f58e2bd00ec1ffe214b793eda46966b6294a53ce6
+[Amboss docs]: https://amboss.tech/docs
+[Amboss account]: https://amboss.space/settings?page=account
+[{app}]: ./web_app
 
 # ThunderHub
 
-[{name}](https://thunderhub.io) is an open source LND node manager where you can
-manage and monitor your node on any device or browser. It allows you to take
-control of the lightning network with a simple and intuitive UX and the most
-up-to-date tech stack.
+[{name}] is an open source LND node manager where you can manage and monitor
+your node on any device or browser. It allows you to take control of the
+lightning network with a simple and intuitive UX and the most up-to-date tech
+stack.
 
 ![ThunderHub homepage](/images/lightning/webapp/thunderhub.webp)
 
@@ -175,8 +182,8 @@ $SU ufw limit 4002/tcp comment 'Allow ThunderHub SSL'
 
 ## Installation
 
-[{name}](https://thunderhub.io) provides a lightweight and easy to use web
-interface to accomplish a great node management.
+[{name}] provides a lightweight and easy to use web interface to accomplish a
+great node management.
 
 <Steps>
 ### Download source code
@@ -202,7 +209,7 @@ git clone --branch v$VERSION https://github.com/apotdevin/thunderhub.git && cd t
 ### Signature check
 
 * To avoid using bad source code, verify that the release has been properly
-signed by the main developer [Anthony Potdevin](https://github.com/apotdevin).
+signed by the main developer [Anthony Potdevin].
 
 ```sh copy
 curl -s https://github.com/apotdevin.gpg | gpg --import
@@ -245,8 +252,7 @@ Run `npm audit` for details.
 ```
 
 <Callout type="info">
-Improve your privacy by opt-out of Next.js
-[telemetry](https://nextjs.org/telemetry)
+Improve your privacy by opt-out of Next.js [telemetry]
 
 ```sh copy
 npx next telemetry disable
@@ -394,8 +400,8 @@ $SU cat /var/lib/tor/thunderhub/hostname
 abcdefg..............xyz.onion
 ```
 
-* You should now be able to connect to your Thunderhub remotely via Tor using
-your hostname
+* You should now be able to connect to your {name} remotely via Tor using your
+hostname
 </FAQBox>
 
 ### Autostart on boot
@@ -527,10 +533,10 @@ $SU rc-service thunderhub start
 ```
 
 <Callout emoji="🎉">
-**Congratulations!** You now have Thunderhub up and running
+**Congratulations!** You now have {name} up and running
 </Callout>
 
-* Check the log to see Thunderhub output. Exit with `Ctrl-C`
+* Check the log to see {name} output. Exit with `Ctrl-C`
 
 ```sh copy
 tail -f /var/log/thunderhub/debug.log
@@ -550,19 +556,17 @@ secondary tab in your browser to access your Amboss account node
 If you can't do "**Login**", maybe the cause is that you don't have a **public**
 channel opened yet. **You'll need at least one public channel that has been open
 for a few days.** Planning to open a public small-size channel to be connected
-with some Lightning Network peers or directly to the [Amboss
-node](https://amboss.space/es/node/03006fcf3312dae8d068ea297f58e2bd00ec1ffe214b793eda46966b6294a53ce6).
-More info on [Amboss docs](https://amboss.tech/docs)
+with some Lightning Network peers or directly to the [Amboss node]. More info on
+[Amboss docs]
 </Callout>
 
-* Making sure we are connected to the [Amboss
-account](https://amboss.space/settings?page=account), now back to Thunderhub for
+* Making sure we are connected to the [Amboss account], now back to {name} for
 the next steps
 </FAQBox>
 
 <FAQBox title="Enable auto backups and healthcheck notifications to Amboss account">
 1. Open the “Settings” by pressing the cogwheel in the top right corner of the
-Thunderhub
+{name}
 1. Switch to “Yes” -> Amboss: “Auto backups” and “Healthcheck Pings”
 1. Test pushing a backup to Amboss by entering in the “Tools” section, to the
 left main menu
@@ -572,7 +576,7 @@ left main menu
 before done. It is recommended to download the backup file and store it in a
 safe place for future recovers. The backup file will be updated automatically in
 Amboss for every channel opening and closing. You could do this too in the
-“Tools” section in Thunderhub, “Backups” -> “Backup all channels” -> “Download”
+“Tools” section in {name}, “Backups” -> “Backup all channels” -> “Download”
 button.
 1. In Amboss, access “Monitoring” to configure “Healthcheck Settings”.
 
@@ -586,8 +590,8 @@ sections of your account.
 <FAQBox title="Recovering channels using the ThunderHub method">
 After possible data corruption of your LND node, ensure that this old node is
 completely off before starting the recovery. Once you have synced the new node,
-on-chain recovered with seeds, full on-chain re-scan complete, and Thunderhub
-installed and running, go to the Thunderhub dashboard.
+on-chain recovered with seeds, full on-chain re-scan complete, and {name}
+installed and running, go to the {name} dashboard.
 
 1. From the left sidebar, click on "**Tools**", and go to the "Backups" section
 -> "**Recover Funds from Channels**" -> push the "**Recover**" button.
@@ -605,7 +609,7 @@ channels. Your funds will become available on-chain at varying speeds.
 
 ## For the future: {name} update
 
-Follow again [{name}] page replacing the environment variable `VERSION=x.xx`
+Follow again [{app}] page replacing the environment variable `VERSION=x.xx`
 value for the latest if it has not been already changed in this guide.
 
 * Update the {name} configuration if necessary (see [release notes])

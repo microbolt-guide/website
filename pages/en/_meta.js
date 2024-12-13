@@ -15,6 +15,23 @@ export default {
     type: "page",
     title: "Ansible"
   },
+  resources: {
+    type: "menu",
+    title: "Resources",
+    items: {
+      config: {
+        title: "Configs",
+        href: "/config",
+        newWindow: true
+      },
+      blog: {
+        type: "page",
+        title: "Blog \u2197",
+        href: "https://bloc.microbolt.guide",
+        newWindow: true
+      }
+    }
+  },
   about: {
     type: "page",
     title: "About",
@@ -25,11 +42,5 @@ export default {
   faq: {
     type: "page",
     title: "FAQ"
-  },
-  blog: {
-    type: "page",
-    title: "Blog \u2B67",
-    href: "https://bloc.microbolt.guide",
-    newWindow: true
   }
 }

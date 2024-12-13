@@ -1,8 +1,8 @@
 import { Callout, Cards, Steps } from 'nextra/components'
-import { FAQBox } from '@components'
 
-import { TbSum } from "react-icons/tb"
-import { FaStamp } from "react-icons/fa"
+import { Sigma, Stamp } from 'lucide-react'
+
+import FAQBox from '@components/FAQBox'
 
 # Bitcoin Core
 
@@ -173,12 +173,12 @@ seva prova de marca de temps:
 
 <Cards>
     <Cards.Card
-        icon={<TbSum />}
+        icon={<Sigma />}
         title="Fitxer de suma de comprovació"
         href="https://bitcoincore.org/bin/bitcoin-core-26.0/SHA256SUMS.ots"
     />
     <Cards.Card
-        icon={<FaStamp />}
+        icon={<Stamp />}
         title="Prova de marca de temps"
         href="https://bitcoincore.org/bin/bitcoin-core-26.0/SHA256SUMS"
     />

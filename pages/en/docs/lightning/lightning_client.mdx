@@ -1,17 +1,19 @@
 import { Callout, Steps } from 'nextra/components'
-import { FAQBox } from '@components'
+
+import FAQBox from '@components/FAQBox'
 
 export const name = "LND"
 export const user = "lnd"
 
+[Lightning Network Daemon]: https://github.com/lightningnetwork/lnd
+[Lightning Labs]: https://lightning.engineering
 [repository]: https://github.com/lightningnetwork/lnd
 [release notes]: https://github.com/lightningnetwork/lnd/releases
 [{name}]: ./lightning_client
 
 # Lightning Network Daemon
 
-We set up [{name}](https://github.com/lightningnetwork/lnd), the Lightning
-Network Daemon by [Lightning Labs](https://lightning.engineering).
+We set up the [Lightning Network Daemon] ({name}) by [Lightning Labs].
 
 ## Preparations
 
@@ -72,9 +74,9 @@ ln -s /var/lib/lnd/main "$HOME/.lnd"
 ## Installation
 
 The installation of {name} is straight-forward, but the application is quite
-powerful and capable of things not explained here. Check out their
-[repository] for a wealth of information about their open-source project and
-Lightning in general.
+powerful and capable of things not explained here. Check out their [repository]
+for a wealth of information about their open-source project and Lightning in
+general.
 
 <Steps>
 ### Download source code
