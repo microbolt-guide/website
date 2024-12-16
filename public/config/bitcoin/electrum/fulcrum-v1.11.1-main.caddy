@@ -1,0 +1,8 @@
+:50002 {
+        route {
+                tls
+                proxy {
+                        upstream 127.0.0.1:50001
+                }
+        }
+}

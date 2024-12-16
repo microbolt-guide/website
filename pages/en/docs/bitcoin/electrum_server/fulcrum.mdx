@@ -1,20 +1,31 @@
-import { Steps, Tabs } from 'nextra/components'
+import { Callout, Steps, Tabs } from 'nextra/components'
+
 import FAQBox from '@components/FAQBox'
 
+export const app = "Fulcrum"
 export const name = "Fulcrum"
 export const user = "fulcrum"
 
+[{name}]: https://github.com/cculianu/Fulcrum
+[comparison]: https://www.sparrowwallet.com/docs/server-performance.html
+[yet]: https://gitlab.alpinelinux.org/alpine/aports/-/merge_requests/76779
 [security section]: ../../system/security#reverse-proxy
 [release notes]: https://github.com/cculianu/Fulcrum/releases
-[{name}]: ./fulcrum
+[Calin Culianu]: https://github.com/cculianu
+[here]: https://patorjk.com/software/taag/#p=display\&f=Slant\&t=Fulcrum
+[PR]: https://github.com/cculianu/Fulcrum/pull/267
+
+[config]: /config/bitcoin/electrum/fulcrum-v1.11.1-main.conf
+[init.d]: /config/bitcoin/electrum/fulcrum-v1.11.1-main.init.d
+
+[BBO]: https://bitcoinbarcelona.xyz
+[{app}]: ./fulcrum
 
 # Fulcrum
 
-[{name}](https://github.com/cculianu/Fulcrum) is a fast & nimble SPV server for
-Bitcoin Cash, Bitcoin BTC, and Litecoin created by Calin Culianu. It can be used
+[{name}] is a fast & nimble SPV server created by Calin Culianu. It can be used
 as an alternative to Electrs because of its performance, as we can see in Craig
-Raw's [comparison](https://www.sparrowwallet.com/docs/server-performance.html)
-of servers.
+Raw's [comparison] of servers.
 
 ![Fulcrum logo](/images/bitcoin/electrum-server/fulcrum.webp)
 
@@ -23,29 +34,33 @@ of servers.
 <Steps>
 ### Install dependencies
 
-* `rocksdb`
+* `rocksdb` needs to be compiled from source. Alpine Linux does not provide a
+suitable package for this, [yet].
 
 ```sh copy
-$SU apk add --virtual .build-dep-rocksdb bash bzip2-dev clang gflags-dev git libc++-dev liburing-dev linux-headers lld llvm-libunwind-dev llvm-dev lz4-dev make perl snappy-dev zlib-dev zstd-dev
-$SU apk add --virtual .runtime-dep-rocksdb libbz2 liburing lz4-libs snappy
+$SU apk add --virtual .build-deps-rocksdb-dev bash clang git linux-headers \
+    make perl 
+$SU apk add --virtual .runtime-deps-rocksdb-dev bzip2-dev gflags-dev \
+    liburing-dev lz4-dev pkgconf snappy-dev zlib-dev zstd-dev
+$SU apk add --virtual .runtime-deps-rocksdb libbz2 libgcc libstdc++ liburing \
+    lz4-libs snappy zlib zstd-libs
 cd /tmp
 VERSION=9.8.4
 git clone --branch v$VERSION https://github.com/facebook/rocksdb.git && cd rocksdb
 sed 's/install -C/install -c/g' Makefile > _
 mv -f _ Makefile
-PORTABLE=1 DEBUG_LEVEL=0 USE_RTTI=1 make static_lib V=1
+PORTABLE=1 DISABLE_JEMALLOC=1 DEBUG_LEVEL=0 USE_RTTI=1 make static_lib
 $SU make install-static PREFIX=/usr
 cd /tmp
 rm -rf rocksdb
-$SU apk del .build-dep-rocksdb
+$SU apk del .build-deps-rocksdb-dev
 ```
 
 These are build dependencies (safe to remove after installation, if you want)
 
 ```sh copy
-$SU apk add --virtual .build-deps autoconf clang git gnupg jemalloc-dev \
-    libc++-dev lld llvm-libunwind-dev llvm-dev lz4-dev make pkgconf \
-    qt6-qtbase-dev zeromq-dev
+$SU apk add --virtual .build-deps autoconf g++ git gnupg jemalloc-dev lz4-dev \
+    make patch pkgconf qt6-qtbase-dev zeromq-dev
 ```
 
 These are runtime dependencies
@@ -84,7 +99,7 @@ $SU adduser fulcrum bitcoind
 $SU adduser satoshi fulcrum && exec su -l satoshi
 ```
 
-### Reverse proxy
+### Reverse proxy (mainnet)
 
 In the [security section], we set up a reverse proxy. Now we can add the {name}
 configuration.
@@ -117,10 +132,10 @@ $SU rc-service caddy reload
     </Tabs.Tab>
     <Tabs.Tab>
 ```sh copy
-$SU $EDITOR /etc/nginx/streams-available/fulcrum-reverse-proxy.conf
+$SU $EDITOR /etc/nginx/streams-available/fulcrum.conf
 ```
 
-```nginx copy filename="/etc/nginx/streams-available/fulcrum-reverse-proxy.conf"
+```nginx copy filename="/etc/nginx/streams-available/fulcrum.conf"
 upstream fulcrum {
   server 127.0.0.1:50001;
 }
@@ -134,8 +149,8 @@ server {
 ```sh copy
 $SU ln \
     -s \
-    ../streams-available/fulcrum-reverse-proxy.conf \
-    /etc/nginx/streams-enabled/fulcrum-reverse-proxy.conf
+    ../streams-available/fulcrum.conf \
+    /etc/nginx/streams-enabled/fulcrum.conf
 ```
 
 * Test and reload NGINX configuration
@@ -147,7 +162,7 @@ $SU rc-service nginx restart
     </Tabs.Tab>
 </Tabs>
 
-### Firewall
+### Firewall (mainnet)
 
 * Configure the firewall to allow incoming requests
 
@@ -159,7 +174,7 @@ $SU $EDITOR /etc/awall/optional/fulcrum.json
 
 ```json copy filename="/etc/awall/optional/fulcrum.json"
 {
-  "description": "Allow Fulcrum SSL",
+  "description": "Allow Fulcrum SSL (mainnet)",
 
   "filter": [
     {
@@ -182,7 +197,7 @@ $SU awall activate
     </Tabs.Tab>
     <Tabs.Tab>
 ```sh copy
-$SU ufw limit 50002/tcp comment 'Allow Fulcrum SSL'
+$SU ufw limit 50002/tcp comment 'Allow Fulcrum SSL (mainnet)'
 ```
     </Tabs.Tab>
 </Tabs>
@@ -190,10 +205,9 @@ $SU ufw limit 50002/tcp comment 'Allow Fulcrum SSL'
 
 ## Installation
 
-An easy and performant way to run an Electrum server is to use
-[{name}](https://github.com/cculianu/Fulcrum), the fast & nimble Electrum
-Server. There are no compatible binaries available, so we will compile the
-application ourselves.
+An easy and performant way to run an Electrum server is to use [{name}], the
+fast & nimble Electrum Server. There are no compatible binaries available, so we
+will compile the application ourselves.
 
 <Steps>
 ### Download source code
@@ -220,7 +234,7 @@ git clone --branch v$VERSION https://github.com/cculianu/Fulcrum.git && cd Fulcr
 ### Signature check
 
 * To avoid using bad source code, verify that the release has been properly
-signed by the main developer [Calin Culianu](https://github.com/cculianu).
+signed by the main developer [Calin Culianu].
 
 ```sh copy
 url="https://raw.githubusercontent.com/Electron-Cash/keys-n-hashes/master/pubkeys/calinkey.txt"
@@ -231,6 +245,82 @@ curl -s "$url" | gpg --import
 git verify-commit v$VERSION
 ```
 
+### Patches
+
+* Apply the patches to the source code to enable unix socket support.
+
+<Callout type="info">
+This patch is part of the codebase of {name}, but there is no official release
+yet. It is necessary to apply it manually. Check the merged [PR].
+</Callout>
+
+```sh copy
+$EDITOR unix-socket.patch
+```
+
+```diff copy filename="unix-socket.patch"
+--- a/src/BitcoinD.cpp
++++ b/src/BitcoinD.cpp
+@@ -396,7 +396,7 @@
+             bool badFormat = !reply.result().canConvert<QVariantList>();
+             for (const auto &var : reply.result().toList()) {
+                 const auto obj = var.toMap();
+-                QString type, addr;
++                QString type, addr, transport;
+                 if (obj.isEmpty() || (type = obj.value("type").toString()).isEmpty() || (addr = obj.value("address").toString()).isEmpty()) {
+                     badFormat = true;
+                     continue;
+@@ -410,6 +410,7 @@
+                 } else
+                     Warning() << "getzmqnotifications: unknown zmq notification type \"" << type << "\"";
+                 if (addr.startsWith("tcp://")) {
++                    transport = "TCP";
+                     const QString hostPortPart = addr.mid(6).split("/").front(); // in case there are trailing slashes?
+                     try {
+                         auto [host, port] = Util::ParseHostPortPair(hostPortPart);
+@@ -427,6 +428,28 @@
+                         badFormat = true;
+                         continue; // skip this one -- it will likely confuse libzmq
+                     }
++                } else if (addr.startsWith("ipc://")) {
++                    transport = "unix domain";
++
++                    QString socketPath = addr.mid(6);
++                    QString errMsg;
++
++                    // Core and/or Knots may have left extra slashes at the front of the string. Trim and leave only 1.
++                    for (QString left2; (left2 = socketPath.left(2)) == "//" || left2 == R"(/\)"; /* */)
++                        socketPath = socketPath.mid(1); // pop first slash and keep looping
++
++                    if (socketPath.isEmpty())
++                        errMsg = "Socket path is empty";
++                    else if (!QFileInfo::exists(socketPath))
++                        errMsg = "Socket does not exist: " + socketPath;
++
++                    if (!errMsg.isEmpty()) {
++                        Error() << "failed to validate zmq notification address: " << addr << " (" << errMsg << ")";
++                        badFormat = true;
++                        continue; // skip this one -- it will likely confuse libzmq
++                    }
++                    // rewrite it to normalized form (trimmed of any extra slashes at front)
++                    addr = "ipc://" + socketPath;
+                 } else {
+                     Warning() << "getzmqnotifications: unknown endpoint protocol " << addr << " for type " << type;
+                     badFormat = true;
+@@ -435,6 +458,7 @@
+
+                 // if we get here, safe to add to our map
+                 zmqs.insert(type, addr);
++                DebugM("getzmqnotifications: added ", transport, " socket address: ", addr);
+             }
+             if (badFormat)
+                 Error() << "getzmqnotifications: query to bitcoind returned a result in an unexpected format";
+```
+
+```sh copy
+patch -p1 < unix-socket.patch
+```
+
 ### Configure, compile and install
 
 * Now compile the source code into an executable binary and install it.
@@ -239,18 +329,17 @@ git verify-commit v$VERSION
 qmake6 Fulcrum.pro \
     "CONFIG-=debug" \
     "CONFIG+=release" \
+    "LIBS+=-L/usr/lib -lrocksdb -lz -lbz2 -ljemalloc -lzmq -lzstd -llz4 -luring -lsnappy" \
+    "INCLUDEPATH+=/usr/include" \
     -o build/
 ```
 
 ```sh copy
-make -C build LIBS="$(pkg-config --cflags --libs Qt6Core Qt6Network Qt6Gui rocksdb jemalloc libzmq)"
+make -C build
 ```
 
 ```sh copy
 $SU install -m 0755 -o root -g root -t /usr/bin ./build/Fulcrum
-```
-
-```sh copy
 $SU install -m 0755 -o root -g root -t /usr/bin ./FulcrumAdmin
 ```
 
@@ -259,14 +348,12 @@ $SU install -D -m 0660 -o fulcrum -g fulcrum ./doc/fulcrum-example-config.conf /
 ```
 
 * Download the custom {name} banner based on Microbolt. Create your own if you
-want [here](https://patorjk.com/software/taag/#p=display\&f=Slant\&t=Fulcrum)
+want [here]
 
 ```sh copy
-$SU curl -L \
-    https://gist.githubusercontent.com/doitwithnotepad/\
-4472a92414223672d9ab4c3b55d0cd23/raw/ecb086f1b8cca49f22929778ac167b35915842e7/\
-banner.txt \
-    -o /etc/fulcrum/banner.txt
+$SU curl
+    -L https://microbolt.guide/config/bitcoin/electrum/fulcrum-v1.11.1-main.banner
+    -o /etc/fulcrum/main.banner
 ```
 
 ### Strip installed binaries
@@ -280,7 +367,8 @@ $SU strip -v /usr/bin/Fulcrum
 ```sh copy
 cd
 rm -rf /tmp/Fulcrum
-$SU apk del .build-deps
+$SU apk del .build-deps .runtime-deps-rocksdb-dev
+$SU rm -rf /usr/lib/pkgconfig/rocksdb.pc /usr/include/rocksdb
 ```
 </Steps>
 
@@ -292,23 +380,25 @@ $SU apk del .build-deps
 $SU $EDITOR /etc/fulcrum/main.conf
 ```
 
-```conf filename="/etc/fulcrum/main.conf" {2,4,6,8,10,12,14}
+```conf filename="/etc/fulcrum/main.conf" {2,4,6,8,10,12}
 [...]
-#datadir = /path/to/a/dir
+#datadir = /path/to/a/dir  # Windows: datadir = D:\FulcrumData\mainnet
+[...]
+#bitcoind = 127.0.0.1:8332
 [...]
 #rpcuser = Bob_The_Banker
 [...]
 #rpcpassword = hunter1
 [...]
-rpccookie = /run/bitcoind/main.authcookie
-[...]
-tcp = 0.0.0.0:50001
-[...]
-banner = /etc/fulcrum/banner.txt
+banner = /etc/fulcrum/main.banner
 [...]
 peering = false
 [...]
 ```
+
+<Callout>
+Check this {name} sample [config] on web browser
+</Callout>
 
 <FAQBox title = "Slow-performance devices">
 ```conf filename="/etc/fulcrum/main.conf" {2,4,6,8,10,12}
@@ -385,7 +475,6 @@ $SU $EDITOR /etc/init.d/fulcrum
 : ${FULCRUM_USER:=fulcrum}
 : ${FULCRUM_GROUP:=fulcrum}
 : ${FULCRUM_BIN:=/usr/bin/Fulcrum}
-: ${FULCRUM_ADMINPORT:=8000}
 : ${FULCRUM_OPTS=${FULCRUM_OPTS}}
 : ${FULCRUM_SIGTERM_TIMEOUT:=600}
 
@@ -395,12 +484,11 @@ pidfile="${piddir}/${FULCRUM_CHAIN}.pid"
 retry="${FULCRUM_SIGTERM_TIMEOUT}"
 
 name="Fulcrum (${FULCRUM_CHAIN})"
-description="A fast & nimble SPV Server for BCH, BTC, and LTC"
+description="A fast & nimble SPV Server"
 
 command="${FULCRUM_BIN}"
 command_args="${FULCRUM_CONFIGFILE}
               --datadir ${FULCRUM_DATADIR}
-              --admin 127.0.0.1:${FULCRUM_ADMINPORT}
               --pidfile ${pidfile}
               ${FULCRUM_OPTS}"
 command_user="${FULCRUM_USER}:${FULCRUM_GROUP}"
@@ -410,41 +498,126 @@ start_stop_daemon_args="--stdout ${FULCRUM_LOGDIR}/debug.log
                         --stderr ${FULCRUM_LOGDIR}/debug.log"
 
 depend() {
-    use bitcoind
-    after bitcoind
-    provide electrum
+    use bitcoind.${FULCRUM_CHAIN}
+    after bitcoind.${FULCRUM_CHAIN}
+    provide electrum.${FULCRUM_CHAIN}
 }
 
 start_pre() {
     mkdir -p "${FULCRUM_DATADIR}" "${FULCRUM_LOGDIR}"
+    [ -L "${FULCRUM_CONFIGFILE}" ] || \
     checkpath --file      --mode 0660 --owner "${command_user}" "${FULCRUM_CONFIGFILE}"
     checkpath --directory --mode 0750 --owner "${command_user}" "${FULCRUM_DATADIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${FULCRUM_LOGDIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${piddir}"
-    checkconfig
 }
 
 start_post() {
     checkpath --file --owner "${command_user}" "${pidfile}"
 }
-
-checkconfig() {
-    if ! grep -qs '^rpccookie = ' "${FULCRUM_CONFIGFILE}"
-    then
-        eerror ""
-        eerror "ERROR: You must set a rpccookie path to run Fulcrum."
-        eerror "The setting must appear in ${FULCRUM_CONFIGFILE}"
-        eerror ""
-        return 1
-    fi
-}
 ```
+
+<Callout>
+Check this {name} sample [init.d] on web browser
+</Callout>
 
 * Enable execution permission
 
 ```sh copy
 $SU chmod +x /etc/init.d/fulcrum
 ```
+
+<Tabs items={['mainnet', 'testnet', 'signet BBO']}>
+    <Tabs.Tab>
+* Create the init configuration file `conf.d/fulcrum` and add the following
+
+```sh copy
+$SU $EDITOR /etc/conf.d/fulcrum
+```
+
+```sh copy filename="/etc/conf.d/fulcrum"
+FULCRUM_OPTS='--tcp 127.0.0.1:50001
+              --admin 127.0.0.1:8000
+              --bitcoind 127.0.0.1:8332
+              --rpccookie /run/bitcoind/${FULCRUM_CHAIN}.authcookie'
+```
+
+* Enable autoboot
+
+```sh copy
+$SU rc-update add fulcrum default
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+* Make a symlink of the default config and the init.d configuration file
+
+```sh copy
+$SU ln -s main.conf /etc/fulcrum/test.conf
+```
+
+```sh copy
+$SU ln -s fulcrum /etc/init.d/fulcrum.testnet
+```
+
+* Create the init configuration file `conf.d/fulcrum.testnet` and add the
+following
+
+```sh copy
+$SU $EDITOR /etc/conf.d/fulcrum.testnet
+```
+
+```sh copy filename="/etc/conf.d/fulcrum.testnet"
+FULCRUM_CHAIN=test
+FULCRUM_OPTS='--tcp 127.0.0.1:51001
+              --admin 127.0.0.1:8100
+              --bitcoind 127.0.0.1:18332
+              --rpccookie /run/bitcoind/${FULCRUM_CHAIN}.authcookie'
+```
+
+* Enable autoboot (optional)
+
+```sh copy
+$SU rc-update add fulcrum.testnet default
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+<Callout>
+BBO means `Barcelona Bitcoin Only`, a signet network for testing purposes from
+the ❤️ Barcelona Bitcoin Community. More info at [BBO]
+</Callout>
+
+* Make a symlink of the default config and the init.d configuration file
+
+```sh copy
+$SU ln -s main.conf /etc/fulcrum/signet.bbo.conf
+```
+
+```sh copy
+$SU ln -s fulcrum /etc/init.d/fulcrum.signet.bbo
+```
+
+* Create the init configuration file `conf.d/fulcrum.signet.bbo` and add the following
+
+```sh copy
+$SU $EDITOR /etc/conf.d/fulcrum.signet.bbo
+```
+
+```sh copy filename="/etc/conf.d/fulcrum.signet.bbo"
+FULCRUM_CHAIN=signet
+FULCRUM_CONFIGFILE=/etc/fulcrum/signet.bbo.conf
+FULCRUM_OPTS='--tcp 127.0.0.1:53001
+              --admin 127.0.0.1:8300
+              --bitcoind 127.0.0.1:38332
+              --rpccookie /run/bitcoind/${FULCRUM_CHAIN}.bbo.authcookie'
+```
+
+* Enable autoboot (optional)
+
+```sh copy
+$SU rc-update add fulcrum.signet.bbo default
+```
+    </Tabs.Tab>
+</Tabs>
 
 ### Enable logrotate
 
@@ -455,7 +628,7 @@ $SU $EDITOR /etc/logrotate.d/fulcrum
 ```
 
 ```sh copy filename="/etc/logrotate.d/fulcrum"
-/var/log/fulcrum/main/*.log {
+/var/log/fulcrum/**/*.log {
     weekly
     missingok
     rotate 104
@@ -465,7 +638,9 @@ $SU $EDITOR /etc/logrotate.d/fulcrum
     create 0640 fulcrum fulcrum
     sharedscripts
     postrotate
-        kill -HUP `cat /run/fulcrum/main.pid`
+        for pidfile in /run/fulcrum/*.pid; do
+            kill -HUP `cat $pidfile`
+        done
     endscript
 }
 ```
@@ -476,11 +651,7 @@ $SU $EDITOR /etc/logrotate.d/fulcrum
 $SU logrotate /etc/logrotate.d/fulcrum --debug
 ```
 
-## Enable and start {name}
-
-```sh copy
-$SU rc-update add fulcrum
-```
+## Enable and start {name} (mainnet)
 
 ```sh copy
 $SU rc-service fulcrum start
@@ -499,7 +670,7 @@ Bitcoin peer-to-peer network.
 
 ## For the future: {name} upgrade
 
-Follow again [{name}] page replacing the environment variable `VERSION=x.xx`
+Follow again [{app}] page replacing the environment variable `VERSION=x.xx`
 value for the latest if it has not been already changed in this guide.
 
 * Update the {name} configuration if necessary (see [release notes])

@@ -1,0 +1,13 @@
+{
+  "description": "Allow Fulcrum SSL (mainnet)",
+
+  "filter": [
+    {
+      "in": "internet",
+      "out": "_fw",
+      "service": "fulcrum",
+      "action": "accept",
+      "conn-limit": { "count": 10, "interval": 60 }
+    }
+  ]
+}
