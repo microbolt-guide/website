@@ -19,15 +19,15 @@ export default {
     type: "menu",
     title: "Resources",
     items: {
-      config: {
-        title: "Configs",
-        href: "/config",
-        newWindow: true
-      },
       blog: {
         type: "page",
         title: "Blog \u2197",
         href: "https://bloc.microbolt.guide",
+        newWindow: true
+      },
+      config: {
+        title: "Configs",
+        href: "/config",
         newWindow: true
       }
     }
