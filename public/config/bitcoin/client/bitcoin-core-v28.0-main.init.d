@@ -35,6 +35,7 @@ depend() {
     checkdepend onion tor
     checkdepend i2psam i2pd
     after logger firewall
+    provide bitcoind.${BITCOIND_CHAIN}
 }
 
 checkdepend() {
@@ -45,6 +46,7 @@ checkdepend() {
 
 start_pre() {
     mkdir -p "${BITCOIND_DATADIR}" "${BITCOIND_LOGDIR}"
+    [ -L "${BITCOIND_CONFIGFILE}" ] || \
     checkpath --file      --mode 0660 --owner "${command_user}" "${BITCOIND_CONFIGFILE}"
     checkpath --directory --mode 0750 --owner "${command_user}" "${BITCOIND_DATADIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${BITCOIND_LOGDIR}"
