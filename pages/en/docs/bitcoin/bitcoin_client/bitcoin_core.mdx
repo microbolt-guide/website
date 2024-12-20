@@ -11,6 +11,7 @@ export const user = "bitcoind"
 [release page]: https://github.com/bitcoin/bitcoin/releases/latest
 [release notes]: https://github.com/bitcoin/bitcoin/tree/master/doc/release-notes
 [{name}]: https://bitcoin.org/en/bitcoin-core
+[Ordisrespector]: https://gist.github.com/luke-jr/4c022839584020444915c84bdd825831
 
 [config]: /config/bitcoin/client/bitcoin-core-v28.0-main.conf
 [init.d]: /config/bitcoin/client/bitcoin-core-v28.0-main.init.d
@@ -47,7 +48,7 @@ These are build dependencies (safe to remove after installation, if you want)
 
 ```sh copy
 $SU apk add --virtual .build-deps autoconf automake boost-dev clang chrpath \
-    file gnupg libevent-dev libtool make pkgconf zeromq-dev
+    file gnupg libevent-dev libtool make patch pkgconf zeromq-dev
 ```
 
 These are runtime dependencies
@@ -218,20 +219,37 @@ tar xzf bitcoin-$VERSION.tar.gz && cd bitcoin-$VERSION
 
 ### Apply patches
 
-- Ordisrespector
+##### Ordisrespector
+
+- [Ordisrespector] is a Bitcoin patch that applies a filter to reject mempool
+transactions with ordinals.
 
 ```sh copy
-sed '/stack.push_back(vchPushValue);/a \
-                if ((flags & SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS) && opcode == OP_FALSE) {\
-                    auto pc_tmp = pc;\
-                    opcodetype next_opcode;\
-                    valtype dummy_data;\
-                    if (script.GetOp(pc_tmp, next_opcode, dummy_data) && next_opcode == OP_IF) {\
-                        return set_error(serror, SCRIPT_ERR_DISCOURAGE_UPGRADABLE_NOPS);\
-                    }\
-                }' \
-    src/script/interpreter.cpp > _
-mv -f _ src/script/interpreter.cpp
+$EDITOR ordisrespector.patch
+```
+
+```diff copy filename="ordisrespector.patch"
+--- a/src/script/interpreter.cpp
++++ b/src/script/interpreter.cpp
+@@ -504,6 +504,14 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript&
+                     return set_error(serror, SCRIPT_ERR_MINIMALDATA);
+                 }
+                 stack.push_back(vchPushValue);
++                if ((flags & SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS) && opcode == OP_FALSE) {
++                    auto pc_tmp = pc;
++                    opcodetype next_opcode;
++                    valtype dummy_data;
++                    if (script.GetOp(pc_tmp, next_opcode, dummy_data) && next_opcode == OP_IF) {
++                        return set_error(serror, SCRIPT_ERR_DISCOURAGE_UPGRADABLE_NOPS);
++                    }
++                }
+             } else if (fExec || (OP_IF <= opcode && opcode <= OP_ENDIF))
+             switch (opcode)
+             {
+```
+
+```sh copy
+patch -p1 < ordisrespector.patch
 ```
 
 ### Configure, compile and install
@@ -450,7 +468,7 @@ stty echo && \
             awk '{print $2}' \
         )/" /etc/bitcoind/main.conf > _; \
     unset salt; \
-    mv -f _ /etc/bitcoind/main.conf && \
+    $SU mv -f _ /etc/bitcoind/main.conf && \
     printf "\n\033[38;5;34m%s\033[m\n" \
         "Done! The password hash is stored in the main.conf file" 
 }
@@ -523,7 +541,7 @@ command_user="${BITCOIND_USER}:${BITCOIND_GROUP}"
 depend() {
     use net
     need localmount
-    checkdepend onion tor
+    checkdepend proxy tor
     checkdepend i2psam i2pd
     after logger firewall
     provide bitcoind.${BITCOIND_CHAIN}
@@ -588,7 +606,7 @@ options. The configurations are prepared to work simultaneously.
 More: [OpenRC]
 </Callout>
 
-<Tabs items={['mainnet', 'testnet', 'signet BBO']}>
+<Tabs items={['mainnet', 'testnet', 'testnet4', 'signet BBO']}>
     <Tabs.Tab>
 * Create the init configuration file `conf.d/bitcoind` and add the following
 
@@ -641,6 +659,39 @@ BITCOIND_OPTS='-rpccookieperms=group
 
 ```sh copy
 $SU rc-update add bitcoind.testnet default
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+* Make a symlink of the default config and the init.d configuration file
+
+```sh copy
+$SU ln -s main.conf /etc/bitcoind/testnet4.conf
+```
+
+```sh copy
+$SU ln -s bitcoind /etc/init.d/bitcoind.testnet4
+```
+
+* Create the init configuration file `conf.d/bitcoind.testnet4` and add the
+following
+
+```sh copy
+$SU $EDITOR /etc/conf.d/bitcoind.testnet4
+```
+
+```sh copy filename="/etc/conf.d/bitcoind.testnet4"
+BITCOIND_CHAIN=testnet4
+BITCOIND_OPTS='-rpccookieperms=group
+               -rpccookiefile=${authcookie}
+               -zmqpubhashblock=unix:${piddir}/${BITCOIND_CHAIN}.hash.block.sock
+               -zmqpubrawblock=unix:${piddir}/${BITCOIND_CHAIN}.raw.block.sock
+               -zmqpubrawtx=unix:${piddir}/${BITCOIND_CHAIN}.raw.tx.sock'
+```
+
+* Enable autoboot (optional)
+
+```sh copy
+$SU rc-update add bitcoind.testnet4 default
 ```
     </Tabs.Tab>
     <Tabs.Tab>

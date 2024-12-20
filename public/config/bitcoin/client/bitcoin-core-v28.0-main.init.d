@@ -32,7 +32,7 @@ command_user="${BITCOIND_USER}:${BITCOIND_GROUP}"
 depend() {
     use net
     need localmount
-    checkdepend onion tor
+    checkdepend proxy tor
     checkdepend i2psam i2pd
     after logger firewall
     provide bitcoind.${BITCOIND_CHAIN}

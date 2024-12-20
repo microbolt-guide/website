@@ -387,7 +387,7 @@ stty echo && \
             awk '{print $2}' \
         )/" /etc/bitcoind/main.conf > _; \
     unset salt; \
-    mv -f _ /etc/bitcoind/main.conf && \
+    $SU mv -f _ /etc/bitcoind/main.conf && \
     printf "\n\033[38;5;34m%s\033[m\n" \
         "Done! The password hash is stored in the main.conf file" 
 }
@@ -460,7 +460,7 @@ command_user="${BITCOIND_USER}:${BITCOIND_GROUP}"
 depend() {
     use net
     need localmount
-    checkdepend onion tor
+    checkdepend proxy tor
     checkdepend i2psam i2pd
     after logger firewall
     provide bitcoind.${BITCOIND_CHAIN}
@@ -525,7 +525,7 @@ options. The configurations are prepared to work simultaneously.
 More: [OpenRC]
 </Callout>
 
-<Tabs items={['mainnet', 'testnet', 'signet BBO']}>
+<Tabs items={['mainnet', 'testnet', 'testnet4', 'signet BBO']}>
     <Tabs.Tab>
 * Create the init configuration file `conf.d/bitcoind` and add the following
 
@@ -579,6 +579,12 @@ BITCOIND_OPTS='-rpccookieperms=group
 ```sh copy
 $SU rc-update add bitcoind.testnet default
 ```
+    </Tabs.Tab>
+    <Tabs.Tab>
+<Callout type="warning">
+`testnet4` is not available on {name} yet. This is a placeholder for future
+releases
+</Callout>
     </Tabs.Tab>
     <Tabs.Tab>
 <Callout>

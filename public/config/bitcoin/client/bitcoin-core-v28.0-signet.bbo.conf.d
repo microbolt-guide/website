@@ -1,7 +1,7 @@
 BITCOIND_CHAIN=signet
 BITCOIND_CONFIGFILE=/etc/bitcoind/signet.bbo.conf
 BITCOIND_OPTS='-rpccookieperms=group
-               -rpccookiefile=${piddir}/${BITCOIND_CHAIN}.bbo.authcookie"
+               -rpccookiefile=${piddir}/${BITCOIND_CHAIN}.bbo.authcookie
                -zmqpubhashblock=unix:${piddir}/${BITCOIND_CHAIN}.bbo.hash.block.sock
                -zmqpubrawblock=unix:${piddir}/${BITCOIND_CHAIN}.bbo.raw.block.sock
                -zmqpubrawtx=unix:${piddir}/${BITCOIND_CHAIN}.bbo.raw.tx.sock
