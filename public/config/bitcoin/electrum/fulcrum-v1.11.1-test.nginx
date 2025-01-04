@@ -1,0 +1,8 @@
+upstream fulcrum {
+  server 127.0.0.1:51001;
+}
+
+server {
+  listen 51002 ssl;
+  proxy_pass fulcrum;
+}

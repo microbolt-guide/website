@@ -17,6 +17,7 @@ export const user = "fulcrum"
 
 [config]: /config/bitcoin/electrum/fulcrum-v1.11.1-main.conf
 [init.d]: /config/bitcoin/electrum/fulcrum-v1.11.1-main.init.d
+[logrotate]: /config/bitcoin/electrum/fulcrum-v1.11.1-main.logrotate
 
 [BBO]: https://bitcoinbarcelona.xyz
 [{app}]: ./fulcrum
@@ -45,7 +46,7 @@ $SU apk add --virtual .runtime-deps-rocksdb-dev bzip2-dev gflags-dev \
 $SU apk add --virtual .runtime-deps-rocksdb libbz2 libgcc libstdc++ liburing \
     lz4-libs snappy zlib zstd-libs
 cd /tmp
-VERSION=9.8.4
+VERSION=9.9.3
 git clone --branch v$VERSION https://github.com/facebook/rocksdb.git && cd rocksdb
 sed 's/install -C/install -c/g' Makefile > _
 mv -f _ Makefile
@@ -66,7 +67,7 @@ $SU apk add --virtual .build-deps autoconf g++ git gnupg jemalloc-dev lz4-dev \
 These are runtime dependencies
 
 ```sh copy
-$SU apk add jemalloc libzmq qt6-qtbase
+$SU apk add jemalloc libzmq python3 qt6-qtbase
 ```
 
 ### Create the {user} user/group
@@ -416,7 +417,7 @@ worker_threads = 1
 ```
 </FAQBox>
 
-<FAQBox title = "Remote access over Tor">
+<FAQBox title = "Remote access over Tor (mainnet)">
 To use your {name} when you're on the go, you can easily create a Tor hidden
 service. This way, you can connect the BitBoxApp or Electrum wallet also
 remotely, or even share the connection details with friends and family. Note
@@ -527,7 +528,7 @@ Check this {name} sample [init.d] on web browser
 $SU chmod +x /etc/init.d/fulcrum
 ```
 
-<Tabs items={['mainnet', 'testnet', 'signet BBO']}>
+<Tabs items={['mainnet', 'testnet', 'testnet4', 'signet BBO']}>
     <Tabs.Tab>
 * Create the init configuration file `conf.d/fulcrum` and add the following
 
@@ -578,6 +579,43 @@ FULCRUM_OPTS='--tcp 127.0.0.1:51001
 
 ```sh copy
 $SU rc-update add fulcrum.testnet default
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+<Callout type="warning">
+`testnet4` is not available on Bitcoin Knots yet. You can only use it with
+Bitcoin Core.
+</Callout>
+
+* Make a symlink of the default config and the init.d configuration file
+
+```sh copy
+$SU ln -s main.conf /etc/fulcrum/testnet4.conf
+```
+
+```sh copy
+$SU ln -s fulcrum /etc/init.d/fulcrum.testnet4
+```
+
+* Create the init configuration file `conf.d/fulcrum.testnet4` and add the
+following
+
+```sh copy
+$SU $EDITOR /etc/conf.d/fulcrum.testnet4
+```
+
+```sh copy filename="/etc/conf.d/fulcrum.testnet4"
+FULCRUM_CHAIN=testnet4
+FULCRUM_OPTS='--tcp 127.0.0.1:54001
+              --admin 127.0.0.1:8400
+              --bitcoind 127.0.0.1:48332
+              --rpccookie /run/bitcoind/${FULCRUM_CHAIN}.authcookie'
+```
+
+* Enable autoboot (optional)
+
+```sh copy
+$SU rc-update add fulcrum.testnet4 default
 ```
     </Tabs.Tab>
     <Tabs.Tab>
@@ -644,6 +682,10 @@ $SU $EDITOR /etc/logrotate.d/fulcrum
     endscript
 }
 ```
+
+<Callout>
+Check this {name} sample [logrotate] on web browser
+</Callout>
 
 * Test
 
