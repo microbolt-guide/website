@@ -19,17 +19,21 @@ export default {
     type: "menu",
     title: "Resources",
     items: {
-      blog: {
-        type: "page",
-        title: "Blog \u2197",
-        href: "https://bloc.microbolt.guide",
-        newWindow: true
-      },
       config: {
         title: "Configs",
         href: "/config",
         newWindow: true
-      }
+      },
+      l10n: {
+        title: "Translate",
+        href: "https://l10n.microbolt.guide",
+        newWindow: true
+      },
+      blog: {
+        title: "Blog",
+        href: "https://bloc.microbolt.guide",
+        newWindow: true
+      },
     }
   },
   about: {
