@@ -1,0 +1,18 @@
+{
+  "description": "Allow Fulcrum SSL",
+
+  "filter": [
+    {
+      "in": "internet",
+      "out": "_fw",
+      "service": [
+        "fulcrum",
+        "fulcrum.testnet",
+        "fulcrum.testnet4",
+        "fulcrum.signet.bbo"
+      ],
+      "action": "accept",
+      "conn-limit": { "count": 10, "interval": 60 }
+    }
+  ]
+}

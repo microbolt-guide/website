@@ -174,22 +174,25 @@ $SU $EDITOR /etc/awall/private/custom-services.json
 ```json copy filename="/etc/awall/private/custom-services.json" /"port": 22/
 {
   "service": {
+    "albyhub": { "proto": "tcp", "port": 8030 },
     "btcrpcexpl": { "proto": "tcp", "port": 4000 },
     "dns": [
       { "proto": "tcp", "port": 53 },
       { "proto": "udp", "port": 53 }
     ],
-    "fulcrum": { "proto": "tcp", "port": 50002 },
     "electrs": { "proto": "tcp", "port": 50012 },
+    "electrs.signet.bbo": { "proto": "tcp", "port": 53012 },
+    "electrs.testnet": { "proto": "tcp", "port": 51012 },
+    "electrs.testnet4": { "proto": "tcp", "port": 54012 },
+    "fulcrum": { "proto": "tcp", "port": 50002 },
+    "fulcrum.signet.bbo": { "proto": "tcp", "port": 53002 },
+    "fulcrum.testnet": { "proto": "tcp", "port": 51002 },
+    "fulcrum.testnet4": { "proto": "tcp", "port": 54002 },
     "lnd-rest": { "proto": "tcp", "port": 8081 },
     "mempool": { "proto": "tcp", "port": 4081 },
-    "public-pool": [
-      { "proto": "tcp", "port": 23333 },
-      { "proto": "tcp", "port": 4040 }
-    ],
+    "public-pool": { "proto": "tcp", "port": [ 23333, 4040 ] },
     "samourai-dojo": { "proto": "tcp", "port": 4011 },
     "ssh": { "proto": "tcp", "port": 22 },
-    "albyhub": { "proto": "tcp", "port": 8030 },
     "thunderhub": { "proto": "tcp", "port": 4002 },
     "umbrel-nostr-relay": { "proto": "tcp", "port": 8881 }
   }

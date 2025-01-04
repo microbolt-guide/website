@@ -15,10 +15,10 @@ export const user = "fulcrum"
 [here]: https://patorjk.com/software/taag/#p=display\&f=Slant\&t=Fulcrum
 [PR]: https://github.com/cculianu/Fulcrum/pull/267
 
-[patch]: /config/bitcoin/electrum/fulcrum-v1.11.1-unix.patch
-[config]: /config/bitcoin/electrum/fulcrum-v1.11.1-main.conf
-[init.d]: /config/bitcoin/electrum/fulcrum-v1.11.1-main.init.d
-[logrotate]: /config/bitcoin/electrum/fulcrum-v1.11.1-main.logrotate
+[patch]: /config/bitcoin/electrum/fulcrum.unix.patch
+[config]: /config/bitcoin/electrum/fulcrum.conf
+[init.d]: /config/bitcoin/electrum/fulcrum.init.d
+[logrotate]: /config/bitcoin/electrum/fulcrum.logrotate
 
 [BBO]: https://bitcoinbarcelona.xyz
 [{app}]: ./fulcrum
@@ -101,13 +101,17 @@ $SU adduser fulcrum bitcoind
 $SU adduser satoshi fulcrum && exec su -l satoshi
 ```
 
-### Reverse proxy (mainnet)
+### Reverse proxy
 
 In the [security section], we set up a reverse proxy. Now we can add the {name}
 configuration.
 
 * Enable the reverse proxy to route external encrypted HTTPS traffic internally
 to the {name}
+
+<Callout type="info">
+Comment/uncomment the lines according to the network you are using.
+</Callout>
 
 <Tabs items={['caddy', 'nginx']}>
     <Tabs.Tab>
@@ -116,14 +120,37 @@ $SU $EDITOR /etc/caddy/streams/fulcrum.caddy
 ```
 
 ```nginx copy filename="/etc/caddy/streams/fulcrum.caddy"
+# Mainnet
 :50002 {
         route {
                 tls
-                proxy {
-                        upstream 127.0.0.1:50001
-                }
+                proxy 127.0.0.1:50001
         }
 }
+
+# Testnet
+#:51002 {
+#        route {
+#                tls
+#                proxy 127.0.0.1:51001
+#        }
+#}
+
+# Testnet4
+#:54002 {
+#        route {
+#                tls
+#                proxy 127.0.0.1:54001
+#        }
+#}
+
+# Signet BBO
+#:53002 {
+#        route {
+#                tls
+#                proxy 127.0.0.1:53001
+#        }
+#}
 ```
 
 * Reload Caddy
@@ -138,14 +165,29 @@ $SU $EDITOR /etc/nginx/streams-available/fulcrum.conf
 ```
 
 ```nginx copy filename="/etc/nginx/streams-available/fulcrum.conf"
-upstream fulcrum {
-  server 127.0.0.1:50001;
-}
-
+# Mainnet
 server {
   listen 50002 ssl;
-  proxy_pass fulcrum;
+  proxy_pass 127.0.0.1:50001;
 }
+
+# Testnet
+#server {
+#  listen 51002 ssl;
+#  proxy_pass 127.0.0.1:51001;
+#}
+
+# Testnet4
+#server {
+#  listen 54002 ssl;
+#  proxy_pass 127.0.0.1:54001;
+#}
+
+# Signet BBO
+#server {
+#  listen 53002 ssl;
+#  proxy_pass 127.0.0.1:53001;
+#}
 ```
 
 ```sh copy
@@ -164,7 +206,7 @@ $SU rc-service nginx restart
     </Tabs.Tab>
 </Tabs>
 
-### Firewall (mainnet)
+### Firewall
 
 * Configure the firewall to allow incoming requests
 
@@ -174,15 +216,25 @@ $SU rc-service nginx restart
 $SU $EDITOR /etc/awall/optional/fulcrum.json
 ```
 
+<Callout type="info">
+Remove the services you are not using. For example, if you are not using the
+`testnet4` network, remove the corresponding service `"fulcrum.testnet4"`.
+</Callout>
+
 ```json copy filename="/etc/awall/optional/fulcrum.json"
 {
-  "description": "Allow Fulcrum SSL (mainnet)",
+  "description": "Allow Fulcrum SSL",
 
   "filter": [
     {
       "in": "internet",
       "out": "_fw",
-      "service": "fulcrum",
+      "service": [
+        "fulcrum",
+        "fulcrum.testnet",
+        "fulcrum.testnet4",
+        "fulcrum.signet.bbo"
+      ],
       "action": "accept",
       "conn-limit": { "count": 10, "interval": 60 }
     }
@@ -198,8 +250,15 @@ $SU awall activate
 ```
     </Tabs.Tab>
     <Tabs.Tab>
+<Callout type="info">
+Execute only the commands corresponding to the networks you are using.
+</Callout>
+
 ```sh copy
 $SU ufw limit 50002/tcp comment 'Allow Fulcrum SSL (mainnet)'
+$SU ufw limit 51002/tcp comment 'Allow Fulcrum SSL (testnet)'
+$SU ufw limit 54002/tcp comment 'Allow Fulcrum SSL (testnet4)'
+$SU ufw limit 53002/tcp comment 'Allow Fulcrum SSL (signet BBO)'
 ```
     </Tabs.Tab>
 </Tabs>
@@ -358,7 +417,7 @@ want [here]
 
 ```sh copy
 $SU curl
-    -L https://microbolt.guide/config/bitcoin/electrum/fulcrum-v1.11.1-main.banner
+    -L https://microbolt.guide/config/bitcoin/electrum/fulcrum.banner
     -o /etc/fulcrum/main.banner
 ```
 
@@ -422,7 +481,7 @@ worker_threads = 1
 ```
 </FAQBox>
 
-<FAQBox title = "Remote access over Tor (mainnet)">
+<FAQBox title = "Remote access over Tor">
 To use your {name} when you're on the go, you can easily create a Tor hidden
 service. This way, you can connect the BitBoxApp or Electrum wallet also
 remotely, or even share the connection details with friends and family. Note
@@ -435,12 +494,19 @@ that the remote device needs to have Tor installed as well.
 $SU $EDITOR /etc/tor/torrc
 ```
 
+<Callout type="info">
+Comment/uncomment the lines according to the network you are using.
+</Callout>
+
 ```sh copy filename="/etc/tor/torrc"
-# Hidden Service Electrum
+# Hidden Service Fulcrum
 HiddenServiceDir /var/lib/tor/hsv3fulcrum/
 HiddenServiceVersion 3
 HiddenServicePoWDefensesEnabled 1
-HiddenServicePort 50002 127.0.0.1:50002
+HiddenServicePort 50002 127.0.0.1:50002 # Mainnet
+#HiddenServicePort 51002 127.0.0.1:51002 # Testnet
+#HiddenServicePort 54002 127.0.0.1:54002 # Testnet4
+#HiddenServicePort 53002 127.0.0.1:53002 # Signet BBO
 ```
 
 * Reload Tor configuration and get your connection address.
@@ -458,7 +524,8 @@ abcdefg..............xyz.onion
 ```
 
 * You should now be able to connect to your {name} remotely via Tor using your
-hostname and port `50002`
+hostname and port `50002` for Mainnet or `51002`, `54002`, `53002` for the
+others networks.
 </FAQBox>
 
 ### Autostart on boot

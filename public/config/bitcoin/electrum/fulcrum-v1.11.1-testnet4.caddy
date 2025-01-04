@@ -1,8 +1,0 @@
-:54002 {
-        route {
-                tls
-                proxy {
-                        upstream 127.0.0.1:54001
-                }
-        }
-}

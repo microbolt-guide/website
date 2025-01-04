@@ -1,0 +1,23 @@
+# Mainnet
+server {
+  listen 50002 ssl;
+  proxy_pass 127.0.0.1:50001;
+}
+
+# Testnet
+#server {
+#  listen 51002 ssl;
+#  proxy_pass 127.0.0.1:51001;
+#}
+
+# Testnet4
+#server {
+#  listen 54002 ssl;
+#  proxy_pass 127.0.0.1:54001;
+#}
+
+# Signet BBO
+#server {
+#  listen 53002 ssl;
+#  proxy_pass 127.0.0.1:53001;
+#}
