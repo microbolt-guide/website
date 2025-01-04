@@ -13,6 +13,7 @@ export const user = "bitcoind"
 [{name}]: https://bitcoin.org/en/bitcoin-core
 [Ordisrespector]: https://gist.github.com/luke-jr/4c022839584020444915c84bdd825831
 
+[patch]: /config/bitcoin/client/bitcoin-core-v28.0-ordisrespector.patch
 [config]: /config/bitcoin/client/bitcoin-core-v28.0-main.conf
 [init.d]: /config/bitcoin/client/bitcoin-core-v28.0-main.init.d
 [logrotate]: /config/bitcoin/client/bitcoin-core-v28.0-main.logrotate
@@ -251,6 +252,10 @@ $EDITOR ordisrespector.patch
 ```sh copy
 patch -p1 < ordisrespector.patch
 ```
+
+<Callout>
+Check this {name} ordisrespector [patch] on web browser
+</Callout>
 
 ### Configure, compile and install
 

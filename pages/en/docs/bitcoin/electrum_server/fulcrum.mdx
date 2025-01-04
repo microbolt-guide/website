@@ -15,6 +15,7 @@ export const user = "fulcrum"
 [here]: https://patorjk.com/software/taag/#p=display\&f=Slant\&t=Fulcrum
 [PR]: https://github.com/cculianu/Fulcrum/pull/267
 
+[patch]: /config/bitcoin/electrum/fulcrum-v1.11.1-unix.patch
 [config]: /config/bitcoin/electrum/fulcrum-v1.11.1-main.conf
 [init.d]: /config/bitcoin/electrum/fulcrum-v1.11.1-main.init.d
 [logrotate]: /config/bitcoin/electrum/fulcrum-v1.11.1-main.logrotate
@@ -321,6 +322,10 @@ $EDITOR unix-socket.patch
 ```sh copy
 patch -p1 < unix-socket.patch
 ```
+
+<Callout>
+Check this {name} unix socket [patch] on web browser
+</Callout>
 
 ### Configure, compile and install
 
