@@ -436,6 +436,7 @@ $SU $EDITOR /etc/init.d/bitcoind
 : ${BITCOIND_GROUP:=bitcoind}
 : ${BITCOIND_BIN:=/usr/bin/bitcoind}
 : ${BITCOIND_OPTS=${BITCOIND_OPTS}}
+: ${BITCOIND_SOCKET_PERMS:=0660}
 : ${BITCOIND_SIGTERM_TIMEOUT:=600}
 
 name="Bitcoin Knots daemon (${BITCOIND_CHAIN})"
@@ -484,6 +485,9 @@ start_pre() {
 
 start_post() {
     chmod -R u=rwX,g=rX,o= "${BITCOIND_DATADIR}" "${BITCOIND_LOGDIR}"
+    for socket in "${piddir}/${BITCOIND_CHAIN}"*.sock; do
+        [ -S "${socket}" ] && chmod "${BITCOIND_SOCKET_PERMS}" "${socket}"
+    done
 }
 
 checkconfig() {
