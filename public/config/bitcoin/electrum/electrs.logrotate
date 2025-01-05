@@ -1,0 +1,15 @@
+/var/log/electrs/**/*.log {
+    weekly
+    missingok
+    rotate 104
+    compress
+    delaycompress
+    notifempty
+    create 0640 electrs electrs
+    sharedscripts
+    postrotate
+        for pidfile in /run/electrs/*.pid; do
+            kill -HUP `cat $pidfile`
+        done
+    endscript
+}

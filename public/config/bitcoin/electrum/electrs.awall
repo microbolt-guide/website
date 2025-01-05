@@ -1,0 +1,18 @@
+{
+  "description": "Allow Electrs SSL",
+
+  "filter": [
+    {
+      "in": "internet",
+      "out": "_fw",
+      "service": [
+        "electrs",
+        "electrs.testnet",
+        "electrs.testnet4",
+        "electrs.signet.bbo"
+      ],
+      "action": "accept",
+      "conn-limit": { "count": 10, "interval": 60 }
+    }
+  ]
+}

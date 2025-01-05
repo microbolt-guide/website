@@ -1,17 +1,25 @@
-import { Steps, Tabs } from 'nextra/components'
+import { Callout, Steps, Tabs } from 'nextra/components'
 import FAQBox from '@components/FAQBox'
 
+export const app = "Electrs"
 export const name = "Electrs"
 export const user = "electrs"
 
+[{name}]: https://github.com/romanz/electrs
 [security section]: ../../system/security#reverse-proxy
 [release notes]: https://github.com/romanz/electrs/releases
-[{name}]: ./electrs
+
+[config]: /config/bitcoin/electrum/electrs.conf
+[init.d]: /config/bitcoin/electrum/electrs.init.d
+[logrotate]: /config/bitcoin/electrum/electrs.logrotate
+
+[BBO]: https://bitcoinbarcelona.xyz
+[{app}]: ./electrs
 
 # Electrs
 
-We set up [{name}](https://github.com/romanz/electrs) to serve as a full
-Electrum server for use with your Bitcoin software or hardware signing device.
+We set up [{name}] to serve as a full Electrum server for use with your Bitcoin
+software or hardware signing device.
 
 ![Electrs logo](/images/bitcoin/electrum-server/electrs.webp)
 
@@ -24,13 +32,13 @@ These are build dependencies (safe to remove after installation, if you want)
 
 ```sh copy
 $SU apk add --virtual .build-deps cargo cargo-auditable clang-dev cmake git \
-    gnupg rocksdb-dev
+    gnupg rocksdb7-dev
 ```
 
 These are runtime dependencies
 
 ```sh copy
-$SU apk add rocksdb
+$SU apk add rocksdb7
 ```
 
 ### Create the {user} user/group
@@ -71,6 +79,10 @@ configuration.
 * Enable the reverse proxy to route external encrypted HTTPS traffic internally
 to the {name}
 
+<Callout type="info">
+Comment/uncomment the lines according to the network you are using.
+</Callout>
+
 <Tabs items={['caddy', 'nginx']}>
     <Tabs.Tab>
 ```sh copy
@@ -78,14 +90,37 @@ $SU $EDITOR /etc/caddy/streams/electrs.caddy
 ```
 
 ```nginx copy filename="/etc/caddy/streams/electrs.caddy"
+# Mainnet
 :50012 {
         route {
                 tls
-                proxy {
-                        upstream 127.0.0.1:50011
-                }
+                proxy upstream 127.0.0.1:50011
         }
 }
+
+# Testnet
+#:51012 {
+#        route {
+#                tls
+#                proxy upstream 127.0.0.1:51011
+#        }
+#}
+
+# Testnet4
+#:54012 {
+#        route {
+#                tls
+#                proxy upstream 127.0.0.1:54011
+#        }
+#}
+
+# Signet BBO
+#:53012 {
+#        route {
+#                tls
+#                proxy upstream 127.0.0.1:53011
+#        }
+#}
 ```
 
 * Reload Caddy
@@ -96,25 +131,40 @@ $SU rc-service caddy reload
     </Tabs.Tab>
     <Tabs.Tab>
 ```sh copy
-$SU $EDITOR /etc/nginx/streams-available/electrs-reverse-proxy.conf
+$SU $EDITOR /etc/nginx/streams-available/electrs.conf
 ```
 
-```nginx copy filename="/etc/nginx/streams-available/electrs-reverse-proxy.conf"
-upstream electrs {
-  server 127.0.0.1:50011;
-}
-
+```nginx copy filename="/etc/nginx/streams-available/electrs.conf"
+# Mainnet
 server {
   listen 50012 ssl;
-  proxy_pass electrs;
+  proxy_pass 127.0.0.1:50011;
 }
+
+# Testnet
+#server {
+#  listen 51012 ssl;
+#  proxy_pass 127.0.0.1:51011;
+#}
+
+# Testnet4
+#server {
+#  listen 54012 ssl;
+#  proxy_pass 127.0.0.1:54011;
+#}
+
+# Signet BBO
+#server {
+#  listen 53012 ssl;
+#  proxy_pass 127.0.0.1:53011;
+#}
 ```
 
 ```sh copy
 $SU ln \
     -s \
-    ../streams-available/electrs-reverse-proxy.conf \
-    /etc/nginx/streams-enabled/electrs-reverse-proxy.conf
+    ../streams-available/electrs.conf \
+    /etc/nginx/streams-enabled/electrs.conf
 ```
 
 * Test and reload NGINX configuration
@@ -136,6 +186,11 @@ $SU rc-service nginx restart
 $SU $EDITOR /etc/awall/optional/electrs.json
 ```
 
+<Callout type="info">
+Remove the services you are not using. For example, if you are not using the
+`testnet4` network, remove the corresponding service `"electrs.testnet4"`.
+</Callout>
+
 ```json copy filename="/etc/awall/optional/electrs.json"
 {
   "description": "Allow Electrs SSL",
@@ -144,7 +199,12 @@ $SU $EDITOR /etc/awall/optional/electrs.json
     {
       "in": "internet",
       "out": "_fw",
-      "service": "electrs",
+      "service": [
+        "electrs",
+        "electrs.testnet",
+        "electrs.testnet4",
+        "electrs.signet.bbo"
+      ],
       "action": "accept",
       "conn-limit": { "count": 10, "interval": 60 }
     }
@@ -160,8 +220,15 @@ $SU awall activate
 ```
     </Tabs.Tab>
     <Tabs.Tab>
+<Callout type="info">
+Execute only the commands corresponding to the networks you are using.
+</Callout>
+
 ```sh copy
-$SU ufw limit 50012/tcp comment 'Allow Electrs SSL'
+$SU ufw limit 50012/tcp comment 'Allow Electrs SSL (mainnet)'
+$SU ufw limit 51012/tcp comment 'Allow Electrs SSL (testnet)'
+$SU ufw limit 54012/tcp comment 'Allow Electrs SSL (testnet4)'
+$SU ufw limit 53012/tcp comment 'Allow Electrs SSL (signet BBO)'
 ```
     </Tabs.Tab>
 </Tabs>
@@ -188,7 +255,7 @@ cd /tmp
 ```
 
 ```sh copy
-VERSION=0.10.7
+VERSION=0.10.8
 ```
 
 ```sh copy
@@ -253,16 +320,25 @@ $SU apk del .build-deps
 $SU $EDITOR /etc/electrs/main.toml
 ```
 
-```toml filename="/etc/electrs/main.toml" {2,4,6,8}
+```toml filename="/etc/electrs/main.toml" {2,4,6,8,10,12}
 [...]
-cookie_file = "/run/bitcoind/main.authcookie"
+#cookie_file = "/var/run/bitcoin-mainnet/cookie"
+[...]
+#daemon_rpc_addr = "127.0.0.1:8332"
+[...]
+#daemon_p2p_addr = "127.0.0.1:8333"
 [...]
 #db_dir = "/some/fast/storage/with/big/size"
 [...]
-electrum_rpc_address = "127.0.0.1:50011"
+#network = "bitcoin"
 [...]
-daemon_dir = "/var/lib/bitcoind/main"
+#electrum_rpc_addr = "127.0.0.1:50001"
+[...]
 ```
+
+<Callout>
+Check this {name} sample [config] on web browser
+</Callout>
 
 <FAQBox title="Remote access over Tor">
 To use your {name} when you're on the go, you can easily create a Tor hidden
@@ -282,7 +358,10 @@ $SU $EDITOR /etc/tor/torrc
 HiddenServiceDir /var/lib/tor/hsv3electrs/
 HiddenServiceVersion 3
 HiddenServicePoWDefensesEnabled 1
-HiddenServicePort 50012 127.0.0.1:50012
+HiddenServicePort 50002 127.0.0.1:50012 # Mainnet
+#HiddenServicePort 51002 127.0.0.1:51012 # Testnet
+#HiddenServicePort 54002 127.0.0.1:54012 # Testnet4
+#HiddenServicePort 53002 127.0.0.1:53012 # Signet BBO
 ```
 
 * Reload Tor configuration and get your connection address.
@@ -300,7 +379,8 @@ abcdefg..............xyz.onion
 ```
 
 * You should now be able to connect to your {name} remotely via Tor using your
-hostname and port `50012`
+hostname and port `50012` for Mainnet or `51012`, `54012`, `53012` for the
+others networks.
 </FAQBox>
 
 ### Autostart on boot
@@ -327,6 +407,14 @@ $SU $EDITOR /etc/init.d/electrs
 : ${ELECTRS_OPTS=${ELECTRS_OPTS}}
 : ${ELECTRS_SIGTERM_TIMEOUT:=600}
 
+network() {
+    case "${ELECTRS_CHAIN}" in
+        main) printf "bitcoin" ;;
+        test) printf "testnet" ;;
+        *)    printf "%s" "${ELECTRS_CHAIN}" ;;
+    esac
+}
+
 required_files="${ELECTRS_CONFIGFILE}"
 piddir="/run/electrs"
 pidfile="${piddir}/${ELECTRS_CHAIN}.pid"
@@ -339,6 +427,7 @@ command="${ELECTRS_BIN}"
 command_args="--conf ${ELECTRS_CONFIGFILE}
               --skip-default-conf-files
               --db-dir ${ELECTRS_DATADIR}
+              --network $(network)
               --skip-block-download-wait
               ${ELECTRS_OPTS}"
 command_user="${ELECTRS_USER}:${ELECTRS_GROUP}"
@@ -348,41 +437,168 @@ start_stop_daemon_args="--stdout ${ELECTRS_LOGDIR}/debug.log
                         --stderr ${ELECTRS_LOGDIR}/debug.log"
 
 depend() {
-    use bitcoind
-    after bitcoind
-    provide electrum
+    use bitcoind.${ELECTRS_CHAIN}
+    after bitcoind.${ELECTRS_CHAIN}
+    provide electrum.${ELECTRS_CHAIN}
 }
 
 start_pre() {
     mkdir -p "${ELECTRS_DATADIR}" "${ELECTRS_LOGDIR}"
+    [ -L "${ELECTRS_CONFIGFILE}" ] || \
     checkpath --file      --mode 0660 --owner "${command_user}" "${ELECTRS_CONFIGFILE}"
     checkpath --directory --mode 0750 --owner "${command_user}" "${ELECTRS_DATADIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${ELECTRS_LOGDIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${piddir}"
-    checkconfig
 }
 
 start_post() {
     checkpath --file --owner "${command_user}" "${pidfile}"
 }
-
-checkconfig() {
-    if ! grep -qs '^cookie_file = ' "${ELECTRS_CONFIGFILE}"
-    then
-        eerror ""
-        eerror "ERROR: You must set a cookie_file path to run Electrs."
-        eerror "The setting must appear in ${ELECTRS_CONFIGFILE}"
-        eerror ""
-        return 1
-    fi
-}
 ```
+
+<Callout>
+Check this {name} sample [init.d] on web browser
+</Callout>
 
 * Enable execution permission
 
 ```sh copy
 $SU chmod +x /etc/init.d/electrs
 ```
+
+<Tabs items={['mainnet', 'testnet', 'testnet4', 'signet BBO']}>
+    <Tabs.Tab>
+* Create the init configuration file `conf.d/electrs` and add the following
+
+```sh copy
+$SU $EDITOR /etc/conf.d/electrs
+```
+
+```sh copy filename="/etc/conf.d/electrs"
+ELECTRS_OPTS='--daemon-dir /var/lib/bitcoind/${ELECTRS_CHAIN}
+              --cookie-file /run/bitcoind/${ELECTRS_CHAIN}.authcookie
+              --electrum-rpc-addr 127.0.0.1:50011
+              --daemon-rpc-addr 127.0.0.1:8332
+              --daemon-p2p-addr 127.0.0.1:8333'
+```
+
+* Enable autoboot
+
+```sh copy
+$SU rc-update add electrs default
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+* Make a symlink of the default config and the init.d configuration file
+
+```sh copy
+$SU ln -s main.toml /etc/electrs/test.toml
+```
+
+```sh copy
+$SU ln -s electrs /etc/init.d/electrs.testnet
+```
+
+* Create the init configuration file `conf.d/electrs.testnet` and add the
+following
+
+```sh copy
+$SU $EDITOR /etc/conf.d/electrs.testnet
+```
+
+```sh copy filename="/etc/conf.d/electrs.testnet"
+ELECTRS_CHAIN=test
+ELECTRS_OPTS='--daemon-dir /var/lib/bitcoind/${ELECTRS_CHAIN}
+              --cookie-file /run/bitcoind/${ELECTRS_CHAIN}.authcookie
+              --electrum-rpc-addr 127.0.0.1:51011
+              --daemon-rpc-addr 127.0.0.1:18332
+              --daemon-p2p-addr 127.0.0.1:18333'
+```
+
+* Enable autoboot (optional)
+
+```sh copy
+$SU rc-update add electrs.testnet default
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+<Callout type="warning">
+`testnet4` is not available on Bitcoin Knots yet. You can only use it with
+Bitcoin Core.
+</Callout>
+
+* Make a symlink of the default config and the init.d configuration file
+
+```sh copy
+$SU ln -s main.toml /etc/electrs/testnet4.toml
+```
+
+```sh copy
+$SU ln -s electrs /etc/init.d/electrs.testnet4
+```
+
+* Create the init configuration file `conf.d/electrs.testnet4` and add the
+following
+
+```sh copy
+$SU $EDITOR /etc/conf.d/electrs.testnet4
+```
+
+```sh copy filename="/etc/conf.d/electrs.testnet4"
+ELECTRS_CHAIN=testnet4
+ELECTRS_OPTS='--daemon-dir /var/lib/bitcoind/${ELECTRS_CHAIN}
+              --cookie-file /run/bitcoind/${ELECTRS_CHAIN}.authcookie
+              --electrum-rpc-addr 127.0.0.1:54011
+              --daemon-rpc-addr 127.0.0.1:48332
+              --daemon-p2p-addr 127.0.0.1:48333'
+```
+
+* Enable autoboot (optional)
+
+```sh copy
+$SU rc-update add electrs.testnet4 default
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+<Callout>
+BBO means `Barcelona Bitcoin Only`, a signet network for testing purposes from
+the ❤️ Barcelona Bitcoin Community. More info at [BBO]
+</Callout>
+
+* Make a symlink of the default config and the init.d configuration file
+
+```sh copy
+$SU ln -s main.toml /etc/electrs/signet.bbo.toml
+```
+
+```sh copy
+$SU ln -s electrs /etc/init.d/electrs.signet.bbo
+```
+
+* Create the init configuration file `conf.d/electrs.signet.bbo` and add the following
+
+```sh copy
+$SU $EDITOR /etc/conf.d/electrs.signet.bbo
+```
+
+```sh copy filename="/etc/conf.d/electrs.signet.bbo"
+ELECTRS_CHAIN=signet
+ELECTRS_CONFIGFILE='/etc/electrs/${ELECTRS_CHAIN}.bbo.toml'
+ELECTRS_OPTS='--daemon-dir /var/lib/bitcoind/${ELECTRS_CHAIN}
+              --cookie-file /run/bitcoind/${ELECTRS_CHAIN}.bbo.authcookie
+              --electrum-rpc-addr 127.0.0.1:53011
+              --daemon-rpc-addr 127.0.0.1:38332
+              --daemon-p2p-addr 127.0.0.1:38333
+              --signet-magic 7529730b'
+```
+
+* Enable autoboot (optional)
+
+```sh copy
+$SU rc-update add electrs.signet.bbo default
+```
+    </Tabs.Tab>
+</Tabs>
 
 ### Enable logrotate
 
@@ -393,7 +609,7 @@ $SU $EDITOR /etc/logrotate.d/electrs
 ```
 
 ```sh copy filename="/etc/logrotate.d/electrs"
-/var/log/electrs/main/*.log {
+/var/log/electrs/**/*.log {
     weekly
     missingok
     rotate 104
@@ -403,10 +619,16 @@ $SU $EDITOR /etc/logrotate.d/electrs
     create 0640 electrs electrs
     sharedscripts
     postrotate
-        kill -HUP `cat /run/electrs/main.pid`
+        for pidfile in /run/electrs/*.pid; do
+            kill -HUP `cat $pidfile`
+        done
     endscript
 }
 ```
+
+<Callout>
+Check this {name} sample [logrotate] on web browser
+</Callout>
 
 * Test
 
@@ -415,10 +637,6 @@ $SU logrotate /etc/logrotate.d/electrs --debug
 ```
 
 ## Enable and start {name}
-
-```sh copy
-$SU rc-update add electrs
-```
 
 ```sh copy
 $SU rc-service electrs start

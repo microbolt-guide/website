@@ -1,0 +1,31 @@
+# Mainnet
+:50012 {
+        route {
+                tls
+                proxy upstream 127.0.0.1:50011
+        }
+}
+
+# Testnet
+#:51012 {
+#        route {
+#                tls
+#                proxy upstream 127.0.0.1:51011
+#        }
+#}
+
+# Testnet4
+#:54012 {
+#        route {
+#                tls
+#                proxy upstream 127.0.0.1:54011
+#        }
+#}
+
+# Signet BBO
+#:53012 {
+#        route {
+#                tls
+#                proxy upstream 127.0.0.1:53011
+#        }
+#}
