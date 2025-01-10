@@ -1,7 +1,7 @@
 #!/sbin/openrc-run
 
 : ${MEMPOOL_CHAIN:=main}
-: ${MEMPOOL_CONFIG_TEMPLATE:=/etc/mempool/template.json}
+: ${MEMPOOL_BACKEND_TEMPLATE:=/etc/mempool/backend.template.json}
 : ${MEMPOOL_CONFIGFILE:=/etc/mempool/${MEMPOOL_CHAIN}.json}
 : ${MEMPOOL_DATADIR:=/var/lib/mempool}
 : ${MEMPOOL_LOGDIR:=/var/log/mempool/${MEMPOOL_CHAIN}}
@@ -45,7 +45,7 @@ depend() {
 
 start_pre() {
     mkdir -p "${MEMPOOL_LOGDIR}"
-    cat "${MEMPOOL_CONFIG_TEMPLATE}" > "${MEMPOOL_CONFIGFILE}"
+    cat "${MEMPOOL_BACKEND_TEMPLATE}" > "${MEMPOOL_CONFIGFILE}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${MEMPOOL_CONFIGFILE%/*}"
     checkpath --file      --mode 0660 --owner "${command_user}" "${MEMPOOL_CONFIGFILE}"
     checkpath --directory --mode 0750 --owner "${command_user}" "${MEMPOOL_DATADIR}"

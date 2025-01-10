@@ -1,18 +1,26 @@
 import { Callout, Steps, Tabs } from 'nextra/components'
 import FAQBox from '@components/FAQBox'
 
+export const app = "Mempool Space"
 export const name = "Mempool Space"
 export const user = "mempool"
 
+[{name}]: https://github.com/mempool/mempool
 [security section]: ../../system/security#reverse-proxy
 [release notes]: https://github.com/mempool/mempool/releases
-[{name}]: ./mempool_space
+[wiz]: https://github.com/wiz
+[MariaDB]: https://mariadb.org
+
+[init.d]: /config/bitcoin/explorer/mempool.init.d
+[logrotate]: /config/bitcoin/explorer/mempool.logrotate
+
+[{app}]: ./mempool_space
 
 # Mempool Space
 
-[{name}](https://github.com/mempool/mempool) is a self-hosted Bitcoin blockchain
-and mempool visualizer/explorer. Look up your onchain transactions and estimate
-transaction fees without any privacy leaks.
+[{name}] is a self-hosted Bitcoin blockchain and mempool visualizer/explorer.
+Look up your onchain transactions and estimate transaction fees without any
+privacy leaks.
 
 ![Mempool Space preview](/images/bitcoin/blockchain-explorer/mempool-preview.webp)
 
@@ -96,6 +104,10 @@ configuration.
 * Enable the reverse proxy to route external encrypted HTTPS traffic internally
 to the {name}
 
+<Callout type="info">
+Comment/uncomment the lines according to the network you are using.
+</Callout>
+
 <Tabs items={['caddy', 'nginx']}>
     <Tabs.Tab>
 ```sh copy
@@ -103,18 +115,39 @@ $SU $EDITOR /etc/caddy/sites/mempool.caddy
 ```
 
 ```nginx copy filename="/etc/caddy/sites/mempool.caddy"
+(api_routes) {
+    handle {args[0]}/api/v1/* {
+        uri strip_prefix {args[0]}
+        reverse_proxy 127.0.0.1:{args[1]}
+    }
+
+    handle {args[0]}/api/* {
+        uri strip_prefix {args[0]}
+        uri replace /api/ /api/v1/
+        reverse_proxy 127.0.0.1:{args[1]}
+    }
+}
+
+(network_handler) {
+    @{args[0]} path {args[1]}/*
+    handle @{args[0]} {
+        root {args[2]}
+        uri strip_prefix {args[1]}
+        try_files {path} /{lang}{path} /en-US{path} /{lang}/index.html /en-US/index.html
+    }
+}
+
 :4081 {
     import tls
     root /var/www/mempool/browser
 
-    handle /api/v1/* {
-        reverse_proxy 127.0.0.1:8999
-    }
-
-    handle /api/* {
-        uri replace /api/ /api/v1/
-        reverse_proxy 127.0.0.1:8999
-    }
+    # API handlers for all networks
+    import api_routes "" 8999                 # Mainnet
+    #import api_routes "/testnet" 8997         # Testnet
+    #import api_routes "/testnet4" 8990        # Testnet4
+    #import api_routes "/signet" 8995          # Signet
+    #import api_routes "/liquid/testnet" 8994  # Liquid Testnet
+    #import api_routes "/liquid" 8998          # Liquid
 
     handle {
         map {header.accept-language} {header_lang} {
@@ -201,10 +234,15 @@ $SU $EDITOR /etc/caddy/sites/mempool.caddy
             try_files {path} /{re.lang-override.1}/index.html /en-US{path} /en-US/index.html
         }
 
-        handle {
-            try_files {path} /{lang}{path} /en-US{path} /{lang}/index.html /en-US/index.html
-        }
+        # Network handlers
+        import network_handler "testnet" "/testnet" "/var/www/mempool/browser"
+        #import network_handler "testnet4" "/testnet4" "/var/www/mempool/browser"
+        #import network_handler "signet" "/signet" "/var/www/mempool/browser"
+        #import network_handler "liquidtestnet" "/liquid/testnet" "/var/www/liquid/browser"
+        #import network_handler "liquid" "/liquid" "/var/www/liquid/browser"
 
+        # Mainnet (default)
+        try_files {path} /{lang}{path} /en-US{path} /{lang}/index.html /en-US/index.html
         file_server
     }
 }
@@ -218,10 +256,10 @@ $SU rc-service caddy reload
     </Tabs.Tab>
     <Tabs.Tab>
 ```sh copy
-$SU $EDITOR /etc/nginx/sites-available/mempool-reverse-proxy.conf
+$SU $EDITOR /etc/nginx/sites-available/mempool.conf
 ```
 
-```nginx copy filename="/etc/nginx/sites-available/mempool-reverse-proxy.conf"
+```nginx copy filename="/etc/nginx/sites-available/mempool.conf"
 proxy_read_timeout 300;
 proxy_connect_timeout 300;
 proxy_send_timeout 300;
@@ -398,8 +436,8 @@ server {
 ```sh copy
 $SU ln \
     -s \
-    ../sites-available/mempool-reverse-proxy.conf \
-    /etc/nginx/sites-enabled/mempool-reverse-proxy.conf
+    ../sites-available/mempool.conf \
+    /etc/nginx/sites-enabled/mempool.conf
 ```
 
 * Test and reload NGINX configuration
@@ -478,7 +516,7 @@ git clone --branch v$VERSION https://github.com/mempool/mempool.git && cd mempoo
 ### Signature check
 
 * To avoid using bad source code, verify that the release has been properly
-signed at least by one of the main developer [wiz](https://github.com/wiz).
+signed at least by one of the main developer [wiz].
 
 ```sh copy
 curl -s https://github.com/wiz.gpg | gpg --import
@@ -490,7 +528,7 @@ git verify-tag v$VERSION
 
 ### MariaDB
 
-[MariaDB](https://mariadb.org) is an open source relational database.
+[MariaDB] is an open source relational database.
 
 * First need to create initial databases and start the service
 
@@ -503,8 +541,8 @@ $SU rc-service mariadb start
 {user} user directly from the command line
 
 ```sh copy
-$SU mysql -e "create database mempool;"
-$SU mysql -e "grant all privileges on mempool.* to 'mempool'@'localhost' identified via unix_socket;"
+$SU mariadb -e "create database mempool;"
+$SU mariadb -e "grant all privileges on mempool.* to 'mempool'@'localhost' identified via unix_socket;"
 ```
 
 ### Backend
@@ -513,9 +551,6 @@ $SU mysql -e "grant all privileges on mempool.* to 'mempool'@'localhost' identif
 
 ```sh copy
 cd /tmp/mempool/backend
-```
-
-```sh copy
 npm ci --omit=dev --omit=optional
 ```
 
@@ -531,15 +566,6 @@ To address all issues, run:
 Run `npm audit` for details.
 ```
 
-<Callout type="warning">
-At `2024-08-31` there is at least **3 high severity vulnerabilities** not
-addressable without breaking changes
-
-```sh copy
-npm audit fix
-```
-</Callout>
-
 * Make it a global permanent installation
 
 ```sh copy
@@ -551,10 +577,15 @@ mkdir ./package/bin
 ```
 
 ```sh copy
-printf "%s\n" \
-    "#!/bin/sh" \
-    "node /var/lib/mempool/index.js" \
-    > ./package/bin/cli.sh
+cp ../docker/backend/start.sh ./package/bin/cli.sh
+```
+
+```sh copy
+sed -e 's/sed -i /sed /g' \
+    -e 's/mempool-config.json/"${MEMPOOL_CONFIG_FILE}" > _\nmv -f _ "${MEMPOOL_CONFIG_FILE}"/g' \
+    -e 's/\/backend\/package\/index.js/"${MEMPOOL_DATADIR}\/index.js"/g' \
+    ./package/bin/cli.sh > _
+mv -f _ ./package/bin/cli.sh
 ```
 
 ```sh copy
@@ -562,11 +593,12 @@ chmod +x ./package/bin/cli.sh
 ```
 
 ```sh copy
-$SU install -D -m 0660 -o mempool -g mempool ./mempool-config.sample.json /etc/mempool/main.json
+$SU install -D -m 0660 -o mempool -g mempool ../docker/backend/mempool-config.json /etc/mempool/backend.template.json
 ```
 
 ```sh copy
 $SU mv -f /tmp/mempool/backend/package /var/lib/mempool
+$SU chown -R mempool:mempool /var/lib/mempool
 ```
 
 ```sh copy
@@ -598,15 +630,6 @@ To address all issues (including breaking changes), run:
 Run `npm audit` for details.
 ```
 
-<Callout type="warning">
-At `2024-08-31` there is at least **16 vulnerabilities** not addressable
-without breaking changes
-
-```sh copy
-npm audit fix --force
-```
-</Callout>
-
 * Make it a global permanent installation
 
 ```sh copy
@@ -616,6 +639,19 @@ npm run build
 ```sh copy
 $SU mv -f ./dist/mempool /var/www/
 ```
+
+<FAQBox title="Liquid Network">
+<Callout type="warning">
+No seriously tested yet.
+</Callout>
+
+If you want to use Mempool Space with the Liquid Network, you need to make a
+copy of the frontend directory in order to be able to configure it separately.
+
+```sh copy
+$SU cp -r /var/www/mempool /var/www/liquid
+```
+</FAQBox>
 
 ### Cleanup
 
@@ -628,62 +664,35 @@ $SU apk del .build-deps
 
 ## Configuration
 
-* Check the configuration file and change highlighted values
-
-```sh copy
-$SU $EDITOR /etc/mempool/main.json
-```
-
-```json filename="/etc/mempool/main.json" {2,4,8-9,11-12,15-16,19,23,25,28}
-[...]
-    "INDEXING_BLOCKS_AMOUNT": 52560,
-[...]
-    "STDOUT_LOG_MIN_PRIORITY": "info",
-[...]
-  "CORE_RPC": {
-[...]
-    "USERNAME": "",
-    "PASSWORD": "",
-[...]
-    "COOKIE": true,
-    "COOKIE_PATH": "/run/bitcoind/main.authcookie"
-  },
-  "ESPLORA": {
-    "REST_API_URL": "",
-    "UNIX_SOCKET_PATH": "",
-[...]
-  "SECOND_CORE_RPC": {
-    "HOST": "",
-[...]
-  "DATABASE": {
-[...]
-    "SOCKET": "/run/mysqld/mysqld.sock",
-[...]
-    "PASSWORD": "",
-[...]
-  "SOCKS5PROXY": {
-    "ENABLED": true,
-[...]
-```
-
 <FAQBox title="Redis">
-To use Redis caching, you need to install the `redis` package and configure the
-{name} configuration file.
+To use Redis caching, you need to install the `redis` package, add {user} to
+redis group and configure the {name} conf.d file.
 
 ```sh copy
 $SU apk add redis
 ```
 
-```json filename="/etc/mempool/main.json" {3-4}
+```sh copy
+$SU adduser mempool redis
+```
+
+```json filename="/etc/conf.d/mempool" {2,4-5}
 [...]
-  "REDIS": {
-    "ENABLED": true,
-    "UNIX_SOCKET_PATH": "/run/redis/redis.sock",
+MEMPOOL_EXTRA_DEPENDS=redis
+
+export REDIS_ENABLED=true
+export REDIS_UNIX_SOCKET_PATH=/run/redis/redis.sock
 [...]
 ```
+
+Repeat it for every chain you want to use Redis with.
 </FAQBox>
 
 <FAQBox title="Remote access over Tor">
+<Callout type="warning">
+Not ready yet.
+</Callout>
+
 To use your blockchain explorer when you're on the go, you can easily create a
 Tor hidden service on the Microbolt and accessing the {name} with the Tor
 browser from any device.
@@ -700,7 +709,12 @@ $SU $EDITOR /etc/tor/torrc
 HiddenServiceDir /var/lib/tor/hsv3mempool/
 HiddenServiceVersion 3
 HiddenServicePoWDefensesEnabled 1
-HiddenServicePort 443 127.0.0.1:4081
+HiddenServicePort 80 127.0.0.1:8999 # Mainnet
+#HiddenServicePort 180 127.0.0.1:8997 # Testnet
+#HiddenServicePort 480 127.0.0.1:8990 # Testnet4
+#HiddenServicePort 380 127.0.0.1:8995 # Signet BBO
+#HiddenServicePort 880 127.0.0.1:8998 # Liquid
+#HiddenServicePort 884 127.0.0.1:8994 # Liquid Testnet
 ```
 
 * Reload Tor configuration and get your connection address.
@@ -721,6 +735,114 @@ abcdefg..............xyz.onion
 hostname
 </FAQBox>
 
+### Backend
+
+* Check the backend start script file and change highlighted values
+
+```sh copy
+$SU $EDITOR /var/lib/mempool/bin/cli.sh
+```
+
+```diff filename="/var/lib/mempool/bin/cli.sh"
+@@ -10,16 +10,16 @@
+ __MEMPOOL_UNIX_SOCKET_PATH__=${MEMPOOL_UNIX_SOCKET_PATH:=""}
+ __MEMPOOL_API_URL_PREFIX__=${MEMPOOL_API_URL_PREFIX:=/api/v1/}
+ __MEMPOOL_POLL_RATE_MS__=${MEMPOOL_POLL_RATE_MS:=2000}
+-__MEMPOOL_CACHE_DIR__=${MEMPOOL_CACHE_DIR:=./cache}
++__MEMPOOL_CACHE_DIR__=${MEMPOOL_CACHE_DIR:=./cache/${MEMPOOL_CHAIN}}
+ __MEMPOOL_CACHE_ENABLED__=${MEMPOOL_CACHE_ENABLED:=true}
+ __MEMPOOL_CLEAR_PROTECTION_MINUTES__=${MEMPOOL_CLEAR_PROTECTION_MINUTES:=20}
+ __MEMPOOL_RECOMMENDED_FEE_PERCENTILE__=${MEMPOOL_RECOMMENDED_FEE_PERCENTILE:=50}
+ __MEMPOOL_BLOCK_WEIGHT_UNITS__=${MEMPOOL_BLOCK_WEIGHT_UNITS:=4000000}
+ __MEMPOOL_INITIAL_BLOCKS_AMOUNT__=${MEMPOOL_INITIAL_BLOCKS_AMOUNT:=8}
+ __MEMPOOL_MEMPOOL_BLOCKS_AMOUNT__=${MEMPOOL_MEMPOOL_BLOCKS_AMOUNT:=8}
+-__MEMPOOL_INDEXING_BLOCKS_AMOUNT__=${MEMPOOL_INDEXING_BLOCKS_AMOUNT:=11000}
++__MEMPOOL_INDEXING_BLOCKS_AMOUNT__=${MEMPOOL_INDEXING_BLOCKS_AMOUNT:=52560}
+ __MEMPOOL_BLOCKS_SUMMARIES_INDEXING__=${MEMPOOL_BLOCKS_SUMMARIES_INDEXING:=false}
+-__MEMPOOL_GOGGLES_INDEXING__=${MEMPOOL_GOGGLES_INDEXING:=false}
++__MEMPOOL_GOGGLES_INDEXING__=${MEMPOOL_GOGGLES_INDEXING:=true}
+ __MEMPOOL_USE_SECOND_NODE_FOR_MINFEE__=${MEMPOOL_USE_SECOND_NODE_FOR_MINFEE:=false}
+ __MEMPOOL_EXTERNAL_ASSETS__=${MEMPOOL_EXTERNAL_ASSETS:=[]}
+ __MEMPOOL_EXTERNAL_MAX_RETRY__=${MEMPOOL_EXTERNAL_MAX_RETRY:=1}
+@@ -30,7 +30,7 @@
+ __MEMPOOL_POOLS_JSON_URL__=${MEMPOOL_POOLS_JSON_URL:=https://raw.githubusercontent.com/mempool/mining-pools/master/pools-v2.json}
+ __MEMPOOL_POOLS_JSON_TREE_URL__=${MEMPOOL_POOLS_JSON_TREE_URL:=https://api.github.com/repos/mempool/mining-pools/git/trees/master}
+ __MEMPOOL_AUDIT__=${MEMPOOL_AUDIT:=false}
+-__MEMPOOL_RUST_GBT__=${MEMPOOL_RUST_GBT:=false}
++__MEMPOOL_RUST_GBT__=${MEMPOOL_RUST_GBT:=true}
+ __MEMPOOL_LIMIT_GBT__=${MEMPOOL_LIMIT_GBT:=false}
+ __MEMPOOL_CPFP_INDEXING__=${MEMPOOL_CPFP_INDEXING:=false}
+ __MEMPOOL_MAX_BLOCKS_BULK_QUERY__=${MEMPOOL_MAX_BLOCKS_BULK_QUERY:=0}
+@@ -38,7 +38,7 @@
+ __MEMPOOL_MAX_PUSH_TX_SIZE_WEIGHT__=${MEMPOOL_MAX_PUSH_TX_SIZE_WEIGHT:=4000000}
+ __MEMPOOL_ALLOW_UNREACHABLE__=${MEMPOOL_ALLOW_UNREACHABLE:=true}
+ __MEMPOOL_PRICE_UPDATES_PER_HOUR__=${MEMPOOL_PRICE_UPDATES_PER_HOUR:=1}
+-__MEMPOOL_MAX_TRACKED_ADDRESSES__=${MEMPOOL_MAX_TRACKED_ADDRESSES:=1}
++__MEMPOOL_MAX_TRACKED_ADDRESSES__=${MEMPOOL_MAX_TRACKED_ADDRESSES:=100}
+
+ # CORE_RPC
+ __CORE_RPC_HOST__=${CORE_RPC_HOST:=127.0.0.1}
+@@ -46,13 +46,13 @@
+ __CORE_RPC_USERNAME__=${CORE_RPC_USERNAME:=mempool}
+ __CORE_RPC_PASSWORD__=${CORE_RPC_PASSWORD:=mempool}
+ __CORE_RPC_TIMEOUT__=${CORE_RPC_TIMEOUT:=60000}
+-__CORE_RPC_COOKIE__=${CORE_RPC_COOKIE:=false}
+-__CORE_RPC_COOKIE_PATH__=${CORE_RPC_COOKIE_PATH:=""}
++__CORE_RPC_COOKIE__=${CORE_RPC_COOKIE:=true}
++__CORE_RPC_COOKIE_PATH__=${CORE_RPC_COOKIE_PATH:=/run/bitcoind/${MEMPOOL_CHAIN}.authcookie}
+
+ # ELECTRUM
+ __ELECTRUM_HOST__=${ELECTRUM_HOST:=127.0.0.1}
+ __ELECTRUM_PORT__=${ELECTRUM_PORT:=50002}
+-__ELECTRUM_TLS_ENABLED__=${ELECTRUM_TLS_ENABLED:=false}
++__ELECTRUM_TLS_ENABLED__=${ELECTRUM_TLS_ENABLED:=true}
+
+ # ESPLORA
+ __ESPLORA_REST_API_URL__=${ESPLORA_REST_API_URL:=http://127.0.0.1:3000}
+@@ -76,7 +76,7 @@
+ # DATABASE
+ __DATABASE_ENABLED__=${DATABASE_ENABLED:=true}
+ __DATABASE_HOST__=${DATABASE_HOST:=127.0.0.1}
+-__DATABASE_SOCKET__=${DATABASE_SOCKET:=""}
++__DATABASE_SOCKET__=${DATABASE_SOCKET:=/run/mysqld/mysqld.sock}
+ __DATABASE_PORT__=${DATABASE_PORT:=3306}
+ __DATABASE_DATABASE__=${DATABASE_DATABASE:=mempool}
+ __DATABASE_USERNAME__=${DATABASE_USERNAME:=mempool}
+@@ -86,7 +86,7 @@
+ __DATABASE_POOL_SIZE__=${DATABASE_POOL_SIZE:=100}
+
+ # SYSLOG
+-__SYSLOG_ENABLED__=${SYSLOG_ENABLED:=false}
++__SYSLOG_ENABLED__=${SYSLOG_ENABLED:=true}
+ __SYSLOG_HOST__=${SYSLOG_HOST:=127.0.0.1}
+ __SYSLOG_PORT__=${SYSLOG_PORT:=514}
+ __SYSLOG_MIN_PRIORITY__=${SYSLOG_MIN_PRIORITY:=info}
+@@ -97,7 +97,7 @@
+ __STATISTICS_TX_PER_SECOND_SAMPLE_PERIOD__=${STATISTICS_TX_PER_SECOND_SAMPLE_PERIOD:=150}
+
+ # SOCKS5PROXY
+-__SOCKS5PROXY_ENABLED__=${SOCKS5PROXY_ENABLED:=false}
++__SOCKS5PROXY_ENABLED__=${SOCKS5PROXY_ENABLED:=true}
+ __SOCKS5PROXY_USE_ONION__=${SOCKS5PROXY_USE_ONION:=true}
+ __SOCKS5PROXY_HOST__=${SOCKS5PROXY_HOST:=localhost}
+ __SOCKS5PROXY_PORT__=${SOCKS5PROXY_PORT:=9050}
+@@ -130,7 +130,7 @@
+ __CLIGHTNING_SOCKET__=${CLIGHTNING_SOCKET:=""}
+
+ # MAXMIND
+-__MAXMIND_ENABLED__=${MAXMIND_ENABLED:=true}
++__MAXMIND_ENABLED__=${MAXMIND_ENABLED:=false}
+ __MAXMIND_GEOLITE2_CITY__=${MAXMIND_GEOLITE2_CITY:="/backend/GeoIP/GeoLite2-City.mmdb"}
+ __MAXMIND_GEOLITE2_ASN__=${MAXMIND_GEOLITE2_ASN:="/backend/GeoIP/GeoLite2-ASN.mmdb"}
+ __MAXMIND_GEOIP2_ISP__=${MAXMIND_GEOIP2_ISP:=""}
+```
+
+### Frontend
+
+<Callout type="warning">
+Not ready yet.
+</Callout>
+
 ### Autostart on boot
 
 Now we'll make sure our blockchain explorer starts as a service on the computer
@@ -737,22 +859,30 @@ $SU $EDITOR /etc/init.d/mempool
 #!/sbin/openrc-run
 
 : ${MEMPOOL_CHAIN:=main}
+: ${MEMPOOL_BACKEND_TEMPLATE:=/etc/mempool/backend.template.json}
 : ${MEMPOOL_CONFIGFILE:=/etc/mempool/${MEMPOOL_CHAIN}.json}
-: ${MEMPOOL_DATADIR:=/var/lib/mempool/${MEMPOOL_CHAIN}}
+: ${MEMPOOL_DATADIR:=/var/lib/mempool}
 : ${MEMPOOL_LOGDIR:=/var/log/mempool/${MEMPOOL_CHAIN}}
 : ${MEMPOOL_USER:=mempool}
 : ${MEMPOOL_GROUP:=mempool}
 : ${MEMPOOL_BIN:=/usr/bin/mempool}
 : ${MEMPOOL_OPTS=${MEMPOOL_OPTS}}
 : ${MEMPOOL_SIGTERM_TIMEOUT:=600}
+: ${MEMPOOL_EXTRA_DEPENDS=${MEMPOOL_EXTRA_DEPENDS}}
+
+case "${MEMPOOL_CHAIN}" in
+    main)          MEMPOOL_NETWORK="mainnet" ;;
+    test|testnet4) MEMPOOL_NETWORK="testnet" ;;
+    *)             MEMPOOL_NETWORK="${MEMPOOL_CHAIN}" ;;
+esac
 
 name="Mempool Space (${MEMPOOL_CHAIN})"
 description="A self-hosted Bitcoin blockchain and mempool visualizer/explorer"
 
 directory="${MEMPOOL_DATADIR}"
-required_files="${MEMPOOL_CONFIGFILE}"
+#required_files="${MEMPOOL_CONFIGFILE}"
 piddir="/run/mempool"
-pidfile="${piddir}/${SVCNAME}.pid"
+pidfile="${piddir}/${MEMPOOL_CHAIN}.pid"
 retry="${MEMPOOL_SIGTERM_TIMEOUT}"
 
 command="${MEMPOOL_BIN}"
@@ -761,26 +891,20 @@ command_user="${MEMPOOL_USER}:${MEMPOOL_GROUP}"
 command_background="true"
 
 start_stop_daemon_args="--env MEMPOOL_CONFIG_FILE=${MEMPOOL_CONFIGFILE}
+                        --env MEMPOOL_CHAIN=${MEMPOOL_CHAIN}
+                        --env MEMPOOL_NETWORK=${MEMPOOL_NETWORK}
+                        --env MEMPOOL_DATADIR=${MEMPOOL_DATADIR}
                         --stdout ${MEMPOOL_LOGDIR}/debug.log
                         --stderr ${MEMPOOL_LOGDIR}/debug.log"
 
 depend() {
-    need bitcoind electrum mariadb
-    checkdepend REDIS redis
-}
-
-checkdepend() {
-    if sed -n '/^[[:space:]]*"'${1}'": {/,/^[[:space:]]*}/p' "${MEMPOOL_CONFIGFILE}" | grep -qs '"ENABLED": true'; then
-        need "${2:-$1}"
-    fi
-}
-
-service_exists() {
-    rc-service --list | grep -q "^$1$"
+    need "bitcoind.${MEMPOOL_CHAIN}" "electrum.${MEMPOOL_CHAIN}" mariadb "${MEMPOOL_EXTRA_DEPENDS}"
 }
 
 start_pre() {
-    mkdir -p "${MEMPOOL_DATADIR}" "${MEMPOOL_LOGDIR}"
+    mkdir -p "${MEMPOOL_LOGDIR}"
+    cat "${MEMPOOL_BACKEND_TEMPLATE}" > "${MEMPOOL_CONFIGFILE}"
+    checkpath --directory --mode 0755 --owner "${command_user}" "${MEMPOOL_CONFIGFILE%/*}"
     checkpath --file      --mode 0660 --owner "${command_user}" "${MEMPOOL_CONFIGFILE}"
     checkpath --directory --mode 0750 --owner "${command_user}" "${MEMPOOL_DATADIR}"
     checkpath --directory --mode 0755 --owner "${command_user}" "${MEMPOOL_LOGDIR}"
@@ -799,11 +923,152 @@ stop() {
 }
 ```
 
+<Callout>
+Check this {name} sample [init.d] on web browser
+</Callout>
+
 * Enable execution permission
 
 ```sh copy
 $SU chmod +x /etc/init.d/mempool
 ```
+
+<Tabs items={['mainnet', 'testnet', 'testnet4', 'signet BBO']}>
+    <Tabs.Tab>
+<Callout type="info">
+There's no need to configure anything else for the mainnet. You can now enable
+and start the service.
+</Callout>
+
+* Enable autoboot
+
+```sh copy
+$SU rc-update add mempool default
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+* Make a symlink of the init.d file
+
+```sh copy
+$SU ln -s mempool /etc/init.d/mempool.testnet
+```
+
+* Create the init configuration file `conf.d/mempool.testnet` and add the
+following
+
+```sh copy
+$SU $EDITOR /etc/conf.d/mempool.testnet
+```
+
+```sh copy filename="/etc/conf.d/mempool.testnet"
+MEMPOOL_CHAIN=test
+
+export BACKEND_HTTP_PORT=8997
+export CORE_RPC_PORT=18332
+export ELECTRUM_PORT=51002 # 51002 for fulcrum, 51012 for electrs
+export DATABASE_DATABASE=mempool_test
+```
+
+* Create a mempool_test database and grant privileges to {user} user directly
+from the command line
+
+```sh copy
+$SU mariadb -e "create database mempool_test;"
+$SU mariadb -e "grant all privileges on mempool_test.* to 'mempool'@'localhost' identified via unix_socket;"
+```
+
+* Enable autoboot (optional)
+
+```sh copy
+$SU rc-update add mempool.testnet default
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+<Callout type="warning">
+`testnet4` is not available on Bitcoin Knots yet. You can only use it with
+Bitcoin Core.
+</Callout>
+
+* Make a symlink of the init.d file
+
+```sh copy
+$SU ln -s mempool /etc/init.d/mempool.testnet4
+```
+
+* Create the init configuration file `conf.d/mempool.testnet4` and add the
+following
+
+```sh copy
+$SU $EDITOR /etc/conf.d/mempool.testnet4
+```
+
+```sh copy filename="/etc/conf.d/mempool.testnet4"
+MEMPOOL_CHAIN=testnet4
+
+export BACKEND_HTTP_PORT=8990
+export CORE_RPC_PORT=48332
+export ELECTRUM_PORT=54002 # 54002 for fulcrum, 54012 for electrs
+export DATABASE_DATABASE=mempool_testnet4
+```
+
+* Create a mempool_testnet4 database and grant privileges to {user} user
+directly from the command line
+
+```sh copy
+$SU mariadb -e "create database mempool_testnet4;"
+$SU mariadb -e "grant all privileges on mempool_testnet4.* to 'mempool'@'localhost' identified via unix_socket;"
+```
+
+* Enable autoboot (optional)
+
+```sh copy
+$SU rc-update add mempool.testnet4 default
+```
+    </Tabs.Tab>
+    <Tabs.Tab>
+<Callout>
+BBO means `Barcelona Bitcoin Only`, a signet network for testing purposes from
+the ❤️ Barcelona Bitcoin Community. More info at [BBO]
+</Callout>
+
+* Make a symlink of the init.d file
+
+```sh copy
+$SU ln -s mempool /etc/init.d/mempool.signet.bbo
+```
+
+* Create the init configuration file `conf.d/mempool.signet.bbo` and add the following
+
+```sh copy
+$SU $EDITOR /etc/conf.d/mempool.signet.bbo
+```
+
+```sh copy filename="/etc/conf.d/mempool.signet.bbo"
+MEMPOOL_CHAIN=signet
+MEMPOOL_CONFIGFILE=/etc/mempool/signet.bbo.json
+
+export BACKEND_HTTP_PORT=8995
+export CORE_RPC_PORT=38332
+export CORE_RPC_COOKIE_PATH=/run/bitcoind/signet.bbo.authcookie
+export ELECTRUM_PORT=53002 # 53002 for fulcrum, 53012 for electrs
+export DATABASE_DATABASE=mempool_signet_bbo
+```
+
+* Create a mempool_signet_bbo database and grant privileges to {user} user
+directly from the command line
+
+```sh copy
+$SU mariadb -e "create database mempool_signet_bbo;"
+$SU mariadb -e "grant all privileges on mempool_signet_bbo.* to 'mempool'@'localhost' identified via unix_socket;"
+```
+
+* Enable autoboot (optional)
+
+```sh copy
+$SU rc-update add mempool.signet.bbo default
+```
+    </Tabs.Tab>
+</Tabs>
 
 ### Enable logrotate
 
@@ -814,7 +1079,7 @@ $SU $EDITOR /etc/logrotate.d/mempool
 ```
 
 ```sh copy filename="/etc/logrotate.d/mempool"
-/var/log/mempool/main/*.log {
+/var/log/mempool/**/*.log {
     weekly
     missingok
     rotate 104
@@ -824,10 +1089,16 @@ $SU $EDITOR /etc/logrotate.d/mempool
     create 0640 mempool mempool
     sharedscripts
     postrotate
-        kill -HUP `cat /run/mempool/main.pid`
+        for pidfile in /run/mempool/*.pid; do
+            kill -HUP `cat $pidfile`
+        done
     endscript
 }
 ```
+
+<Callout>
+Check this {name} sample [logrotate] on web browser
+</Callout>
 
 * Test
 
@@ -836,10 +1107,6 @@ $SU logrotate /etc/logrotate.d/mempool --debug
 ```
 
 ## Enable and start {name}
-
-```sh copy
-$SU rc-update add mempool
-```
 
 ```sh copy
 $SU rc-service mempool start
@@ -856,13 +1123,13 @@ to https://nakamoto01:4081 (or your equivalent IP address).
 
 ## For the future: {name} update
 
-Follow again [{name}] page replacing the environment variable `VERSION=x.xx`
+Follow again [{app}] page replacing the environment variable `VERSION=x.xx`
 value for the latest if it has not been already changed in this guide.
 
 * Update the {name} configuration if necessary (see [release notes])
 
 ```sh copy
-$SU $EDITOR /etc/mempool/main.json
+$SU $EDITOR /etc/conf.d/mempool
 ```
 
 * Restart the service to apply the changes
